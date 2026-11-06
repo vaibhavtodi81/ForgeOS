@@ -116,6 +116,7 @@ export const Hero: React.FC = () => {
             <span className="text-xs text-[#595552] mt-1 font-light">Trust ForgeOS daily</span>
           </div>
         </div>
+
       </div>
     </section>
   );
