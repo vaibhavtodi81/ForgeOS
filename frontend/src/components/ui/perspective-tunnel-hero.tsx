@@ -124,15 +124,15 @@ function TunnelCard({ card, progress, pointer, total, stage }: TunnelCardProps) 
             }}
             className="pointer-events-auto absolute left-1/2 top-1/2 aspect-[4/5] will-change-transform select-none cursor-pointer"
         >
-            <div className="group relative h-full w-full overflow-hidden rounded-2xl bg-slate-900 shadow-2xl shadow-black/80 ring-1 ring-white/10 transition-all duration-500 hover:ring-amber-500/70 hover:shadow-amber-500/25">
+            <div className="group relative h-full w-full overflow-hidden rounded-2xl bg-[#E8DCD4] shadow-xl ring-1 ring-[#323232]/15 transition-all duration-500 hover:ring-[#323232]/50 hover:shadow-2xl">
                 <img
                     src={card.item.src}
                     alt={card.item.title}
                     draggable={false}
                     className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent flex items-end p-4 sm:p-5">
-                    <span className="text-xs sm:text-sm font-mono tracking-widest uppercase text-white/95 drop-shadow-md">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex items-end p-4 sm:p-5">
+                    <span className="text-xs sm:text-sm font-mono tracking-widest uppercase text-white drop-shadow-md">
                         {card.item.title}
                     </span>
                 </div>
@@ -165,7 +165,6 @@ export default function PerspectiveTunnelHero() {
         return () => window.removeEventListener("resize", updateDimensions);
     }, []);
 
-    // Link animation directly to page scroll through a pinned sticky viewport track
     const { scrollYProgress } = useScroll({
         target: containerRef,
         offset: ["start start", "end end"],
@@ -186,38 +185,36 @@ export default function PerspectiveTunnelHero() {
     return (
         <div
             ref={containerRef}
-            className="relative h-[250vh] w-full bg-slate-950"
+            className="relative h-[250vh] w-full bg-[#DDD0C8]"
         >
-            {/* Sticky 100vh viewport that pins during the 250vh scroll distance, then releases naturally */}
             <div
-                className="sticky top-0 h-screen w-full overflow-hidden text-white select-none flex items-center justify-center"
+                className="sticky top-0 h-screen w-full overflow-hidden text-[#323232] select-none flex items-center justify-center"
                 style={{
                     perspective: stage.isMobile ? "900px" : "1200px",
                     transformStyle: "preserve-3d",
                 }}
             >
-                {/* Immersive Background Grid & Glow */}
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#f59e0b_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,#000_60%,transparent_100%)] opacity-25" />
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.12)_0%,transparent_70%)]" />
+                {/* Subtle Grid in Dark Grey */}
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#323232_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,#000_60%,transparent_100%)] opacity-20" />
 
                 {/* Depth Ring Guides */}
-                <div className="pointer-events-none absolute h-[48vmin] w-[48vmin] rounded-full border border-amber-500/15" />
-                <div className="pointer-events-none absolute h-[76vmin] w-[76vmin] rounded-full border border-dashed border-white/10" />
+                <div className="pointer-events-none absolute h-[48vmin] w-[48vmin] rounded-full border border-[#323232]/15" />
+                <div className="pointer-events-none absolute h-[76vmin] w-[76vmin] rounded-full border border-dashed border-[#323232]/20" />
 
-                {/* Central Anchor Typography */}
+                {/* Central Typography */}
                 <motion.div
                     style={{ scale: titleScale, opacity: titleOpacity }}
                     className="pointer-events-none z-0 flex flex-col items-center text-center px-6 max-w-xl"
                 >
-                    <p className="text-xs font-mono uppercase tracking-[0.4em] text-amber-400 mb-4">
+                    <p className="text-xs font-mono uppercase tracking-[0.4em] text-[#595552] mb-4">
                         Builder Portfolio & Sites
                     </p>
-                    <h2 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-[0.95] bg-gradient-to-b from-white via-white to-white/40 bg-clip-text text-transparent">
+                    <h2 className="text-4xl sm:text-6xl md:text-7xl font-medium tracking-tight leading-[0.95] text-[#323232]">
                         PROJECTS IN
                         <br />
                         MOTION.
                     </h2>
-                    <p className="mt-4 max-w-[36ch] text-sm sm:text-base font-light text-neutral-400">
+                    <p className="mt-4 max-w-[36ch] text-sm sm:text-base font-light text-[#595552]">
                         Continue scrolling to travel through live builder developments.
                     </p>
                 </motion.div>
@@ -225,10 +222,10 @@ export default function PerspectiveTunnelHero() {
                 {/* Scroll Prompt */}
                 <motion.div
                     style={{ opacity: promptOpacity }}
-                    className="pointer-events-none absolute bottom-8 z-20 flex flex-col items-center gap-2 text-xs font-mono uppercase tracking-[0.3em] text-neutral-400"
+                    className="pointer-events-none absolute bottom-8 z-20 flex flex-col items-center gap-2 text-xs font-mono uppercase tracking-[0.3em] text-[#595552]"
                 >
                     <span>Scroll to Explore Sites</span>
-                    <div className="h-6 w-px bg-gradient-to-b from-amber-500 to-transparent" />
+                    <div className="h-6 w-px bg-gradient-to-b from-[#323232] to-transparent" />
                 </motion.div>
 
                 {/* 3D Z-Space Plane */}
