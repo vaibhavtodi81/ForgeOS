@@ -27,31 +27,31 @@ export const Navbar: React.FC = () => {
     {
       label: 'Features',
       href: '#features',
-      icon: <LayoutDashboard className="w-4 h-4 text-amber-400" />,
+      icon: <LayoutDashboard className="w-4 h-4 text-[#323232]" />,
       fx: 'glow',
     },
     {
       label: 'How It Works',
       href: '#how-it-works',
-      icon: <ClipboardList className="w-4 h-4 text-amber-400" />,
+      icon: <ClipboardList className="w-4 h-4 text-[#323232]" />,
       fx: 'spin',
     },
     {
       label: 'Gallery',
       href: '#gallery',
-      icon: <Package className="w-4 h-4 text-amber-400" />,
+      icon: <Package className="w-4 h-4 text-[#323232]" />,
       fx: 'pop',
     },
     {
       label: 'Showcase',
       href: '#showcase',
-      icon: <Layers className="w-4 h-4 text-amber-400" />,
+      icon: <Layers className="w-4 h-4 text-[#323232]" />,
       fx: 'wave',
     },
     {
       label: 'Testimonials',
       href: '#testimonials',
-      icon: <Star className="w-4 h-4 text-amber-400" />,
+      icon: <Star className="w-4 h-4 text-[#323232]" />,
       fx: 'drop',
     },
   ];
@@ -60,52 +60,47 @@ export const Navbar: React.FC = () => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-slate-950/90 backdrop-blur-md shadow-lg shadow-black/40 border-b border-slate-800/80 py-2'
-          : 'bg-transparent border-b border-transparent py-4'
+          ? 'bg-[#DDD0C8]/90 backdrop-blur-md shadow-sm border-b border-[#323232]/10 py-3'
+          : 'bg-transparent border-b border-transparent py-5'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
-          {/* Logo / Brand */}
+        <div className="flex items-center justify-between h-12">
+          {/* Logo / Brand - Editorial style */}
           <a
             href="#"
-            className="flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-lg"
+            className="flex items-center gap-2.5 group focus:outline-none rounded-lg"
           >
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 group-hover:bg-amber-500/20 group-hover:border-amber-500/60 transition-all duration-200 shadow-sm shadow-amber-500/10">
-              <Building2 className="w-5 h-5 transition-transform group-hover:scale-105" />
+            <div className="w-8 h-8 rounded-full bg-[#323232] text-[#DDD0C8] flex items-center justify-center transition-transform group-hover:scale-105">
+              <Building2 className="w-4 h-4" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-white flex items-center">
-                Forge<span className="text-amber-500">OS</span>
-              </span>
-              <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold -mt-1 hidden sm:block">
-                Builder Platform
-              </span>
-            </div>
+            <span className="text-lg font-bold tracking-[0.2em] uppercase text-[#323232]">
+              FORGE<span className="font-light text-[#595552]">OS</span>
+            </span>
           </a>
 
           {/* Liquid Glass Navbar in Center (Desktop) */}
           <div className="hidden lg:flex items-center justify-center">
             <LiquidNavbar
               items={liquidNavItems}
-              tone="dark"
+              tone="light"
               defaultActive={0}
               sound={false}
-              className="scale-95"
+              className="scale-95 shadow-sm"
             />
           </div>
 
-          {/* Right Action Buttons (Desktop) */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* Right Action Buttons */}
+          <div className="hidden md:flex items-center gap-4">
             <a
               href="#login"
-              className="text-sm font-medium text-slate-300 hover:text-white px-3 py-2 rounded-lg transition-colors duration-150"
+              className="text-xs font-semibold uppercase tracking-wider text-[#323232] hover:text-black px-3 py-2 transition-colors"
             >
               Log In
             </a>
             <a
               href="#get-started"
-              className="text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 px-4 py-2 rounded-xl shadow-sm shadow-amber-500/20 hover:shadow-amber-500/40 transition-all duration-150 transform hover:-translate-y-0.5"
+              className="text-xs font-semibold uppercase tracking-wider text-[#DDD0C8] bg-[#323232] hover:bg-[#1E1E1E] px-6 py-2.5 rounded-full shadow-sm transition-all duration-200 transform hover:-translate-y-0.5"
             >
               Get Started
             </a>
@@ -116,9 +111,8 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors"
+              className="p-2 rounded-lg text-[#323232] hover:bg-[#323232]/10 transition-colors"
               aria-label="Toggle mobile menu"
-              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? (
                 <X className="w-6 h-6" />
@@ -132,30 +126,30 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Dropdown Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 px-4 pt-3 pb-6 space-y-2 mt-2">
+        <div className="lg:hidden bg-[#DDD0C8]/95 backdrop-blur-xl border-b border-[#323232]/15 px-4 pt-4 pb-6 space-y-2 mt-2 shadow-lg">
           {liquidNavItems.map((link) => (
             <a
               key={link.label}
               href={link.href}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#323232] hover:bg-[#323232]/10 transition-colors"
             >
               {link.icon}
               {link.label}
             </a>
           ))}
-          <div className="pt-4 border-t border-slate-800/80 flex flex-col gap-2">
+          <div className="pt-4 border-t border-[#323232]/15 flex flex-col gap-2">
             <a
               href="#login"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-center py-2 text-sm font-medium text-slate-300 hover:text-white"
+              className="text-center py-2 text-sm font-medium text-[#323232]"
             >
               Log In
             </a>
             <a
               href="#get-started"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-center py-2.5 text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-xl shadow-md"
+              className="text-center py-2.5 text-xs font-semibold uppercase tracking-wider text-[#DDD0C8] bg-[#323232] rounded-full shadow-sm"
             >
               Get Started
             </a>
