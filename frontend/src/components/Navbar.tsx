@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Menu, X } from 'lucide-react';
+import { Building2, Menu, X, LayoutDashboard, ClipboardList, Package, Layers, Star } from 'lucide-react';
+import { LiquidNavbar, type LiquidNavItem } from '@/components/ui/liquid-glass-navbar';
 
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -15,7 +16,6 @@ export const Navbar: React.FC = () => {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    // Run once on mount in case page is refreshed while scrolled
     handleScroll();
 
     return () => {
@@ -23,24 +23,49 @@ export const Navbar: React.FC = () => {
     };
   }, []);
 
-  const navLinks = [
-    { label: 'Features', href: '#features' },
-    { label: 'How It Works', href: '#how-it-works' },
-    { label: 'Gallery', href: '#gallery' },
-    { label: 'Showcase', href: '#showcase' },
-    { label: 'Testimonials', href: '#testimonials' },
+  const liquidNavItems: LiquidNavItem[] = [
+    {
+      label: 'Features',
+      href: '#features',
+      icon: <LayoutDashboard className="w-4 h-4 text-amber-400" />,
+      fx: 'glow',
+    },
+    {
+      label: 'How It Works',
+      href: '#how-it-works',
+      icon: <ClipboardList className="w-4 h-4 text-amber-400" />,
+      fx: 'spin',
+    },
+    {
+      label: 'Gallery',
+      href: '#gallery',
+      icon: <Package className="w-4 h-4 text-amber-400" />,
+      fx: 'pop',
+    },
+    {
+      label: 'Showcase',
+      href: '#showcase',
+      icon: <Layers className="w-4 h-4 text-amber-400" />,
+      fx: 'wave',
+    },
+    {
+      label: 'Testimonials',
+      href: '#testimonials',
+      icon: <Star className="w-4 h-4 text-amber-400" />,
+      fx: 'drop',
+    },
   ];
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-slate-900/95 backdrop-blur-md shadow-lg shadow-black/20 border-b border-slate-800'
-          : 'bg-transparent border-b border-transparent'
+          ? 'bg-slate-950/90 backdrop-blur-md shadow-lg shadow-black/40 border-b border-slate-800/80 py-2'
+          : 'bg-transparent border-b border-transparent py-4'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-14">
           {/* Logo / Brand */}
           <a
             href="#"
@@ -59,37 +84,35 @@ export const Navbar: React.FC = () => {
             </div>
           </a>
 
-          {/* Center Navigation Links (Desktop) */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-sm font-medium text-slate-300 hover:text-amber-400 transition-colors duration-150 relative py-1 hover:underline underline-offset-8 decoration-amber-500/50"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
+          {/* Liquid Glass Navbar in Center (Desktop) */}
+          <div className="hidden lg:flex items-center justify-center">
+            <LiquidNavbar
+              items={liquidNavItems}
+              tone="dark"
+              defaultActive={0}
+              sound={false}
+              className="scale-95"
+            />
+          </div>
 
           {/* Right Action Buttons (Desktop) */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             <a
               href="#login"
-              className="text-sm font-medium text-slate-300 hover:text-white px-3.5 py-2 rounded-lg transition-colors duration-150"
+              className="text-sm font-medium text-slate-300 hover:text-white px-3 py-2 rounded-lg transition-colors duration-150"
             >
               Log In
             </a>
             <a
               href="#get-started"
-              className="text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 px-4.5 py-2.5 rounded-lg shadow-sm shadow-amber-500/20 hover:shadow-amber-500/40 transition-all duration-150 transform hover:-translate-y-0.5"
+              className="text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 px-4 py-2 rounded-xl shadow-sm shadow-amber-500/20 hover:shadow-amber-500/40 transition-all duration-150 transform hover:-translate-y-0.5"
             >
               Get Started
             </a>
           </div>
 
           {/* Mobile Hamburger Button */}
-          <div className="flex md:hidden items-center">
+          <div className="flex lg:hidden items-center">
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -109,32 +132,30 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Dropdown Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-slate-900/98 backdrop-blur-xl border-b border-slate-800 px-4 pt-3 pb-6 space-y-4 animate-in fade-in duration-200">
-          <nav className="flex flex-col space-y-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="px-3.5 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:text-amber-400 hover:bg-slate-800/60 transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-2.5">
+        <div className="lg:hidden bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 px-4 pt-3 pb-6 space-y-2 mt-2">
+          {liquidNavItems.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors"
+            >
+              {link.icon}
+              {link.label}
+            </a>
+          ))}
+          <div className="pt-4 border-t border-slate-800/80 flex flex-col gap-2">
             <a
               href="#login"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 rounded-lg text-sm font-medium text-slate-200 hover:text-white bg-slate-800/70 hover:bg-slate-800 transition-colors"
+              className="text-center py-2 text-sm font-medium text-slate-300 hover:text-white"
             >
               Log In
             </a>
             <a
               href="#get-started"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 rounded-lg text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 transition-colors shadow-md shadow-amber-500/20"
+              className="text-center py-2.5 text-sm font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-xl shadow-md"
             >
               Get Started
             </a>
