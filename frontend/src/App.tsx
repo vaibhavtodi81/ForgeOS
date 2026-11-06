@@ -6,6 +6,7 @@ import { ProductGallery } from './components/ProductGallery'
 import PerspectiveTunnelHero from './components/ui/perspective-tunnel-hero'
 import { Testimonials } from './components/Testimonials'
 import { Footer } from './components/Footer'
+import SiteStoryReveal from './components/SiteStoryReveal'
 
 export function App() {
   return (
@@ -13,6 +14,7 @@ export function App() {
       <Navbar />
       <main className="flex-grow">
         <Hero />
+        <SiteStoryReveal />
         <Features />
         <HowItWorks />
         <ProductGallery />
