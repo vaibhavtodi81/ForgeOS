@@ -1,173 +1,119 @@
 import React from 'react';
-import { ArrowRight, Play, Building2, IndianRupee, ShieldCheck, CheckCircle2, TrendingUp, HardHat } from 'lucide-react';
+import { ArrowRight, Play, Building2, IndianRupee, ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
 
 export const Hero: React.FC = () => {
   return (
-    <section className="relative min-h-screen w-full flex items-center justify-center pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 text-white overflow-hidden">
-      {/* Inline styles for subtle custom floating keyframe animations */}
-      <style>{`
-        @keyframes hero-float-slow {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-12px) rotate(0.8deg); }
-        }
-        @keyframes hero-float-reverse {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(10px) rotate(-0.8deg); }
-        }
-        @keyframes hero-pulse-glow {
-          0%, 100% { opacity: 0.15; transform: scale(1); }
-          50% { opacity: 0.25; transform: scale(1.05); }
-        }
-        .animate-float-slow {
-          animation: hero-float-slow 6s ease-in-out infinite;
-        }
-        .animate-float-reverse {
-          animation: hero-float-reverse 7s ease-in-out infinite;
-        }
-        .animate-pulse-glow {
-          animation: hero-pulse-glow 5s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Subtle Construction-Themed Blueprint Grid Background */}
+    <section className="relative min-h-[90vh] w-full flex items-center justify-center pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-[#DDD0C8] text-[#323232] overflow-hidden">
+      {/* Subtle architectural grid pattern */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-20"
+        className="absolute inset-0 pointer-events-none opacity-25"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px)
+            linear-gradient(to right, rgba(50, 50, 50, 0.08) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(50, 50, 50, 0.08) 1px, transparent 1px)
           `,
-          backgroundSize: '48px 48px',
-          maskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 80%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 80%)',
+          backgroundSize: '40px 40px',
+          maskImage: 'radial-gradient(ellipse 70% 60% at 50% 45%, black 20%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 70% 60% at 50% 45%, black 20%, transparent 80%)',
         }}
       />
 
-      {/* Ambient Lighting Orbs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[320px] bg-amber-500/15 blur-[120px] rounded-full pointer-events-none animate-pulse-glow" />
-      <div className="absolute bottom-10 right-10 w-96 h-96 bg-amber-600/10 blur-[130px] rounded-full pointer-events-none" />
-
-      {/* Subtle CAD / Construction Blueprint Geometric Crosshair Accents */}
-      <div className="absolute top-28 left-8 sm:left-16 text-slate-700/60 font-mono text-xs select-none pointer-events-none hidden md:block">
-        + [GRID: SEC-01]
-      </div>
-      <div className="absolute top-28 right-8 sm:right-16 text-slate-700/60 font-mono text-xs select-none pointer-events-none hidden md:block">
-        + [ELEV: +42.50M]
-      </div>
-
-      {/* Floating Decorative Element - Left Side (Desktop Site Log Preview) */}
-      <div className="hidden xl:flex absolute left-8 top-1/2 -translate-y-28 animate-float-slow z-10 pointer-events-none">
-        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/70 p-4 rounded-2xl shadow-2xl shadow-black/40 w-64 text-left">
+      {/* Floating Decorative Preview - Left */}
+      <div className="hidden xl:flex absolute left-8 top-1/2 -translate-y-24 z-10 pointer-events-none">
+        <div className="bg-[#E8DCD4]/90 backdrop-blur-md border border-[#323232]/15 p-4 rounded-2xl shadow-xl w-64 text-left">
           <div className="flex items-center justify-between mb-2">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#323232] bg-[#323232]/10 px-2.5 py-0.5 rounded-full">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Log Verified
+              Site Log Verified
             </span>
-            <span className="text-[11px] text-slate-400">10m ago</span>
+            <span className="text-[10px] text-[#595552]">Today</span>
           </div>
-          <p className="text-sm font-semibold text-white">Tower C • 14th Slab Pour</p>
-          <div className="mt-2 pt-2 border-t border-slate-800 text-xs flex justify-between items-center text-slate-300">
-            <span>Cement Wastage</span>
-            <span className="text-emerald-400 font-semibold">-1.2% (Under Norm)</span>
+          <p className="text-sm font-bold text-[#323232]">Tower C • 14th Slab Pour</p>
+          <div className="mt-2 pt-2 border-t border-[#323232]/10 text-xs flex justify-between items-center text-[#595552]">
+            <span>Material Wastage</span>
+            <span className="text-[#323232] font-semibold">-1.2% (Under Norm)</span>
           </div>
         </div>
       </div>
 
-      {/* Floating Decorative Element - Right Side (Desktop Financial Badge) */}
-      <div className="hidden xl:flex absolute right-8 top-1/2 -translate-y-16 animate-float-reverse z-10 pointer-events-none">
-        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/70 p-4 rounded-2xl shadow-2xl shadow-black/40 w-64 text-left">
+      {/* Floating Decorative Preview - Right */}
+      <div className="hidden xl:flex absolute right-8 top-1/2 -translate-y-12 z-10 pointer-events-none">
+        <div className="bg-[#E8DCD4]/90 backdrop-blur-md border border-[#323232]/15 p-4 rounded-2xl shadow-xl w-64 text-left">
           <div className="flex items-center justify-between mb-2">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#323232] bg-[#323232]/10 px-2.5 py-0.5 rounded-full">
               <TrendingUp className="w-3.5 h-3.5" />
-              Billing Audit
+              Billing Reconciliation
             </span>
-            <span className="text-[11px] text-slate-400">GST Matched</span>
+            <span className="text-[10px] text-[#595552]">GST Ready</span>
           </div>
-          <p className="text-sm font-semibold text-white">Steel Supplier Invoice</p>
-          <div className="mt-2 pt-2 border-t border-slate-800 text-xs flex justify-between items-center text-slate-300">
+          <p className="text-sm font-bold text-[#323232]">Steel Supplier Invoice</p>
+          <div className="mt-2 pt-2 border-t border-[#323232]/10 text-xs flex justify-between items-center text-[#595552]">
             <span>Verified Payout</span>
-            <span className="text-amber-400 font-bold">₹18,40,000</span>
+            <span className="text-[#323232] font-bold">₹18,40,000</span>
           </div>
         </div>
       </div>
 
       {/* Main Hero Container */}
-      <div className="relative z-20 max-w-5xl mx-auto text-center flex flex-col items-center">
-        {/* Industry Pill Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-xs sm:text-sm font-medium text-slate-300 shadow-inner mb-6 sm:mb-8 backdrop-blur-sm">
-          <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-          <span className="h-2 w-2 rounded-full bg-amber-500 -ml-4" />
-          <HardHat className="w-4 h-4 text-amber-400" />
-          <span>The Operating System for Indian Real Estate & Builders</span>
-        </div>
-
-        {/* Main Headline */}
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white leading-[1.15] max-w-4xl">
-          Manage Every Project.{' '}
-          <span className="block mt-1 sm:mt-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500">
-            Control Every Rupee.
-          </span>
-        </h1>
-
-        {/* Subheading */}
-        <p className="mt-6 text-base sm:text-lg md:text-xl text-slate-300 font-normal leading-relaxed max-w-3xl">
-          ForgeOS gives builders and developers a single, real-time view of all projects — progress, resources, wastage, and payments — so nothing slips through the cracks.
+      <div className="relative z-20 max-w-4xl mx-auto text-center flex flex-col items-center">
+        {/* Eyebrow - Exactly like the reference image */}
+        <p className="text-sm sm:text-base font-normal text-[#595552] mb-6 tracking-wide">
+          Your projects are as demanding as your ambition
         </p>
 
-        {/* Two CTA Buttons */}
-        <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+        {/* Primary Headline */}
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-[#323232] leading-[1.1] max-w-3xl">
+          Brightening construction with beautiful, durable systems.
+        </h1>
+
+        {/* Subtitle */}
+        <p className="mt-6 text-base sm:text-lg text-[#595552] max-w-2xl font-light leading-relaxed">
+          ForgeOS gives builders and real estate developers a single, reliable view of progress, stock balances, wastage, and contractor bills.
+        </p>
+
+        {/* Action Buttons - Pill style matching reference image */}
+        <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
           <a
-            href="#trial"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 text-base font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 rounded-xl shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all duration-200 transform hover:-translate-y-0.5 group"
+            href="#get-started"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs font-semibold uppercase tracking-widest text-[#DDD0C8] bg-[#323232] hover:bg-[#1E1E1E] transition-all duration-200 shadow-md group"
           >
-            Start Free Trial
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            <span>Start Free Trial</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </a>
 
           <a
-            href="#demo"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 text-base font-medium text-white border border-slate-600/80 hover:border-slate-400 bg-slate-800/40 hover:bg-slate-800/80 rounded-xl transition-all duration-200 backdrop-blur-sm"
+            href="#showcase"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs font-semibold uppercase tracking-widest text-[#323232] border border-[#323232]/30 hover:border-[#323232] hover:bg-[#323232]/5 transition-all duration-200"
           >
-            <Play className="w-4 h-4 text-amber-400 fill-amber-400" />
-            Watch Demo
+            <Play className="w-3.5 h-3.5 fill-[#323232]" />
+            <span>Explore 3D Sites</span>
           </a>
         </div>
 
-        {/* 3 Small Stat Badges in a Row */}
-        <div className="mt-14 sm:mt-16 w-full max-w-3xl pt-8 border-t border-slate-800/90">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
-            {/* Stat Badge 1 */}
-            <div className="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm shadow-md transition-all hover:border-slate-700">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <p className="text-xl font-bold text-white tracking-tight leading-none">500+</p>
-                <p className="text-xs text-slate-400 font-medium mt-1">Projects Managed</p>
-              </div>
+        {/* Stat Badges in Beige & Dark Grey */}
+        <div className="mt-16 pt-10 border-t border-[#323232]/15 w-full grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+          <div className="flex flex-col items-center p-4 rounded-2xl bg-[#E8DCD4]/50 border border-[#323232]/10">
+            <div className="flex items-center gap-2 text-[#323232] font-semibold text-lg">
+              <Building2 className="w-4 h-4" />
+              <span>500+ Projects</span>
             </div>
+            <span className="text-xs text-[#595552] mt-1 font-light">Managed across India</span>
+          </div>
 
-            {/* Stat Badge 2 */}
-            <div className="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm shadow-md transition-all hover:border-slate-700">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                <IndianRupee className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <p className="text-xl font-bold text-white tracking-tight leading-none">₹200Cr+</p>
-                <p className="text-xs text-slate-400 font-medium mt-1">Tracked</p>
-              </div>
+          <div className="flex flex-col items-center p-4 rounded-2xl bg-[#E8DCD4]/50 border border-[#323232]/10">
+            <div className="flex items-center gap-2 text-[#323232] font-semibold text-lg">
+              <IndianRupee className="w-4 h-4" />
+              <span>₹200Cr+ Spend</span>
             </div>
+            <span className="text-xs text-[#595552] mt-1 font-light">Accurately reconciled</span>
+          </div>
 
-            {/* Stat Badge 3 */}
-            <div className="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm shadow-md transition-all hover:border-slate-700">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <p className="text-xl font-bold text-white tracking-tight leading-none">50+</p>
-                <p className="text-xs text-slate-400 font-medium mt-1">Builders Trust Us</p>
-              </div>
+          <div className="flex flex-col items-center p-4 rounded-2xl bg-[#E8DCD4]/50 border border-[#323232]/10">
+            <div className="flex items-center gap-2 text-[#323232] font-semibold text-lg">
+              <ShieldCheck className="w-4 h-4" />
+              <span>50+ Developers</span>
             </div>
+            <span className="text-xs text-[#595552] mt-1 font-light">Trust ForgeOS daily</span>
           </div>
         </div>
       </div>
