@@ -21,7 +21,7 @@ const steps: StepItem[] = [
     icon: UserPlus,
     title: 'Create Your Account',
     description:
-      'Sign up and add your team. Create project managers and assign them to your sites.',
+      'Sign up and add your team. Create project managers and assign them to your sites in seconds.',
   },
   {
     number: 2,
@@ -43,18 +43,18 @@ export const HowItWorks: React.FC = () => {
   return (
     <section
       id="how-it-works"
-      className="py-20 sm:py-28 bg-slate-50 relative border-t border-slate-200/70"
+      className="py-24 sm:py-32 bg-slate-900/60 relative border-t border-slate-900"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-700 border border-amber-500/20 mb-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-4">
             How It Works
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
             Get Started in Minutes
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
+          <p className="mt-4 text-base sm:text-lg text-slate-400 leading-relaxed">
             ForgeOS is designed for builders, not tech experts. Set up and start tracking in three simple steps.
           </p>
         </div>
@@ -63,7 +63,7 @@ export const HowItWorks: React.FC = () => {
         <div className="relative">
           {/* Desktop Connecting Line behind cards */}
           <div
-            className="hidden lg:block absolute top-1/2 left-[16%] right-[16%] -translate-y-12 h-0.5 border-t-2 border-dashed border-amber-300/80 z-0"
+            className="hidden lg:block absolute top-1/2 left-[16%] right-[16%] -translate-y-12 h-0.5 border-t-2 border-dashed border-slate-700 z-0"
             aria-hidden="true"
           />
 
@@ -75,41 +75,41 @@ export const HowItWorks: React.FC = () => {
               return (
                 <div key={step.number} className="relative flex flex-col">
                   {/* Step Card */}
-                  <div className="group relative bg-white rounded-2xl p-7 sm:p-8 border border-slate-200/90 shadow-sm hover:shadow-xl hover:shadow-slate-200/60 hover:border-amber-400/60 transition-all duration-300 flex-1 flex flex-col justify-between">
+                  <div className="group relative bg-slate-950/80 rounded-3xl p-7 sm:p-8 border border-slate-800 shadow-xl shadow-black/50 hover:border-amber-500/50 hover:shadow-amber-500/5 transition-all duration-300 flex-1 flex flex-col justify-between">
                     <div>
                       {/* Badge & Icon Top Row */}
                       <div className="flex items-center justify-between mb-6">
                         {/* Number Badge with Primary/Amber Color */}
-                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-white font-bold text-sm shadow-md shadow-amber-500/30">
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-slate-950 font-extrabold text-sm shadow-md shadow-amber-500/30">
                           {step.number}
                         </div>
 
                         {/* Step Icon */}
-                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 ring-1 ring-amber-500/20 group-hover:ring-amber-500">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all duration-300 ring-1 ring-amber-500/20 group-hover:ring-amber-500">
                           <Icon className="w-6 h-6 stroke-[2]" aria-hidden="true" />
                         </div>
                       </div>
 
                       {/* Content */}
-                      <h3 className="text-xl font-bold text-slate-900 tracking-tight group-hover:text-amber-600 transition-colors duration-200">
+                      <h3 className="text-xl font-bold text-white tracking-tight group-hover:text-amber-400 transition-colors duration-200">
                         {step.title}
                       </h3>
-                      <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed">
+                      <p className="mt-3 text-slate-400 text-sm sm:text-base leading-relaxed">
                         {step.description}
                       </p>
                     </div>
 
                     {/* Step Indicator Footer */}
-                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
+                    <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-slate-500">
                       <span>Step 0{step.number}</span>
-                      <span className="text-amber-600 font-medium">Ready in minutes</span>
+                      <span className="text-amber-400 font-medium">Ready in minutes</span>
                     </div>
                   </div>
 
                   {/* Desktop Connecting Arrow between steps */}
                   {!isLast && (
                     <div
-                      className="hidden lg:flex absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white border border-amber-200 shadow-md items-center justify-center text-amber-600 ring-4 ring-slate-50"
+                      className="hidden lg:flex absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-slate-900 border border-slate-700 shadow-lg items-center justify-center text-amber-400 ring-4 ring-slate-950"
                       aria-hidden="true"
                     >
                       <ArrowRight className="w-5 h-5 stroke-[2.5]" />
@@ -119,10 +119,10 @@ export const HowItWorks: React.FC = () => {
                   {/* Mobile Connecting Arrow between steps */}
                   {!isLast && (
                     <div
-                      className="flex lg:hidden justify-center items-center py-4 text-amber-500"
+                      className="flex lg:hidden justify-center items-center py-4 text-amber-400"
                       aria-hidden="true"
                     >
-                      <div className="w-8 h-8 rounded-full bg-white border border-amber-200 shadow-xs flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 shadow-xs flex items-center justify-center">
                         <ArrowDown className="w-4 h-4 stroke-[2.5]" />
                       </div>
                     </div>
@@ -135,6 +135,6 @@ export const HowItWorks: React.FC = () => {
       </div>
     </section>
   );
-}
+};
 
 export default HowItWorks;
