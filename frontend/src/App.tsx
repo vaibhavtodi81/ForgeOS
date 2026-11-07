@@ -8,10 +8,23 @@ import { Testimonials } from './components/Testimonials'
 import { Footer } from './components/Footer'
 import SiteStoryReveal from './components/SiteStoryReveal'
 import { DailyLogsPage } from './features/daily-logs/pages/DailyLogsPage'
+import { ProgressHistoryPage } from './features/progress-history/pages/ProgressHistoryPage'
+import { ComingSoonPage } from './features/app-shell/pages/ComingSoonPage'
 
 export function App() {
-  if (window.location.pathname === '/daily-logs') {
+  if (window.location.pathname === '/daily-logs' || window.location.pathname === '/app/daily-logs') {
     return <DailyLogsPage />
+  }
+  if (window.location.pathname === '/app/progress-history') {
+    return <ProgressHistoryPage />
+  }
+  if (window.location.pathname === '/app') {
+    return <ComingSoonPage title="Dashboard" />
+  }
+  if (window.location.pathname.startsWith('/app/')) {
+    const section = window.location.pathname.split('/')[2] ?? 'Workspace'
+    const title = section.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+    return <ComingSoonPage title={title} />
   }
 
   return (
