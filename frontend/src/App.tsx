@@ -13,6 +13,7 @@ import { ComingSoonPage } from './features/app-shell/pages/ComingSoonPage'
 import { ProjectLogsPage } from './features/daily-logs/pages/ProjectLogsPage'
 import { ProjectLogFormPage } from './features/daily-logs/pages/ProjectLogFormPage'
 import { ProjectLogDetailPage } from './features/daily-logs/pages/ProjectLogDetailPage'
+import { ProjectProgressPage } from './features/progress-history/pages/ProjectProgressPage'
 
 export function App() {
   const pathParts = window.location.pathname.split('/').filter(Boolean)
@@ -24,6 +25,9 @@ export function App() {
   }
   if (pathParts.length === 4 && pathParts[0] === 'projects' && pathParts[2] === 'logs') {
     return <ProjectLogDetailPage logId={pathParts[3]} projectId={pathParts[1]} />
+  }
+  if (pathParts.length === 3 && pathParts[0] === 'projects' && pathParts[2] === 'progress') {
+    return <ProjectProgressPage projectId={pathParts[1]} />
   }
   if (pathParts.length === 3 && pathParts[0] === 'projects' && pathParts[2] === 'logs') {
     return <ProjectLogsPage projectId={pathParts[1]} />
