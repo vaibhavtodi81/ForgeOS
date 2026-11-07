@@ -19,7 +19,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/app', icon: LayoutDashboard },
   { label: 'Projects', href: '/app/projects', icon: FolderKanban },
   { label: 'Daily Logs', href: '/projects/GVR-001/logs', icon: ClipboardList },
-  { label: 'Progress History', href: '/app/progress-history', icon: BarChart3 },
+  { label: 'Progress History', href: '/projects/GVR-001/progress', icon: BarChart3 },
   { label: 'Materials', href: '/app/materials', icon: Boxes },
   { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
   { label: 'Bills', href: '/app/bills', icon: CreditCard },
