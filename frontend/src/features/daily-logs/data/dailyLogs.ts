@@ -1,0 +1,61 @@
+import type { DailyLog } from '../types/dailyLog'
+
+export const dailyLogs: DailyLog[] = [
+  {
+    id: 'log-2024-06-18',
+    date: '2024-06-18',
+    project: 'Riverside Residences',
+    weather: 'Clear · 28°C',
+    status: 'Submitted',
+    summary: 'Level 04 slab reinforcement completed. MEP coordination is ready for inspection tomorrow.',
+    progress: 68,
+    labour: [
+      { id: 'l1', name: 'Arjun Mehta', trade: 'Steel fixer', company: 'BuildRight Civil', status: 'Present', hours: 8 },
+      { id: 'l2', name: 'Sanjay Kumar', trade: 'Mason', company: 'BuildRight Civil', status: 'Present', hours: 8 },
+      { id: 'l3', name: 'Maya Patel', trade: 'Electrician', company: 'VoltWorks', status: 'Half day', hours: 4 },
+      { id: 'l4', name: 'Rakesh Singh', trade: 'Site supervisor', company: 'ForgeOS Projects', status: 'Present', hours: 9 },
+    ],
+    machinery: [
+      { id: 'm1', name: 'Tower Crane TC-02', type: 'Lifting', operator: 'Vikram Rao', hours: 6.5, status: 'In use' },
+      { id: 'm2', name: 'Transit Mixer TM-14', type: 'Concrete', operator: 'Amit Shah', hours: 4, status: 'In use' },
+      { id: 'm3', name: 'Excavator EX-07', type: 'Earthworks', operator: 'Neeraj Das', hours: 0, status: 'Idle' },
+    ],
+    progressHistory: [
+      { id: 'p1', date: 'Jun 18', activity: 'Level 04 reinforcement', completion: 92, note: 'East wing completed; west wing snagging in progress.' },
+      { id: 'p2', date: 'Jun 17', activity: 'Level 04 formwork', completion: 100, note: 'Signed off by site engineer.' },
+      { id: 'p3', date: 'Jun 15', activity: 'MEP first fix', completion: 64, note: 'Electrical conduits installed in core.' },
+    ],
+    activity: [
+      { id: 'a1', time: '16:42', title: 'Daily log submitted', description: 'Rakesh Singh submitted the site log for review.', type: 'approval' },
+      { id: 'a2', time: '14:15', title: 'Concrete delivery received', description: '18 m³ of M30 concrete checked in at Gate 2.', type: 'delivery' },
+      { id: 'a3', time: '11:30', title: 'Progress updated', description: 'Level 04 reinforcement moved from 84% to 92%.', type: 'update' },
+      { id: 'a4', time: '09:10', title: 'Safety observation raised', description: 'Temporary edge protection required at the west stair core.', type: 'issue' },
+    ],
+  },
+  {
+    id: 'log-2024-06-17',
+    date: '2024-06-17',
+    project: 'Riverside Residences',
+    weather: 'Partly cloudy · 26°C',
+    status: 'Approved',
+    summary: 'Formwork inspection passed and the material hoist was serviced without schedule impact.',
+    progress: 65,
+    labour: [],
+    machinery: [],
+    progressHistory: [],
+    activity: [],
+  },
+  {
+    id: 'log-2024-06-14',
+    date: '2024-06-14',
+    project: 'Riverside Residences',
+    weather: 'Light rain · 23°C',
+    status: 'Draft',
+    summary: 'Rain paused external works for 90 minutes. Internal finishing activities continued.',
+    progress: 63,
+    labour: [],
+    machinery: [],
+    progressHistory: [],
+    activity: [],
+  },
+]
