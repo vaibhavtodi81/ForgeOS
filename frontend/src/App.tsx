@@ -11,9 +11,16 @@ import { DailyLogsPage } from './features/daily-logs/pages/DailyLogsPage'
 import { ProgressHistoryPage } from './features/progress-history/pages/ProgressHistoryPage'
 import { ComingSoonPage } from './features/app-shell/pages/ComingSoonPage'
 import { ProjectLogsPage } from './features/daily-logs/pages/ProjectLogsPage'
+import { ProjectLogFormPage } from './features/daily-logs/pages/ProjectLogFormPage'
 
 export function App() {
   const pathParts = window.location.pathname.split('/').filter(Boolean)
+  if (pathParts.length === 4 && pathParts[0] === 'projects' && pathParts[2] === 'logs' && pathParts[3] === 'new') {
+    return <ProjectLogFormPage projectId={pathParts[1]} />
+  }
+  if (pathParts.length === 5 && pathParts[0] === 'projects' && pathParts[2] === 'logs' && pathParts[4] === 'edit') {
+    return <ProjectLogFormPage logId={pathParts[3]} projectId={pathParts[1]} />
+  }
   if (pathParts.length === 3 && pathParts[0] === 'projects' && pathParts[2] === 'logs') {
     return <ProjectLogsPage projectId={pathParts[1]} />
   }
