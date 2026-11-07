@@ -40,7 +40,7 @@ export function Sidebar({ currentPath, collapsed, mobileOpen, onCloseMobile, onT
         <div className="flex-1 overflow-y-auto p-3">
           {!collapsed && <p className="mb-2 px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#A59A93]">Workspace</p>}
           {navItems.map(({ label, href, icon: Icon }) => {
-            const active = currentPath === href || (href === '/app' && currentPath === '/app/')
+            const active = currentPath === href || (href === '/app' && currentPath === '/app/') || (label === 'Daily Logs' && currentPath.endsWith('/logs'))
             return <a className={`mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${active ? 'bg-[#F3E9E1] font-semibold text-[#9A5E3A]' : 'font-medium text-[#595552] hover:bg-[#F3E9E1] hover:text-[#9A5E3A]'} ${collapsed ? 'justify-center' : ''}`} href={href} key={label} onClick={onCloseMobile} title={collapsed ? label : undefined}>
               <Icon className="h-[17px] w-[17px] shrink-0" />
               {!collapsed && <span>{label}</span>}
