@@ -1,3 +1,9 @@
+import { hasPermission } from './features/authentication/utils/permissions'
+import { LandsPage } from './features/lands/pages/LandsPage'
+import { ProjectsPage } from './features/projects/pages/ProjectsPage'
+import { ProjectDetailsPage } from './features/projects/pages/ProjectDetailsPage'
+import { UsersPage } from './features/users/pages/UsersPage'
+import { DashboardPage } from './features/app-shell/pages/DashboardPage'
 import { useEffect, useState } from 'react'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
@@ -15,16 +21,50 @@ import { ProjectLogsPage } from './features/daily-logs/pages/ProjectLogsPage'
 import { ProjectLogFormPage } from './features/daily-logs/pages/ProjectLogFormPage'
 import { ProjectLogDetailPage } from './features/daily-logs/pages/ProjectLogDetailPage'
 import { ProjectProgressPage } from './features/progress-history/pages/ProjectProgressPage'
+import { LoginPage } from './features/authentication/pages/LoginPage'
 
 export function App() {
-  const [pathname, setPathname] = useState(window.location.pathname)
+  const [pathname, setPathname] = useState(
+    window.location.hash === '#login' ? '#login' : window.location.pathname
+  )
+
   useEffect(() => {
-    const handlePopState = () => setPathname(window.location.pathname)
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    const handleLocationChange = () => {
+      setPathname(
+        window.location.hash === '#login'
+          ? '#login'
+          : window.location.pathname
+      )
+    }
+
+    window.addEventListener('popstate', handleLocationChange)
+    window.addEventListener('hashchange', handleLocationChange)
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange)
+      window.removeEventListener('hashchange', handleLocationChange)
+    }
   }, [])
 
   const pathParts = pathname.split('/').filter(Boolean)
+
+  const isProtectedRoute =
+    pathname === '/app' ||
+    pathname.startsWith('/app/') ||
+    pathParts[0] === 'projects' ||
+    pathname === '/daily-logs'
+
+
+  if (isProtectedRoute && !hasPermission(['Admin', 'Project Manager'])) {
+    return <LoginPage />
+  }
+
+  if (pathname === '#login' || pathname === '/login') {
+    return <LoginPage />
+  }
+  if (pathname === '/login') {
+    return <LoginPage />
+  }
   if (pathParts.length === 4 && pathParts[0] === 'projects' && pathParts[2] === 'logs' && pathParts[3] === 'new') {
     return <ProjectLogFormPage projectId={pathParts[1]} />
   }
@@ -47,7 +87,23 @@ export function App() {
     return <ProgressHistoryPage />
   }
   if (pathname === '/app') {
-    return <ComingSoonPage title="Dashboard" />
+    return <DashboardPage />
+  }
+  if (pathname === '/app/users') {
+    return hasPermission(['Admin'])
+      ? <UsersPage />
+      : <ComingSoonPage title="Access Denied - Admin Only" />
+  }
+  if (pathParts.length === 3 && pathParts[0] === 'app' && pathParts[1] === 'projects') {
+    return <ProjectDetailsPage />
+  }
+  if (pathname === '/app/projects') {
+    return <ProjectsPage />
+  }
+  if (pathname === '/app/lands') {
+    return hasPermission(['Admin'])
+      ? <LandsPage />
+      : <ComingSoonPage title="Access Denied - Admin Only" />
   }
   if (pathname.startsWith('/app/')) {
     const section = pathname.split('/')[2] ?? 'Workspace'
