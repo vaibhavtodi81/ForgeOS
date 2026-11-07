@@ -10,8 +10,13 @@ import SiteStoryReveal from './components/SiteStoryReveal'
 import { DailyLogsPage } from './features/daily-logs/pages/DailyLogsPage'
 import { ProgressHistoryPage } from './features/progress-history/pages/ProgressHistoryPage'
 import { ComingSoonPage } from './features/app-shell/pages/ComingSoonPage'
+import { ProjectLogsPage } from './features/daily-logs/pages/ProjectLogsPage'
 
 export function App() {
+  const pathParts = window.location.pathname.split('/').filter(Boolean)
+  if (pathParts.length === 3 && pathParts[0] === 'projects' && pathParts[2] === 'logs') {
+    return <ProjectLogsPage projectId={pathParts[1]} />
+  }
   if (window.location.pathname === '/daily-logs' || window.location.pathname === '/app/daily-logs') {
     return <DailyLogsPage />
   }
