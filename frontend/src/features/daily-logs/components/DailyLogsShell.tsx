@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, Edit3, FileText, MapPin, Menu, Plus, Search, Settings2 } from 'lucide-react'
+import { Edit3, FileText, MapPin, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { ActivityTimeline } from './ActivityTimeline'
 import { DailyLogForm } from './DailyLogForm'
@@ -17,7 +17,6 @@ export function DailyLogsShell({ initialLogs }: DailyLogsShellProps) {
   const [selectedId, setSelectedId] = useState(initialLogs[0]?.id ?? '')
   const [isCreating, setIsCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const selectedLog = logs.find((log) => log.id === selectedId) ?? logs[0]
 
   const handleSave = (summary: string) => {
@@ -49,7 +48,6 @@ export function DailyLogsShell({ initialLogs }: DailyLogsShellProps) {
   if (isCreating) {
     return (
       <div className="min-h-screen bg-[#F7F3EE] text-[#323232]">
-        <TopBar onMenu={() => setIsSidebarOpen((open) => !open)} />
         <DailyLogForm initialSummary={editingId ? selectedLog?.summary : undefined} isEditing={Boolean(editingId)} onCancel={() => { setIsCreating(false); setEditingId(null) }} onSave={handleSave} />
       </div>
     )
@@ -57,10 +55,9 @@ export function DailyLogsShell({ initialLogs }: DailyLogsShellProps) {
 
   return (
     <div className="min-h-screen bg-[#F7F3EE] text-[#323232]">
-      <TopBar onMenu={() => setIsSidebarOpen((open) => !open)} />
-      <div className="mx-auto flex max-w-[1600px] pt-16">
-        <div className={`${isSidebarOpen ? 'block' : 'hidden'} absolute inset-x-0 top-16 z-20 shadow-xl lg:relative lg:top-0 lg:block lg:shadow-none`}>
-          <DailyLogsList logs={logs} onCreate={() => { setEditingId(null); setIsCreating(true) }} onSelect={(id) => { setSelectedId(id); setIsSidebarOpen(false) }} selectedId={selectedId} />
+      <div className="mx-auto flex max-w-[1600px] flex-col lg:flex-row">
+        <div className="w-full shrink-0 shadow-sm lg:w-[330px] lg:shadow-none">
+          <DailyLogsList logs={logs} onCreate={() => { setEditingId(null); setIsCreating(true) }} onSelect={setSelectedId} selectedId={selectedId} />
         </div>
         {selectedLog ? <main className="min-w-0 flex-1">
           <header className="border-b border-[#E8E0DA] bg-[#F7F3EE] px-6 py-6 lg:px-10">
@@ -103,15 +100,6 @@ export function DailyLogsShell({ initialLogs }: DailyLogsShellProps) {
       </div>
     </div>
   )
-}
-
-function TopBar({ onMenu }: { onMenu: () => void }) {
-  return <header className="fixed inset-x-0 top-0 z-30 h-16 border-b border-[#E8E0DA] bg-[#F7F3EE]/95 backdrop-blur-md">
-    <div className="mx-auto flex h-full max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8">
-      <div className="flex items-center gap-3"><button className="rounded-lg p-2 text-[#595552] hover:bg-[#E8E0DA] lg:hidden" onClick={onMenu} type="button" aria-label="Toggle daily logs navigation"><Menu className="h-5 w-5" /></button><a className="flex items-center gap-2" href="/"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#323232] text-xs font-bold text-[#F7F3EE]">F</span><span className="text-sm font-bold tracking-[0.18em] text-[#323232]">FORGE<span className="font-light text-[#8E827A]">OS</span></span></a><span className="hidden h-5 w-px bg-[#D9CEC6] sm:block" /><span className="hidden text-sm font-medium text-[#595552] sm:block">Operations</span></div>
-      <div className="flex items-center gap-2"><button className="rounded-lg p-2 text-[#8E827A] hover:bg-[#E8E0DA]" type="button" aria-label="Search"><Search className="h-4 w-4" /></button><button className="rounded-lg p-2 text-[#8E827A] hover:bg-[#E8E0DA]" type="button" aria-label="Notifications"><Bell className="h-4 w-4" /></button><div className="ml-1 hidden items-center gap-2 border-l border-[#E8E0DA] pl-3 sm:flex"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D9BBA7] text-xs font-bold text-[#6D4330]">RS</div><div className="hidden text-left md:block"><p className="text-xs font-semibold text-[#323232]">Rakesh Singh</p><p className="text-[10px] text-[#8E827A]">Site manager</p></div><ChevronDown className="h-3.5 w-3.5 text-[#8E827A]" /></div><button className="rounded-lg p-2 text-[#8E827A] hover:bg-[#E8E0DA]" type="button" aria-label="Settings"><Settings2 className="h-4 w-4" /></button></div>
-    </div>
-  </header>
 }
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
