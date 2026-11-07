@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
 import { Features } from './components/Features'
@@ -16,7 +17,14 @@ import { ProjectLogDetailPage } from './features/daily-logs/pages/ProjectLogDeta
 import { ProjectProgressPage } from './features/progress-history/pages/ProjectProgressPage'
 
 export function App() {
-  const pathParts = window.location.pathname.split('/').filter(Boolean)
+  const [pathname, setPathname] = useState(window.location.pathname)
+  useEffect(() => {
+    const handlePopState = () => setPathname(window.location.pathname)
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const pathParts = pathname.split('/').filter(Boolean)
   if (pathParts.length === 4 && pathParts[0] === 'projects' && pathParts[2] === 'logs' && pathParts[3] === 'new') {
     return <ProjectLogFormPage projectId={pathParts[1]} />
   }
@@ -32,17 +40,17 @@ export function App() {
   if (pathParts.length === 3 && pathParts[0] === 'projects' && pathParts[2] === 'logs') {
     return <ProjectLogsPage projectId={pathParts[1]} />
   }
-  if (window.location.pathname === '/daily-logs' || window.location.pathname === '/app/daily-logs') {
+  if (pathname === '/daily-logs' || pathname === '/app/daily-logs') {
     return <DailyLogsPage />
   }
-  if (window.location.pathname === '/app/progress-history') {
+  if (pathname === '/app/progress-history') {
     return <ProgressHistoryPage />
   }
-  if (window.location.pathname === '/app') {
+  if (pathname === '/app') {
     return <ComingSoonPage title="Dashboard" />
   }
-  if (window.location.pathname.startsWith('/app/')) {
-    const section = window.location.pathname.split('/')[2] ?? 'Workspace'
+  if (pathname.startsWith('/app/')) {
+    const section = pathname.split('/')[2] ?? 'Workspace'
     const title = section.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
     return <ComingSoonPage title={title} />
   }

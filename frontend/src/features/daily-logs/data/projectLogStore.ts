@@ -7,9 +7,9 @@ export function getProjectLogs(projectId: string): ProjectLog[] {
   try {
     const stored = localStorage.getItem(storageKey)
     const parsed = stored ? JSON.parse(stored) as ProjectLog[] : projectLogs
-    return parsed.filter((log) => log.projectId === projectId)
+    return parsed.filter((log) => log.projectId === projectId).map(normalizeProjectLog)
   } catch {
-    return projectLogs.filter((log) => log.projectId === projectId)
+    return projectLogs.filter((log) => log.projectId === projectId).map(normalizeProjectLog)
   }
 }
 
@@ -27,5 +27,14 @@ function getAllProjectLogs(): ProjectLog[] {
     return stored ? JSON.parse(stored) as ProjectLog[] : projectLogs
   } catch {
     return projectLogs
+  }
+}
+
+function normalizeProjectLog(log: ProjectLog): ProjectLog {
+  return {
+    ...log,
+    issues: log.issues ?? '',
+    labour: log.labour ?? [],
+    machinery: log.machinery ?? [],
   }
 }
