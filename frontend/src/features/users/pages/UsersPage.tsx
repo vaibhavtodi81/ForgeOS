@@ -69,13 +69,26 @@ export function UsersPage() {
 
   const saveUser = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const normalizedEmail = email.trim().toLowerCase()
+    const duplicateEmail = users.some((user) =>
+      user.email.trim().toLowerCase() === normalizedEmail &&
+      user.id !== editingUser?.id
+    )
+    if (duplicateEmail) {
+      window.alert('This email is already registered. Please use a different email.')
+      return
+    }
+    if (!name.trim() || !normalizedEmail) {
+      window.alert('Please enter a valid name and email address.')
+      return
+    }
     if (editingUser) {
       setUsers((current) => current.map((user) =>
-        user.id === editingUser.id ? { ...user, name, email, role, status } : user
+        user.id === editingUser.id ? { ...user, name: name.trim(), email: normalizedEmail, role, status } : user
       ))
     } else {
       setUsers((current) => [...current, {
-        id: Date.now(), name, email, role, status,
+        id: Date.now(), name: name.trim(), email: normalizedEmail, role, status,
         joined: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       }])
     }
