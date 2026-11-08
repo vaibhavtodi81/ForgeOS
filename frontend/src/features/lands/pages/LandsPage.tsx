@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   Map, Plus, Search, Pencil, Trash2, X,
   MapPin, Ruler, Building2, CheckCircle2
@@ -36,7 +36,18 @@ const statusStyles: Record<Land['status'], string> = {
 }
 
 export function LandsPage() {
-  const [lands, setLands] = useState(initialLands)
+  const [lands, setLands] = useState<Land[]>(() => {
+    try {
+      const saved = localStorage.getItem('forgeos_lands')
+      return saved ? JSON.parse(saved) : initialLands
+    } catch {
+      return initialLands
+    }
+  })
+
+  useEffect(() => {
+    localStorage.setItem('forgeos_lands', JSON.stringify(lands))
+  }, [lands])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
   const [showForm, setShowForm] = useState(false)
