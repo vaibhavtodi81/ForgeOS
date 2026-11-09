@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, ChevronDown, Menu, Search, UserCircle, LogOut } from 'lucide-react'
+import { Bell, ChevronDown, Menu, Search, UserCircle, LogOut, Check } from 'lucide-react'
 import { ProjectSelector } from './ProjectSelector'
 
 interface TopbarProps {
@@ -29,6 +29,14 @@ export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
   const handleLogout = () => {
     localStorage.removeItem('forgeos_demo_user')
     window.location.href = '/'
+  }
+
+  const switchDemoRole = (nextRole: 'admin' | 'pm') => {
+    localStorage.setItem('forgeos_demo_user', JSON.stringify({
+      role: nextRole,
+      email: nextRole === 'admin' ? 'admin@forgeos.com' : 'pm@forgeos.com',
+    }))
+    window.location.href = nextRole === 'admin' ? '/app/admin/dashboard' : '/app/pm/dashboard'
   }
 
   return (
@@ -92,6 +100,27 @@ export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
                     {role}
                   </div>
                   <p className="mt-1 truncate text-xs text-[#8E827A]">{email}</p>
+                </div>
+                <div className="border-b border-[#E8DCD4] px-2 py-2">
+                  <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#A59A93]">
+                    Demo role switcher
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => switchDemoRole('admin')}
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-[#595552] hover:bg-[#F7F3EE]"
+                  >
+                    Administrator
+                    {role === 'Administrator' && <Check size={15} className="text-[#9A5E3A]" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchDemoRole('pm')}
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-[#595552] hover:bg-[#F7F3EE]"
+                  >
+                    Project Manager
+                    {role === 'Project Manager' && <Check size={15} className="text-[#9A5E3A]" />}
+                  </button>
                 </div>
                 <button
                   type="button"
