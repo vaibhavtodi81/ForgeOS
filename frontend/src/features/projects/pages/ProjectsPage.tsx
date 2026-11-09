@@ -73,7 +73,10 @@ export function ProjectsPage() {
     String(user.email || '').trim().toLowerCase() ===
     String(currentUser?.email || '').trim().toLowerCase()
   )
-  const currentUserName = String(currentUser?.name || currentProfile?.name || '').trim()
+  const currentUserName = String(
+    currentUser?.name || currentProfile?.name || ''
+  ).trim()
+  const currentUserEmail = String(currentUser?.email || '').trim().toLowerCase()
 
   const managerOptions = Array.from(new Set([
     'Aarav Sharma', 'Priya Mehta', 'Rohan Verma', 'Neha Kapoor',
@@ -88,10 +91,14 @@ export function ProjectsPage() {
 
   const visibleProjects = currentRole === 'Admin'
     ? projects
-    : projects.filter((project) =>
-        currentUserName !== '' &&
-        String(project.manager).trim().toLowerCase() === currentUserName.toLowerCase()
-      )
+    : projects.filter((project: any) => {
+        const assignedName = String(project.manager || '').trim().toLowerCase()
+        const assignedEmail = String(project.managerEmail || '').trim().toLowerCase()
+        return (
+          (currentUserName !== '' && assignedName === currentUserName.toLowerCase()) ||
+          (currentUserEmail !== '' && assignedEmail === currentUserEmail)
+        )
+      })
 
   const filtered = useMemo(() => visibleProjects.filter((project) => {
     const query = search.toLowerCase()
