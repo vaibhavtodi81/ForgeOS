@@ -11,6 +11,8 @@ import {
 type UserRole = 'admin' | 'pm'
 
 type RegisteredUser = {
+  id?: string | number
+  name?: string
   email?: string
   role?: string
   status?: string
@@ -42,7 +44,7 @@ export function LoginForm() {
     }
 
     const matchedUser = registeredUsers.find((user) =>
-      String(user.email).toLowerCase() === email.trim().toLowerCase()
+      String(user.email || '').trim().toLowerCase() === email.trim().toLowerCase()
     )
 
     if (matchedUser && String(matchedUser.status).toLowerCase() === 'inactive') {
@@ -65,7 +67,7 @@ export function LoginForm() {
 
     localStorage.setItem('forgeos_demo_user', JSON.stringify({
       id: matchedUser?.id,
-      name: matchedUser?.name ?? '',
+      name: String(matchedUser?.name || '').trim(),
       email: email.trim(),
       role: authenticatedRole,
       rememberMe,
