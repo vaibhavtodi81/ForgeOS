@@ -4,6 +4,7 @@ import { ProjectsPage } from './features/projects/pages/ProjectsPage'
 import { ProjectDetailsPage } from './features/projects/pages/ProjectDetailsPage'
 import { UsersPage } from './features/users/pages/UsersPage'
 import { BillsPage } from './features/bills/pages/BillsPage'
+import { VendorsPage } from './features/vendors/pages/VendorsPage'
 import { DashboardPage } from './features/app-shell/pages/DashboardPage'
 import { useEffect, useState } from 'react'
 import { Navbar } from './components/Navbar'
@@ -108,6 +109,9 @@ export function App() {
   }
   if (pathname === '/app/bills') {
     return <BillsPage />
+  }
+  if (pathname === '/app/vendors') {
+    return <VendorsPage />
   }
   if (pathname.startsWith('/app/')) {
     const section = pathname.split('/')[2] ?? 'Workspace'
