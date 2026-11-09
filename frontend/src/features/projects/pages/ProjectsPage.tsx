@@ -12,6 +12,8 @@ type Project = {
   name: string
   location: string
   manager: string
+  managerEmail?: string
+  createdByEmail?: string
   budget: string
   startDate: string
   endDate: string
@@ -26,7 +28,7 @@ const initialProjects: Project[] = [
 ]
 
 const emptyForm = {
-  name: '', location: '', manager: '', budget: '',
+  name: '', location: '', manager: '', managerEmail: '', budget: '',
   startDate: '', endDate: '', status: 'Planning' as Project['status'],
 }
 
@@ -96,7 +98,7 @@ export function ProjectsPage() {
         const assignedEmail = String(project.managerEmail || '').trim().toLowerCase()
         return (
           (currentUserName !== '' && assignedName === currentUserName.toLowerCase()) ||
-          (currentUserEmail !== '' && assignedEmail === currentUserEmail)
+          (currentUserEmail !== '' && (assignedEmail === currentUserEmail || String(project.createdByEmail || '').trim().toLowerCase() === currentUserEmail))
         )
       })
 
@@ -108,7 +110,11 @@ export function ProjectsPage() {
 
   const openAdd = () => {
     setEditing(null)
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+      manager: currentRole === 'Project Manager' ? currentUserName : '',
+      managerEmail: currentRole === 'Project Manager' ? currentUserEmail : '',
+    })
     setShowForm(true)
   }
 
@@ -118,6 +124,7 @@ export function ProjectsPage() {
       name: project.name,
       location: project.location,
       manager: project.manager,
+      managerEmail: project.managerEmail || '',
       budget: project.budget,
       startDate: project.startDate,
       endDate: project.endDate,
@@ -152,10 +159,26 @@ export function ProjectsPage() {
         p.id === editing.id ? { ...p, ...form } : p
       ))
     } else {
+      const enteredEmail = String(form.managerEmail || '').trim().toLowerCase()
+      const assignedProfile = registeredUsers.find((user: any) =>
+        enteredEmail && String(user.email || '').trim().toLowerCase() === enteredEmail
+      )
+      const assignedManager = String(form.manager || assignedProfile?.name || '').trim()
+
+      if (!assignedManager) {
+        window.alert(currentRole === 'Project Manager'
+          ? 'Your account name is missing. Please ask the Administrator to update your user profile.'
+          : 'Please enter a Project Manager name or registered email.')
+        return
+      }
+
       setProjects((current) => [...current, {
         id: Date.now(),
         code: `PRJ-${String(current.length + 1).padStart(3, '0')}`,
         ...form,
+        manager: assignedManager,
+        managerEmail: String(assignedProfile?.email || enteredEmail || '').trim().toLowerCase(),
+        createdByEmail: currentUserEmail,
       }])
     }
     setShowForm(false)
@@ -183,7 +206,7 @@ export function ProjectsPage() {
             <h1 className="mt-1 text-2xl font-semibold text-[#323232] sm:text-3xl">Project Management</h1>
             <p className="mt-2 text-sm text-[#8E827A]">Create, organize and monitor your construction projects.</p>
           </div>
-          {currentRole === 'Admin' && <button onClick={openAdd} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#323232] px-5 py-3 text-sm font-medium text-white hover:bg-[#1E1E1E]">
+          {(currentRole === 'Admin' || currentRole === 'Project Manager') && <button onClick={openAdd} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#323232] px-5 py-3 text-sm font-medium text-white hover:bg-[#1E1E1E]">
             <Plus size={17} /> Create Project
           </button>}
         </section>
@@ -275,7 +298,11 @@ export function ProjectsPage() {
                       <div className="flex justify-end gap-2">
                         <button onClick={() => { window.location.href = `/app/projects/${project.id}` }} title="View project details" className="rounded-lg p-2 text-[#595552] hover:bg-[#F7F3EE]"><span className="text-xs font-semibold">View</span></button>
                         {currentRole === 'Admin' && <button onClick={() => openEdit(project)} title="Edit project" className="rounded-lg p-2 text-[#595552] hover:bg-[#F7F3EE]"><Pencil size={16} /></button>}
-                        {currentRole === 'Admin' && <button onClick={() => deleteProject(project.id)} title="Delete project" className="rounded-lg p-2 text-[#9B625A] hover:bg-[#F8ECEA]"><Trash2 size={16} /></button>}
+                        {(currentRole === 'Admin' ||
+                          (currentRole === 'Project Manager' &&
+                           (String(project.managerEmail || '').trim().toLowerCase() === currentUserEmail ||
+                            String(project.createdByEmail || '').trim().toLowerCase() === currentUserEmail))) &&
+                          <button onClick={() => deleteProject(project.id)} title="Delete project" className="rounded-lg p-2 text-[#9B625A] hover:bg-[#F8ECEA]"><Trash2 size={16} /></button>}
                       </div>
                     </td>
                   </tr>
@@ -304,14 +331,53 @@ export function ProjectsPage() {
               <label className="text-sm font-medium text-[#595552]">Location
                 <input required value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="City, State" className="mt-2 w-full rounded-xl border border-[#C8BCB4] px-4 py-3 font-normal outline-none" />
               </label>
-              <label className="text-sm font-medium text-[#595552]">Assign Project Manager
-                <select required value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className="mt-2 w-full rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 font-normal outline-none">
-                  <option value="">Select a Project Manager</option>
-                  {managerOptions.map((manager) => (
-                    <option key={manager} value={manager}>{manager}</option>
-                  ))}
-                </select>
-              </label>
+              <div className="text-sm font-medium text-[#595552]">
+                <label htmlFor="project-manager-name">Project Manager Name</label>
+                <input
+                  id="project-manager-name"
+                  required
+                  value={form.manager}
+                  onChange={(e) => setForm({ ...form, manager: e.target.value })}
+                  placeholder="Enter manager name"
+                  className="mt-2 w-full rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 font-normal outline-none read-only:bg-[#F7F3EE]"
+                />
+                {currentRole === 'Admin' && (
+                  <p className="mt-1 text-xs font-normal text-[#8E827A]">Enter a custom name or select a registered manager below.</p>
+                )}
+                {currentRole === 'Admin' && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const selected = registeredUsers.find((user: any) => String(user.email || '') === e.target.value)
+                      if (selected) setForm({ ...form, manager: String(selected.name || ''), managerEmail: String(selected.email || '').toLowerCase() })
+                    }}
+                    className="mt-2 w-full rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 font-normal outline-none"
+                  >
+                    <option value="">Choose a registered Project Manager (optional)</option>
+                    {registeredUsers.filter((user: any) =>
+                      ['project manager', 'pm'].includes(String(user.role || '').toLowerCase()) &&
+                      String(user.status || 'Active').toLowerCase() === 'active'
+                    ).map((user: any) => (
+                      <option key={user.id} value={user.email}>{user.name} — {user.email}</option>
+                    ))}
+                  </select>
+                )}
+                <label htmlFor="project-manager-email" className="mt-3 block">Project Manager Email (optional)</label>
+                <input
+                  id="project-manager-email"
+                  type="email"
+                  value={form.managerEmail || ''}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    const matched = registeredUsers.find((user: any) =>
+                      String(user.email || '').trim().toLowerCase() === value.trim().toLowerCase()
+                    )
+                    setForm({ ...form, managerEmail: value, ...(matched ? { manager: String(matched.name || '') } : {}) })
+                  }}
+                  placeholder="manager@example.com"
+                  className="mt-2 w-full rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 font-normal outline-none read-only:bg-[#F7F3EE]"
+                />
+              </div>
               <label className="text-sm font-medium text-[#595552]">Estimated Budget
                 <input required value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} placeholder="e.g. ₹2.5 Cr" className="mt-2 w-full rounded-xl border border-[#C8BCB4] px-4 py-3 font-normal outline-none" />
               </label>
