@@ -45,3 +45,4 @@ export interface Bill {
   challanNumber?: string;
   fileAttachmentName?: string;
 }
+
