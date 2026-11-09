@@ -173,7 +173,7 @@ export function DashboardPage() {
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#323232] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#1E1E1E]"
           >
             <Plus size={17} />
-            Create Project
+            {isAdmin() ? 'Create Project' : 'View My Projects'}
           </button>
         </section>
 

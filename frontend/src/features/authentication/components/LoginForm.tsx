@@ -64,6 +64,8 @@ export function LoginForm() {
           : role
 
     localStorage.setItem('forgeos_demo_user', JSON.stringify({
+      id: matchedUser?.id,
+      name: matchedUser?.name ?? '',
       email: email.trim(),
       role: authenticatedRole,
       rememberMe,

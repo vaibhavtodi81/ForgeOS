@@ -59,18 +59,45 @@ export function ProjectsPage() {
 
   const currentUser = getCurrentUser()
   const currentRole = getCurrentRole()
+
+  const registeredUsers = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('forgeos_users') || '[]')
+      return Array.isArray(saved) ? saved : []
+    } catch {
+      return []
+    }
+  })()
+
+  const currentProfile = registeredUsers.find((user: any) =>
+    String(user.email || '').trim().toLowerCase() ===
+    String(currentUser?.email || '').trim().toLowerCase()
+  )
+  const currentUserName = String(currentUser?.name || currentProfile?.name || '').trim()
+
+  const managerOptions = Array.from(new Set([
+    'Aarav Sharma', 'Priya Mehta', 'Rohan Verma', 'Neha Kapoor',
+    ...registeredUsers
+      .filter((user: any) =>
+        ['project manager', 'pm'].includes(String(user.role || '').toLowerCase()) &&
+        String(user.status || 'Active').toLowerCase() === 'active'
+      )
+      .map((user: any) => String(user.name || '').trim())
+      .filter(Boolean),
+  ]))
+
   const visibleProjects = currentRole === 'Admin'
     ? projects
     : projects.filter((project) =>
-        String(project.manager).trim().toLowerCase() ===
-        String(currentUser?.name ?? '').trim().toLowerCase()
+        currentUserName !== '' &&
+        String(project.manager).trim().toLowerCase() === currentUserName.toLowerCase()
       )
 
   const filtered = useMemo(() => visibleProjects.filter((project) => {
     const query = search.toLowerCase()
     const matchesSearch = `${project.name} ${project.code} ${project.location} ${project.manager}`.toLowerCase().includes(query)
     return matchesSearch && (filter === 'All' || project.status === filter)
-  }), [projects, search, filter])
+  }), [visibleProjects, search, filter])
 
   const openAdd = () => {
     setEditing(null)
@@ -174,7 +201,7 @@ export function ProjectsPage() {
         <section className="overflow-hidden rounded-2xl border border-[#C8BCB4]/70 bg-white">
           <div className="flex flex-col justify-between gap-4 border-b border-[#E8DCD4] p-5 sm:flex-row sm:items-center">
             <div>
-              <h2 className="font-semibold text-[#323232]">All Projects</h2>
+              <h2 className="font-semibold text-[#323232]">{currentRole === 'Admin' ? 'All Projects' : 'My Projects'}</h2>
               <p className="mt-1 text-xs text-[#8E827A]">{filtered.length} projects found</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -223,10 +250,9 @@ export function ProjectsPage() {
                         className="max-w-[170px] rounded-lg border border-[#C8BCB4] bg-white px-2 py-2 text-sm text-[#595552] outline-none"
                         aria-label={`Reassign manager for ${project.name}`}
                       >
-                        <option value="Aarav Sharma">Aarav Sharma</option>
-                        <option value="Priya Mehta">Priya Mehta</option>
-                        <option value="Rohan Verma">Rohan Verma</option>
-                        <option value="Neha Kapoor">Neha Kapoor</option>
+                  {managerOptions.map((manager) => (
+                    <option key={manager} value={manager}>{manager}</option>
+                  ))}
                       </select>
 
                       ) : (
@@ -247,7 +273,7 @@ export function ProjectsPage() {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-[#8E827A]">No projects found.</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={7} className="px-5 py-12 text-center text-sm text-[#8E827A]">{currentRole === 'Admin' ? 'No projects yet. Use Create Project to add your first project.' : 'No projects are assigned to your account yet. Please ask an Administrator to assign you to a project.'}</td></tr>}
               </tbody>
             </table>
           </div>
@@ -274,10 +300,9 @@ export function ProjectsPage() {
               <label className="text-sm font-medium text-[#595552]">Assign Project Manager
                 <select required value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className="mt-2 w-full rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 font-normal outline-none">
                   <option value="">Select a Project Manager</option>
-                  <option value="Aarav Sharma">Aarav Sharma</option>
-                  <option value="Priya Mehta">Priya Mehta</option>
-                  <option value="Rohan Verma">Rohan Verma</option>
-                  <option value="Neha Kapoor">Neha Kapoor</option>
+                  {managerOptions.map((manager) => (
+                    <option key={manager} value={manager}>{manager}</option>
+                  ))}
                 </select>
               </label>
               <label className="text-sm font-medium text-[#595552]">Estimated Budget
