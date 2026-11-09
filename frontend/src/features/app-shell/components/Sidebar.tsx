@@ -8,7 +8,6 @@ import {
   CreditCard,
   FolderKanban,
   LayoutDashboard,
-  Map,
   Menu,
   PackageCheck,
   PackageSearch,
