@@ -24,6 +24,13 @@ import { ProjectLogFormPage } from './features/daily-logs/pages/ProjectLogFormPa
 import { ProjectLogDetailPage } from './features/daily-logs/pages/ProjectLogDetailPage'
 import { ProjectProgressPage } from './features/progress-history/pages/ProjectProgressPage'
 import { LoginPage } from './features/authentication/pages/LoginPage'
+import { MaterialsPage } from './features/materials/pages/MaterialsPage'
+import { MaterialPlanningPage } from './features/materials/pages/MaterialPlanningPage'
+import { StockInPage } from './features/stock/pages/StockInPage'
+import { StockOutPage } from './features/stock/pages/StockOutPage'
+import { StockLedgerPage } from './features/stock/pages/StockLedgerPage'
+import { StockDashboardPage } from './features/stock/pages/StockDashboardPage'
+import { WastageAnalysisPage } from './features/wastage/pages/WastageAnalysisPage'
 
 export function App() {
   const [pathname, setPathname] = useState(
@@ -112,6 +119,27 @@ export function App() {
   }
   if (pathname === '/app/vendors') {
     return <VendorsPage />
+  }
+  if (pathname === '/app/materials') {
+    return <MaterialsPage />
+  }
+  if (pathname === '/app/material-planning') {
+    return <MaterialPlanningPage />
+  }
+  if (pathname === '/app/stock') {
+    return <StockDashboardPage />
+  }
+  if (pathname === '/app/stock-in') {
+    return <StockInPage />
+  }
+  if (pathname === '/app/stock-out') {
+    return <StockOutPage />
+  }
+  if (pathname === '/app/stock-ledger') {
+    return <StockLedgerPage />
+  }
+  if (pathname === '/app/wastage') {
+    return <WastageAnalysisPage />
   }
   if (pathname.startsWith('/app/')) {
     const section = pathname.split('/')[2] ?? 'Workspace'
