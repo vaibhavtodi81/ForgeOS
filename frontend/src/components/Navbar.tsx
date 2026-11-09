@@ -99,7 +99,7 @@ export const Navbar: React.FC = () => {
               Log In
             </a>
             <a
-              href="#get-started"
+              href="/login"
               className="text-xs font-semibold uppercase tracking-wider text-[#DDD0C8] bg-[#323232] hover:bg-[#1E1E1E] px-6 py-2.5 rounded-full shadow-sm transition-all duration-200 transform hover:-translate-y-0.5"
             >
               Get Started
@@ -147,7 +147,7 @@ export const Navbar: React.FC = () => {
               Log In
             </a>
             <a
-              href="#get-started"
+              href="/login"
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-center py-2.5 text-xs font-semibold uppercase tracking-wider text-[#DDD0C8] bg-[#323232] rounded-full shadow-sm"
             >

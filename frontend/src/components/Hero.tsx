@@ -84,7 +84,7 @@ export const Hero: React.FC = () => {
         {/* Action Buttons - Pill style matching reference image */}
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-4">
           <a
-            href="#get-started"
+            href="/login"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs font-semibold uppercase tracking-widest text-[#DDD0C8] bg-[#323232] hover:bg-[#1E1E1E] transition-all duration-200 shadow-md group"
           >
             <span>Start Free Trial</span>

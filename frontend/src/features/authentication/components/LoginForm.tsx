@@ -10,6 +10,12 @@ import {
 
 type UserRole = 'admin' | 'pm'
 
+type RegisteredUser = {
+  email?: string
+  role?: string
+  status?: string
+}
+
 export function LoginForm() {
   const [role, setRole] = useState<UserRole>('admin')
   const [email, setEmail] = useState('')
@@ -25,8 +31,17 @@ export function LoginForm() {
       return
     }
 
-    const registeredUsers = JSON.parse(localStorage.getItem('forgeos_users') || '[]')
-    const matchedUser = registeredUsers.find((user: any) =>
+    let registeredUsers: RegisteredUser[] = []
+    try {
+      const savedUsers = localStorage.getItem('forgeos_users')
+      const parsedUsers = savedUsers ? JSON.parse(savedUsers) : []
+      registeredUsers = Array.isArray(parsedUsers) ? parsedUsers : []
+    } catch {
+      setMessage('Unable to load workspace users. Please try again.')
+      return
+    }
+
+    const matchedUser = registeredUsers.find((user) =>
       String(user.email).toLowerCase() === email.trim().toLowerCase()
     )
 
@@ -39,9 +54,18 @@ export function LoginForm() {
       setMessage('Your account is inactive. Please contact the administrator.')
       return
     }
+
+    const registeredRole = String(matchedUser?.role ?? '').toLowerCase()
+    const authenticatedRole: UserRole =
+      registeredRole === 'project manager' || registeredRole === 'pm'
+        ? 'pm'
+        : registeredRole === 'admin' || registeredRole === 'administrator'
+          ? 'admin'
+          : role
+
     localStorage.setItem('forgeos_demo_user', JSON.stringify({
       email: email.trim(),
-      role,
+      role: authenticatedRole,
       rememberMe,
     }))
 
