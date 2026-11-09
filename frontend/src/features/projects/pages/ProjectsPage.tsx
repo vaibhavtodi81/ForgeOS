@@ -94,6 +94,25 @@ export function ProjectsPage() {
 
   const saveProject = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
+    if (form.startDate && form.endDate && form.endDate < form.startDate) {
+      window.alert('Project end date cannot be earlier than its start date.')
+      return
+    }
+
+    const duplicateName = projects.some((project) =>
+      project.name.trim().toLowerCase() === form.name.trim().toLowerCase() &&
+      project.id !== editing?.id
+    )
+    if (duplicateName) {
+      window.alert('A project with this name already exists.')
+      return
+    }
+
+    if (!form.name.trim() || !form.location.trim() || !form.manager.trim()) {
+      window.alert('Please complete all required project details.')
+      return
+    }
     if (editing) {
       setProjects((current) => current.map((p) =>
         p.id === editing.id ? { ...p, ...form } : p
