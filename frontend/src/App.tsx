@@ -3,6 +3,7 @@ import { LandsPage } from './features/lands/pages/LandsPage'
 import { ProjectsPage } from './features/projects/pages/ProjectsPage'
 import { ProjectDetailsPage } from './features/projects/pages/ProjectDetailsPage'
 import { UsersPage } from './features/users/pages/UsersPage'
+import { BillsPage } from './features/bills/pages/BillsPage'
 import { DashboardPage } from './features/app-shell/pages/DashboardPage'
 import { useEffect, useState } from 'react'
 import { Navbar } from './components/Navbar'
@@ -104,6 +105,9 @@ export function App() {
     return hasPermission(['Admin'])
       ? <LandsPage />
       : <ComingSoonPage title="Access Denied - Admin Only" />
+  }
+  if (pathname === '/app/bills') {
+    return <BillsPage />
   }
   if (pathname.startsWith('/app/')) {
     const section = pathname.split('/')[2] ?? 'Workspace'
