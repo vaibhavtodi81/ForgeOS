@@ -17,6 +17,11 @@ import {
   ScrollText,
   TrendingUp,
   UsersRound,
+  FileBarChart,
+  Settings,
+  HardHat,
+  Truck,
+  AlertTriangle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -53,10 +58,10 @@ export function Sidebar({
   }
 
   const adminItems: NavItem[] = [
-    { label: 'Dashboard', href: '/app', icon: LayoutDashboard },
-    { label: 'Users', href: '/app/users', icon: UsersRound },
-    { label: 'Lands', href: '/app/lands', icon: Map },
-    { label: 'Projects', href: '/app/projects', icon: FolderKanban },
+    { label: 'Dashboard', href: '/app/admin/dashboard', icon: LayoutDashboard },
+    { label: 'All Projects', href: '/app/projects', icon: FolderKanban },
+    { label: 'Project Managers', href: '/app/users', icon: UsersRound },
+    { label: 'Daily Logs', href: '/app/daily-logs', icon: ClipboardList },
     { label: 'Materials', href: '/app/materials', icon: Boxes },
     { label: 'Material Planning', href: '/app/material-planning', icon: ClipboardCheck },
     { label: 'Available Stock', href: '/app/stock', icon: PackageSearch },
@@ -66,13 +71,17 @@ export function Sidebar({
     { label: 'Wastage', href: '/app/wastage', icon: TrendingUp },
     { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
     { label: 'Bills', href: '/app/bills', icon: CreditCard },
+    { label: 'Reports', href: '/app/reports', icon: FileBarChart },
+    { label: 'Settings', href: '/app/settings', icon: Settings },
   ]
 
   const managerItems: NavItem[] = [
-    { label: 'Dashboard', href: '/app', icon: LayoutDashboard },
+    { label: 'Dashboard', href: '/app/pm/dashboard', icon: LayoutDashboard },
     { label: 'My Projects', href: '/app/projects', icon: FolderKanban },
-    { label: 'Daily Logs', href: '/projects/GVR-001/logs', icon: ClipboardList },
+    { label: 'Daily Site Logs', href: '/app/daily-logs', icon: ClipboardList },
     { label: 'Progress History', href: '/projects/GVR-001/progress', icon: BarChart3 },
+    { label: 'Labour Records', href: '/app/labour', icon: HardHat },
+    { label: 'Machinery Usage', href: '/app/machinery', icon: Truck },
     { label: 'Materials', href: '/app/materials', icon: Boxes },
     { label: 'Material Planning', href: '/app/material-planning', icon: ClipboardCheck },
     { label: 'Available Stock', href: '/app/stock', icon: PackageSearch },
@@ -82,6 +91,7 @@ export function Sidebar({
     { label: 'Wastage', href: '/app/wastage', icon: TrendingUp },
     { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
     { label: 'Bills', href: '/app/bills', icon: CreditCard },
+    { label: 'Issues & Activities', href: '/app/issues', icon: AlertTriangle },
   ]
 
   const navItems = role === 'admin' ? adminItems : managerItems
@@ -141,7 +151,8 @@ export function Sidebar({
             const active =
               currentPath === href ||
               (href === '/app' && currentPath === '/app/') ||
-              (label === 'Daily Logs' && currentPath.endsWith('/logs')) ||
+              (label === 'Daily Logs' && (currentPath === '/app/daily-logs' || currentPath.endsWith('/logs'))) ||
+              (label === 'Daily Site Logs' && (currentPath === '/app/daily-logs' || currentPath.endsWith('/logs'))) ||
               (label === 'Progress History' && currentPath.endsWith('/progress'))
 
             return (

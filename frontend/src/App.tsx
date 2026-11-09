@@ -31,6 +31,8 @@ import { StockOutPage } from './features/stock/pages/StockOutPage'
 import { StockLedgerPage } from './features/stock/pages/StockLedgerPage'
 import { StockDashboardPage } from './features/stock/pages/StockDashboardPage'
 import { WastageAnalysisPage } from './features/wastage/pages/WastageAnalysisPage'
+import { AdminDashboardPage } from './features/app-shell/pages/AdminDashboardPage'
+import { ProjectManagerDashboardPage } from './features/app-shell/pages/ProjectManagerDashboardPage'
 
 export function App() {
   const [pathname, setPathname] = useState(
@@ -97,6 +99,16 @@ export function App() {
   }
   if (pathname === '/app') {
     return <DashboardPage />
+  }
+  if (pathname === '/app/pm/dashboard') {
+    return hasPermission(['Project Manager'])
+      ? <ProjectManagerDashboardPage />
+      : <ComingSoonPage title="Access Denied - Project Manager Only" />
+  }
+  if (pathname === '/app/admin/dashboard') {
+    return hasPermission(['Admin'])
+      ? <AdminDashboardPage />
+      : <ComingSoonPage title="Access Denied - Admin Only" />
   }
   if (pathname === '/app/users') {
     return hasPermission(['Admin'])
