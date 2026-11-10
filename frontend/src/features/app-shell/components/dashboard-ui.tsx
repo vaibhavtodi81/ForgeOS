@@ -78,3 +78,7 @@ export function Sparkline({ points, label }: { points: string; label: string }) 
     </svg>
   )
 }
+
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <span aria-hidden="true" className={`dashboard-skeleton inline-block ${className}`} />
+}

@@ -25,7 +25,7 @@ export function AppShell({ currentPath, children, projectSelector }: AppShellPro
           onOpenMobileNav={() => setMobileOpen(true)}
           projectSelector={projectSelector}
         />
-        <main className="min-h-screen pt-16">{children}</main>
+        <main className="dashboard-page-transition min-h-screen pt-16">{children}</main>
       </div>
     </div>
   </div>

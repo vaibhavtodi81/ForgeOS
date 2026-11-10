@@ -170,6 +170,37 @@ body {
   color: var(--dashboard-amber);
 }
 
+.dashboard-page-transition {
+  animation: dashboard-page-enter 420ms ease both;
+}
+
+.dashboard-popover {
+  animation: dashboard-popover-enter 180ms ease both;
+}
+
+.dashboard-skeleton {
+  min-height: 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.13), rgba(255,255,255,.06));
+  background-size: 200% 100%;
+  animation: dashboard-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes dashboard-page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dashboard-popover-enter {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes dashboard-skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
 .dashboard-card {
   border: 1px solid var(--dashboard-border);
   border-radius: 1rem;
