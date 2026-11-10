@@ -6,7 +6,11 @@ import {
   LockKeyhole,
   Mail,
   ShieldCheck,
+  Building2,
+  KeyRound,
+  Info,
 } from 'lucide-react'
+import { AVAILABLE_PROJECTS, PM_ACCESS_CODES } from '../utils/permissions'
 
 type UserRole = 'admin' | 'pm'
 
@@ -25,6 +29,10 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [message, setMessage] = useState('')
+
+  // PM-specific states
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(AVAILABLE_PROJECTS[0].id)
+  const [adminCode, setAdminCode] = useState<string>('FORGE-PM-2026')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -65,15 +73,44 @@ export function LoginForm() {
           ? 'admin'
           : role
 
+    // If PM, validate project selection and admin code
+    let assignedProjectInfo = {}
+    if (authenticatedRole === 'pm') {
+      if (!selectedProjectId) {
+        setMessage('Project Managers must select an assigned project before signing in.')
+        return
+      }
+
+      const cleanCode = adminCode.trim().toUpperCase()
+      const isValidCode = PM_ACCESS_CODES.some(
+        (code) => code.toUpperCase() === cleanCode
+      )
+
+      if (!isValidCode) {
+        setMessage('Invalid Admin Authorization Code. Please check the code provided by your administrator.')
+        return
+      }
+
+      const project = AVAILABLE_PROJECTS.find((p) => p.id === selectedProjectId)
+      if (project) {
+        assignedProjectInfo = {
+          assignedProjectId: project.id,
+          assignedProjectCode: project.code,
+          assignedProjectName: project.name,
+        }
+      }
+    }
+
     localStorage.setItem('forgeos_demo_user', JSON.stringify({
       id: matchedUser?.id,
-      name: String(matchedUser?.name || '').trim(),
+      name: String(matchedUser?.name || '').trim() || (authenticatedRole === 'admin' ? 'Administrator' : 'Project Manager'),
       email: email.trim(),
       role: authenticatedRole,
       rememberMe,
+      ...assignedProjectInfo,
     }))
 
-    window.location.href = '/app'
+    window.location.href = authenticatedRole === 'admin' ? '/app/admin/dashboard' : '/app/pm/dashboard'
   }
 
   return (
@@ -86,7 +123,10 @@ export function LoginForm() {
         <div className="grid grid-cols-2 gap-3 rounded-2xl bg-[#F7F3EE] p-1.5">
           <button
             type="button"
-            onClick={() => setRole('admin')}
+            onClick={() => {
+              setRole('admin')
+              setMessage('')
+            }}
             className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
               role === 'admin'
                 ? 'bg-[#323232] text-white shadow-md'
@@ -98,7 +138,10 @@ export function LoginForm() {
 
           <button
             type="button"
-            onClick={() => setRole('pm')}
+            onClick={() => {
+              setRole('pm')
+              setMessage('')
+            }}
             className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
               role === 'pm'
                 ? 'bg-[#323232] text-white shadow-md'
@@ -125,7 +168,7 @@ export function LoginForm() {
               setEmail(event.target.value)
               setMessage('')
             }}
-            placeholder="name@company.com"
+            placeholder={role === 'admin' ? 'admin@forgeos.com' : 'pm@forgeos.com'}
             autoComplete="email"
             required
             className="w-full bg-transparent py-4 text-sm text-[#323232] outline-none placeholder:text-[#A59A92]"
@@ -175,6 +218,66 @@ export function LoginForm() {
         </div>
       </div>
 
+      {/* Project Manager Specific Fields */}
+      {role === 'pm' && (
+        <div className="space-y-4 rounded-2xl border border-[#E8DCD4] bg-[#F3E9E1]/50 p-4 transition-all">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#9A5E3A]">
+            <Info size={14} />
+            <span>Project Manager Assignment</span>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="project" className="text-xs font-semibold text-[#323232]">
+              Assigned Project Site *
+            </label>
+            <div className="flex items-center gap-2.5 rounded-xl border border-[#C8BCB4] bg-white px-3 py-2.5 transition focus-within:border-[#323232]">
+              <Building2 size={17} className="text-[#9A5E3A] shrink-0" />
+              <select
+                id="project"
+                value={selectedProjectId}
+                onChange={(e) => {
+                  setSelectedProjectId(e.target.value)
+                  setMessage('')
+                }}
+                className="w-full bg-transparent text-xs font-medium text-[#323232] outline-none"
+              >
+                {AVAILABLE_PROJECTS.map((proj) => (
+                  <option key={proj.id} value={proj.id}>
+                    {proj.code} — {proj.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-[11px] text-[#8E827A]">
+              Your workspace, daily logs, and inventory will be scoped to this site.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="adminCode" className="text-xs font-semibold text-[#323232]">
+              Admin Authorization Code *
+            </label>
+            <div className="flex items-center gap-2.5 rounded-xl border border-[#C8BCB4] bg-white px-3 py-2.5 transition focus-within:border-[#323232]">
+              <KeyRound size={17} className="text-[#9A5E3A] shrink-0" />
+              <input
+                id="adminCode"
+                type="text"
+                value={adminCode}
+                onChange={(e) => {
+                  setAdminCode(e.target.value)
+                  setMessage('')
+                }}
+                placeholder="Enter code from Administrator"
+                className="w-full bg-transparent text-xs font-mono font-semibold uppercase tracking-wider text-[#323232] outline-none placeholder:text-[#A59A92]"
+              />
+            </div>
+            <p className="text-[10px] text-[#8E827A]">
+              Authorization key provided by company admin (Demo: <code className="rounded bg-white px-1 py-0.5 font-bold text-[#9A5E3A]">FORGE-PM-2026</code>)
+            </p>
+          </div>
+        </div>
+      )}
+
       <label className="flex cursor-pointer items-center gap-3 text-sm text-[#595552]">
         <input
           type="checkbox"
@@ -198,14 +301,19 @@ export function LoginForm() {
         type="submit"
         className="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#323232] px-5 py-4 text-sm font-semibold text-white shadow-lg shadow-[#323232]/10 transition-all hover:-translate-y-0.5 hover:bg-[#1E1E1E] hover:shadow-xl active:translate-y-0"
       >
-        Sign in to ForgeOS
+        Sign in as {role === 'admin' ? 'Administrator' : 'Project Manager'}
         <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
       </button>
 
       <div className="flex items-center justify-center gap-2 text-xs text-[#8E827A]">
         <ShieldCheck size={15} />
-        <span>Secure workspace access · {role === 'admin' ? 'Administrator' : 'Project Manager'}</span>
+        <span>
+          {role === 'admin'
+            ? 'Complete Organization & Portfolio Oversight'
+            : 'Scoped Project Control & Site Operations'}
+        </span>
       </div>
     </form>
   )
 }
+export default LoginForm
