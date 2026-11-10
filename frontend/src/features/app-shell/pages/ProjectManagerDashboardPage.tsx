@@ -2,26 +2,34 @@ import {
   AlertTriangle,
   ArrowUpRight,
   BarChart3,
-  CalendarDays,
+  CalendarClock,
   CheckCircle2,
-  ChevronRight,
   ClipboardList,
   Clock3,
   Construction,
   HardHat,
   MapPin,
   Plus,
+  ShieldAlert,
   Truck,
   Users,
   Wrench,
-  ShieldAlert,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
-import { StatCard } from '../components/dashboard-ui'
-import { getAssignedProject, getCurrentUser } from '../../authentication/utils/permissions'
+import { DashboardCard, ProgressBar, SectionTitle, StatCard, StatusPill } from '../components/dashboard-ui'
 
-type AssignedProject = {
+type ProjectStatus = 'In Progress' | 'Delayed'
+type MilestoneStatus = 'Complete' | 'In progress' | 'Upcoming'
+
+type Milestone = {
+  name: string
+  date: string
+  progress: number
+  status: MilestoneStatus
+}
+
+type SiteProject = {
   id: string
   code: string
   name: string
@@ -30,291 +38,198 @@ type AssignedProject = {
   startDate: string
   completionDate: string
   progress: number
-  status: 'In Progress' | 'Delayed' | 'Completed'
+  status: ProjectStatus
+  health: 'On track' | 'Watch'
+  workers: number
+  machinery: number
+  logs: number
+  issues: number
+  lastUpdate: string
+  milestones: Milestone[]
 }
 
-const projectProfiles: Record<string, AssignedProject> = {
-  '1': { id: '1', code: 'PRJ-001', name: 'Green Valley Residency', location: 'Gurugram, Haryana', stage: 'Finishing', startDate: '10 Jan 2026', completionDate: '20 Dec 2026', progress: 76, status: 'In Progress' },
-  '2': { id: '2', code: 'PRJ-002', name: 'Skyline Commercial Hub', location: 'Delhi, India', stage: 'Structure', startDate: '01 Feb 2026', completionDate: '15 Mar 2027', progress: 52, status: 'In Progress' },
-  '3': { id: '3', code: 'PRJ-003', name: 'Riverside Heights', location: 'Noida, UP', stage: 'Handover', startDate: '01 Jun 2025', completionDate: '30 Aug 2026', progress: 100, status: 'Completed' },
-  '4': { id: '4', code: 'PRJ-004', name: 'Urban Square', location: 'Jaipur, Rajasthan', stage: 'Planning', startDate: '01 Sep 2026', completionDate: '30 Oct 2027', progress: 28, status: 'In Progress' },
-}
-
-const milestones = [
-  { name: 'Land Preparation & Approvals', date: 'Completed · Jan 18', progress: 100, status: 'Complete' },
-  { name: 'Deep Excavation & Shoring', date: 'Completed · Feb 12', progress: 100, status: 'Complete' },
-  { name: 'Raft & Substructure Casting', date: 'Completed · Mar 28', progress: 100, status: 'Complete' },
-  { name: 'Superstructure Towers', date: 'Target · Jul 12', progress: 68, status: 'In progress' },
-  { name: 'Finishing & MEP Installations', date: 'Target · Nov 30', progress: 22, status: 'Upcoming' },
-  { name: 'Site Audit & Handover', date: 'Target · Dec 20', progress: 0, status: 'Upcoming' },
+const assignedProjects: SiteProject[] = [
+  {
+    id: '1',
+    code: 'PRJ-001',
+    name: 'Green Valley Residency',
+    location: 'Gurugram, Haryana',
+    stage: 'Finishing',
+    startDate: '10 Jan 2026',
+    completionDate: '20 Dec 2026',
+    progress: 76,
+    status: 'In Progress',
+    health: 'On track',
+    workers: 42,
+    machinery: 7,
+    logs: 18,
+    issues: 2,
+    lastUpdate: 'Today, 4:30 PM',
+    milestones: [
+      { name: 'Land preparation', date: 'Completed · Jan 18', progress: 100, status: 'Complete' },
+      { name: 'Excavation', date: 'Completed · Feb 12', progress: 100, status: 'Complete' },
+      { name: 'Foundation', date: 'Completed · Mar 28', progress: 100, status: 'Complete' },
+      { name: 'Structure', date: 'Target · Jul 12', progress: 86, status: 'In progress' },
+      { name: 'Finishing', date: 'Target · Nov 30', progress: 52, status: 'In progress' },
+      { name: 'Handover', date: 'Target · Dec 20', progress: 0, status: 'Upcoming' },
+    ],
+  },
+  {
+    id: '2',
+    code: 'PRJ-002',
+    name: 'Skyline Commercial Hub',
+    location: 'Delhi, India',
+    stage: 'Structure',
+    startDate: '01 Feb 2026',
+    completionDate: '15 Mar 2027',
+    progress: 52,
+    status: 'In Progress',
+    health: 'Watch',
+    workers: 31,
+    machinery: 5,
+    logs: 12,
+    issues: 4,
+    lastUpdate: 'Today, 2:15 PM',
+    milestones: [
+      { name: 'Land preparation', date: 'Completed · Feb 08', progress: 100, status: 'Complete' },
+      { name: 'Excavation', date: 'Completed · Mar 02', progress: 100, status: 'Complete' },
+      { name: 'Foundation', date: 'Completed · Apr 18', progress: 100, status: 'Complete' },
+      { name: 'Structure', date: 'Target · Sep 22', progress: 62, status: 'In progress' },
+      { name: 'Finishing', date: 'Target · Jan 18', progress: 8, status: 'Upcoming' },
+      { name: 'Handover', date: 'Target · Mar 15', progress: 0, status: 'Upcoming' },
+    ],
+  },
 ]
 
 const activity = [
-  { title: 'Daily site log submitted', detail: '12 workers · Clear weather · 8 hours logged', time: 'Today, 4:30 PM', icon: ClipboardList, tone: 'bg-[#F3E9E1] text-[#9A5E3A]' },
-  { title: 'Labour attendance updated', detail: 'Masonry crew added 4 workers to site', time: 'Today, 9:15 AM', icon: Users, tone: 'bg-[#E8EFE5] text-[#617858]' },
-  { title: 'Concrete mixer in use', detail: 'Mixer truck · 6.5 hours · Foundation zone', time: 'Yesterday, 5:45 PM', icon: Truck, tone: 'bg-[#F5EDE1] text-[#9A7950]' },
-  { title: 'Site issue reported', detail: 'Material delivery delayed by one day', time: 'Yesterday, 2:10 PM', icon: AlertTriangle, tone: 'bg-[#F8ECEA] text-[#9B625A]' },
+  { title: 'Daily progress submitted', detail: 'Structure level 04 slab poured', time: 'Today, 4:30 PM', icon: ClipboardList, tone: 'amber' },
+  { title: 'Labour attendance updated', detail: 'Masonry crew added 4 workers to site', time: 'Today, 9:15 AM', icon: Users, tone: 'green' },
+  { title: 'Machinery usage recorded', detail: 'Concrete mixer · 6.5 hours · Foundation zone', time: 'Yesterday, 5:45 PM', icon: Truck, tone: 'violet' },
+  { title: 'Material update received', detail: 'Steel delivery checked against challan', time: 'Yesterday, 3:20 PM', icon: Construction, tone: 'amber' },
+  { title: 'Site issue reported', detail: 'Material delivery delayed by one day', time: 'Yesterday, 2:10 PM', icon: AlertTriangle, tone: 'red' },
 ]
 
 function goTo(path: string) {
   window.location.href = path
 }
 
-function Stat({ label, value, note, icon: Icon, tone }: { label: string; value: string; note: string; icon: typeof Users; tone: string }) {
-  const accent: 'amber' | 'green' | 'red' | 'violet' = tone.includes('E8EFE5') ? 'green' : tone.includes('F1EAF6') ? 'violet' : 'amber'
-  return <StatCard label={label} value={value} note={note} icon={Icon} accent={accent} />
+function SiteBlueprint({ project }: { project: SiteProject }) {
+  return (
+    <div className="relative min-h-[245px] overflow-hidden rounded-2xl border border-white/10 bg-[#151a1d]">
+      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(242,166,90,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(242,166,90,.5) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_15%,rgba(242,166,90,.28),transparent_35%)]" />
+      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 640 300" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M75 270V142l92-74 90 74v128M290 270V83l103-53 102 53v187M525 270V125l61-42 61 42v145M40 270h575" fill="none" stroke="#F2A65A" strokeWidth="2" opacity=".8" />
+        <path d="M116 270V174h103v96M337 270V115h107v155M548 270v-98h53v98" fill="none" stroke="#FFC078" strokeWidth="1.5" opacity=".7" />
+        <path d="M25 270h590" stroke="rgba(255,255,255,.35)" strokeWidth="1" />
+      </svg>
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/85 via-black/25 to-transparent p-5 pt-20">
+        <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#F2A65A]">Live site view · {project.code}</p><p className="mt-1 text-sm font-medium text-white/80">{project.stage} operations</p></div>
+        <span className="rounded-full border border-white/15 bg-black/25 px-2.5 py-1 text-[10px] text-white/60">Sample visualization</span>
+      </div>
+    </div>
+  )
+}
+
+function ProgressTrend({ project }: { project: SiteProject }) {
+  const end = project.progress
+  const points = `M0 124 C45 119 58 110 105 112 S160 ${project.progress > 60 ? 80 : 95} 215 ${project.progress > 60 ? 85 : 103} S270 74 320 ${project.progress > 60 ? 62 : 78} S375 52 420 ${project.progress > 60 ? 42 : 61} S468 35 500 ${Math.max(18, 140 - end)}`
+  return (
+    <div className="relative h-48">
+      <div className="absolute inset-0 flex flex-col justify-between text-[10px] text-[var(--dashboard-subtle)]">{[100, 75, 50, 25, 0].map((value) => <div className="flex items-center gap-3" key={value}><span className="w-7 text-right">{value}</span><div className="h-px flex-1 bg-white/[0.07]" /></div>)}</div>
+      <svg className="absolute bottom-5 left-10 right-0 h-40 w-[calc(100%-2.5rem)]" viewBox="0 0 500 150" preserveAspectRatio="none" role="img" aria-label={`${project.name} progress trend`}>
+        <defs><linearGradient id={`pmProgress-${project.id}`} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#F2A65A" stopOpacity=".3" /><stop offset="100%" stopColor="#F2A65A" stopOpacity="0" /></linearGradient></defs>
+        <path d={`${points} L500 150 L0 150 Z`} fill={`url(#pmProgress-${project.id})`} />
+        <path d={points} fill="none" stroke="#F2A65A" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+        <circle cx="500" cy={Math.max(18, 140 - end)} r="5" fill="#FFC078" />
+      </svg>
+      <div className="absolute bottom-0 left-10 right-0 flex justify-between text-[10px] text-[var(--dashboard-subtle)]"><span>Week 1</span><span>Week 2</span><span>Week 3</span><span>Week 4</span><span>Now</span></div>
+    </div>
+  )
+}
+
+function MilestoneRail({ milestones }: { milestones: Milestone[] }) {
+  return (
+    <div className="relative mt-7 space-y-5">
+      <div className="absolute bottom-5 left-[13px] top-5 w-px bg-white/10" />
+      {milestones.map((milestone) => (
+        <div className="relative flex gap-3" key={milestone.name}>
+          <div className={`z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${milestone.status === 'Complete' ? 'border-[#84C59A]/40 bg-[#84C59A]/15 text-[#84C59A]' : milestone.status === 'In progress' ? 'border-[#F2A65A]/50 bg-[#F2A65A]/15 text-[#F2A65A]' : 'border-white/10 bg-[#171b1f] text-white/30'}`}>
+            {milestone.status === 'Complete' ? <CheckCircle2 size={14} /> : <span className="h-2 w-2 rounded-full bg-current" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-3"><p className="text-sm font-medium text-[var(--dashboard-ink)]">{milestone.name}</p><span className="text-xs text-[var(--dashboard-muted)]">{milestone.progress}%</span></div>
+            <p className="mt-1 text-[10px] text-[var(--dashboard-subtle)]">{milestone.date} · {milestone.status}</p>
+            <div className="mt-2"><ProgressBar value={milestone.progress} color={milestone.status === 'Complete' ? 'green' : 'amber'} /></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export function ProjectManagerDashboardPage() {
-  const user = getCurrentUser()
-  const assigned = getAssignedProject()
-  const assignedKey = assigned?.id || '1'
-  const projectOptions = Object.values(projectProfiles)
-  const [selectedId, setSelectedId] = useState(assignedKey)
-  const currentProject = projectProfiles[selectedId] || projectProfiles[assignedKey] || projectProfiles['1']
-
+  const [selectedId, setSelectedId] = useState(assignedProjects[0].id)
+  const [notice, setNotice] = useState('')
+  const project = useMemo(() => assignedProjects.find((item) => item.id === selectedId) ?? assignedProjects[0], [selectedId])
   const today = new Intl.DateTimeFormat('en-IN', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
+
+  const quickAction = (label: string, path: string) => {
+    setNotice(`${label} ready with sample data`)
+    window.setTimeout(() => goTo(path), 350)
+  }
 
   return (
     <AppShell
       currentPath="/app/pm/dashboard"
       projectSelector={{
-        value: currentProject.code,
-        options: projectOptions.map(({ code: id, name }) => ({ id, name })),
+        value: project.code,
+        options: assignedProjects.map(({ code: id, name }) => ({ id, name })),
         onChange: (code) => {
-          const nextProject = projectOptions.find((project) => project.code === code)
-          if (nextProject) setSelectedId(nextProject.id)
+          const next = assignedProjects.find((item) => item.code === code)
+          if (next) setSelectedId(next.id)
         },
       }}
     >
-      <div className="mx-auto max-w-[1500px] space-y-7 p-5 sm:p-7 lg:p-8">
+      <div className="mx-auto max-w-[1680px] space-y-7 p-5 sm:p-7 lg:p-8">
         <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <p className="text-sm font-medium text-[#8E827A]">{today}</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#323232] sm:text-3xl">
-              Welcome, {user?.name || 'Project Manager'}
-            </h1>
-            <p className="mt-2 text-sm text-[#8E827A]">
-              Scoped site operations and daily milestones for <strong className="text-[#323232]">{currentProject.name}</strong>.
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-amber)]">{today}</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[var(--dashboard-ink)] sm:text-5xl">Good morning, <span className="text-white/45">Project Manager.</span></h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--dashboard-muted)]">Your site operations cockpit for keeping crews coordinated, milestones visible, and every day moving forward.</p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center gap-2 rounded-xl border border-[#C8BCB4] bg-white px-4 py-2.5 text-xs font-semibold text-[#595552] shadow-xs">
-              <Construction size={16} className="text-[#9A5E3A]" />
-              <span>Assigned Site: {currentProject.code}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => goTo(`/projects/${currentProject.code}/logs/new`)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#323232] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1E1E1E]"
-            >
-              <Plus size={16} /> Add Daily Site Log
-            </button>
-          </div>
+          <button type="button" onClick={() => quickAction('Daily site log', `/projects/${project.code}/logs/new`)} className="dashboard-button dashboard-button-primary"><Plus size={16} /> Add daily site log</button>
         </section>
 
-        {/* Assigned Project Site Card */}
-        <section className="rounded-2xl border border-[#C8BCB4]/70 bg-[#E8DCD4] p-5 sm:p-6 shadow-sm">
-          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9A5E3A]">
-                Assigned Project · {currentProject.code}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-[#323232]">{currentProject.name}</h2>
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-[#595552]">
-                <MapPin size={15} />{currentProject.location}
-              </p>
-            </div>
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#F5EDE1] px-3 py-1.5 text-xs font-semibold text-[#9A7950]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#B87A4F]" />
-              {currentProject.status}
-            </span>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-4 border-t border-[#C8BCB4]/70 pt-5 sm:grid-cols-4">
-            <div>
-              <p className="text-xs text-[#8E827A]">Current stage</p>
-              <p className="mt-1 text-sm font-semibold text-[#323232]">{currentProject.stage}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#8E827A]">Project start date</p>
-              <p className="mt-1 text-sm font-semibold text-[#323232]">{currentProject.startDate}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#8E827A]">Expected completion</p>
-              <p className="mt-1 text-sm font-semibold text-[#323232]">{currentProject.completionDate}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#8E827A]">Overall completion</p>
-              <p className="mt-1 text-sm font-semibold text-[#9A5E3A]">{currentProject.progress}%</p>
-            </div>
-          </div>
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/70">
-            <div className="h-full rounded-full bg-[#B87A4F]" style={{ width: `${currentProject.progress}%` }} />
-          </div>
-        </section>
-
-        {/* Site Stats */}
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Today's labour" value="42" note="Workers checked in on site" icon={HardHat} tone="bg-[#F3E9E1] text-[#9A5E3A]" />
-          <Stat label="Machinery in use" value="07" note="Active across site zones" icon={Wrench} tone="bg-[#F5EDE1] text-[#9A7950]" />
-          <Stat label="Daily logs submitted" value="18" note="Logged for this project" icon={ClipboardList} tone="bg-[#E8EFE5] text-[#617858]" />
-          <Stat label="Latest site activity" value="4:30 PM" note="Log submitted today" icon={Clock3} tone="bg-[#F1EAF6] text-[#806B96]" />
-        </section>
-
-        {/* Progress & Milestones */}
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-          <div className="rounded-2xl border border-[#C8BCB4]/70 bg-white p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={18} className="text-[#9A5E3A]" />
-                  <h2 className="font-semibold text-[#323232]">Progress tracking</h2>
-                </div>
-                <p className="mt-1 text-xs text-[#8E827A]">Previous progress versus current progress</p>
+        <section className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
+          <DashboardCard tone="featured" className="p-5 sm:p-6">
+            <div className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
+              <div className="flex flex-col justify-between">
+                <div><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-amber)]">Assigned project · {project.code}</p><StatusPill tone={project.health === 'On track' ? 'green' : 'amber'}>{project.health}</StatusPill></div><h2 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[var(--dashboard-ink)]">{project.name}</h2><p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--dashboard-muted)]"><MapPin size={15} />{project.location}</p></div>
+                <div className="mt-8"><div className="flex items-end justify-between"><div><p className="text-5xl font-semibold tracking-[-0.06em] text-[var(--dashboard-ink)]">{project.progress}%</p><p className="mt-1 text-xs text-[var(--dashboard-muted)]">overall project completion</p></div><StatusPill tone={project.status === 'Delayed' ? 'red' : 'amber'}>{project.status}</StatusPill></div><div className="mt-5"><ProgressBar value={project.progress} /><div className="mt-2 flex justify-between text-[10px] text-[var(--dashboard-muted)]"><span>Current stage · {project.stage}</span><span>Target · {project.completionDate}</span></div></div></div>
               </div>
-              <span className="rounded-full bg-[#E8EFE5] px-2.5 py-1 text-[10px] font-semibold text-[#617858]">+4.2% this month</span>
+              <SiteBlueprint project={project} />
             </div>
-            <div className="mt-6 flex items-end gap-5">
-              <p className="text-4xl font-semibold text-[#323232]">{currentProject.progress}%</p>
-              <p className="pb-1 text-xs text-[#8E827A]">current completion<br /><span className="font-semibold text-[#617858]">71.8%</span> previous update</p>
-            </div>
-            <div className="relative mt-5 h-36">
-              <div className="absolute inset-0 flex flex-col justify-between">
-                {[100, 75, 50, 25, 0].map((value) => (
-                  <div className="flex items-center gap-2" key={value}>
-                    <span className="w-6 text-right text-[10px] text-[#A59A93]">{value}</span>
-                    <div className="h-px flex-1 bg-[#E8DCD4]" />
-                  </div>
-                ))}
-              </div>
-              <svg className="absolute bottom-3 left-8 right-1 h-32 w-[calc(100%-2.25rem)]" viewBox="0 0 500 130" preserveAspectRatio="none" role="img" aria-label="Progress history chart">
-                <path d="M0 112 C55 108 70 98 115 100 S170 76 220 82 S270 66 320 55 S375 49 420 32 S470 28 500 18" fill="none" stroke="#B87A4F" strokeWidth="3" vectorEffect="non-scaling-stroke" />
-                <circle cx="500" cy="18" r="5" fill="#B87A4F" />
-              </svg>
-              <div className="absolute bottom-0 left-8 right-0 flex justify-between text-[10px] text-[#A59A93]">
-                <span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Nov</span>
-              </div>
-            </div>
-            <div className="mt-5 space-y-3 border-t border-[#E8DCD4] pt-4">
-              {['Structure level 04 slab poured', 'Foundation inspection approved', 'Masonry work started in Tower A'].map((item, index) => (
-                <div className="flex items-center gap-3 text-sm" key={item}>
-                  <CheckCircle2 size={16} className="text-[#71866A]" />
-                  <span className="flex-1 text-[#595552]">{item}</span>
-                  <span className="text-[10px] text-[#A59A93]">{index === 0 ? 'Today' : `${index + 1} days ago`}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-[#C8BCB4]/70 bg-white p-5">
-            <h2 className="font-semibold text-[#323232]">Site Milestones</h2>
-            <p className="mt-1 text-xs text-[#8E827A]">Track stage deliverables for {currentProject.code}</p>
-            <div className="mt-6 space-y-5">
-              {milestones.map((milestone) => (
-                <div key={milestone.name}>
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${milestone.status === 'Complete' ? 'bg-[#E8EFE5] text-[#617858]' : milestone.status === 'In progress' ? 'bg-[#F5EDE1] text-[#9A7950]' : 'bg-[#F7F3EE] text-[#A59A93]'}`}>
-                      {milestone.status === 'Complete' ? <CheckCircle2 size={15} /> : <span className="h-2 w-2 rounded-full bg-current" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex justify-between gap-2">
-                        <p className="text-sm font-medium text-[#323232]">{milestone.name}</p>
-                        <span className="text-xs text-[#8E827A]">{milestone.progress}%</span>
-                      </div>
-                      <p className="mt-0.5 text-[10px] text-[#A59A93]">{milestone.date}</p>
-                    </div>
-                  </div>
-                  <div className="ml-10 mt-2 h-1 overflow-hidden rounded-full bg-[#E8DCD4]">
-                    <div className="h-full rounded-full bg-[#B87A4F]" style={{ width: `${milestone.progress}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+            <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/10 pt-5 sm:grid-cols-4"><div><p className="dashboard-eyebrow">Current stage</p><p className="mt-1 text-sm font-semibold text-[var(--dashboard-ink)]">{project.stage}</p></div><div><p className="dashboard-eyebrow">Project started</p><p className="mt-1 text-sm font-semibold text-[var(--dashboard-ink)]">{project.startDate}</p></div><div><p className="dashboard-eyebrow">Expected completion</p><p className="mt-1 text-sm font-semibold text-[var(--dashboard-ink)]">{project.completionDate}</p></div><div><p className="dashboard-eyebrow">Last site update</p><p className="mt-1 text-sm font-semibold text-[var(--dashboard-ink)]">{project.lastUpdate}</p></div></div>
+          </DashboardCard>
+          <DashboardCard className="p-5 sm:p-6"><SectionTitle title="Project pulse" description="Operational health for the selected site." /><div className="mt-6 space-y-5"><div><div className="flex justify-between text-xs"><span className="text-[var(--dashboard-muted)]">Weekly progress</span><span className="font-semibold text-[#84C59A]">+4.2%</span></div><div className="mt-2 h-2 rounded-full bg-white/[0.07]"><div className="h-full w-[68%] rounded-full bg-[#84C59A]" /></div></div><div><div className="flex justify-between text-xs"><span className="text-[var(--dashboard-muted)]">Schedule confidence</span><span className="font-semibold text-[var(--dashboard-amber)]">{project.health === 'On track' ? '88%' : '64%'}</span></div><div className="mt-2 h-2 rounded-full bg-white/[0.07]"><div className="h-full rounded-full bg-[#F2A65A]" style={{ width: project.health === 'On track' ? '88%' : '64%' }} /></div></div><div className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><div className="flex items-start gap-3"><ShieldAlert size={18} className="mt-0.5 text-[#F2A65A]" /><div><p className="text-sm font-semibold text-[var(--dashboard-ink)]">Field note</p><p className="mt-1 text-xs leading-5 text-[var(--dashboard-muted)]">{project.health === 'On track' ? 'Crew output is ahead of the weekly baseline.' : 'Review material deliveries before the next structure pour.'}</p></div></div></div><button type="button" onClick={() => quickAction('Progress history', `/projects/${project.code}/progress`)} className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--dashboard-amber)]">Open progress history <ArrowUpRight size={13} /></button></div></DashboardCard>
         </section>
 
-        {/* Site Activity & Alerts */}
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-2xl border border-[#C8BCB4]/70 bg-white">
-            <div className="border-b border-[#E8DCD4] px-5 py-5">
-              <h2 className="font-semibold text-[#323232]">Recent site activity</h2>
-              <p className="mt-1 text-xs text-[#8E827A]">Daily logs, attendance, machinery and issues from {currentProject.name}</p>
-            </div>
-            <div className="divide-y divide-[#E8DCD4]">
-              {activity.map(({ title, detail, time, icon: Icon, tone }) => (
-                <div className="flex gap-3 px-5 py-4" key={title}>
-                  <div className={`h-9 w-9 shrink-0 rounded-xl p-2 ${tone}`}><Icon size={17} /></div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-[#323232]">{title}</p>
-                    <p className="mt-1 text-xs text-[#8E827A]">{detail}</p>
-                    <p className="mt-1 text-[10px] text-[#A59A93]">{time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <section><div className="mb-4"><p className="dashboard-eyebrow">Today at site</p><h2 className="mt-1 text-xl font-semibold text-[var(--dashboard-ink)]">The field, at a glance</h2></div><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"><StatCard label="Workers present today" value={String(project.workers)} note="Checked in across active zones" icon={HardHat} /><StatCard label="Machinery in use" value={String(project.machinery).padStart(2, '0')} note="Active across site zones" icon={Wrench} accent="violet" /><StatCard label="Daily logs submitted" value={String(project.logs)} note="Submitted for this project" icon={ClipboardList} accent="green" /><StatCard label="Open site issues" value={String(project.issues).padStart(2, '0')} note="Require field follow-up" icon={AlertTriangle} accent="red" /></div></section>
 
-          <div className="rounded-2xl border border-[#C8BCB4]/70 bg-white">
-            <div className="border-b border-[#E8DCD4] px-5 py-5">
-              <h2 className="font-semibold text-[#323232]">Site alerts & reminders</h2>
-              <p className="mt-1 text-xs text-[#8E827A]">Action items requiring field supervisor attention</p>
-            </div>
-            <div className="divide-y divide-[#E8DCD4]">
-              {[
-                ['Missing daily site log', 'Tomorrow’s log is not yet submitted', ClipboardList, `/projects/${currentProject.code}/logs/new`],
-                ['Material delivery schedule', 'Steel delivery expected tomorrow', Clock3, '/app/stock-in'],
-                ['Site safety inspection', 'Weekly electrical scaffolding check', ShieldAlert, '/app/daily-logs'],
-                ['Upcoming milestone', 'Superstructure milestone review due in 12 days', CalendarDays, `/projects/${currentProject.code}/progress`],
-              ].map(([title, detail, Icon, path]) => (
-                <button
-                  type="button"
-                  onClick={() => goTo(path as string)}
-                  className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-[#F7F3EE]/60"
-                  key={title as string}
-                >
-                  <div className="rounded-xl bg-[#F8ECEA] p-2.5 text-[#9B625A]"><Icon size={16} /></div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-[#323232]">{title as string}</p>
-                    <p className="mt-1 text-xs text-[#8E827A]">{detail as string}</p>
-                  </div>
-                  <ChevronRight size={16} className="text-[#A59A93]" />
-                </button>
-              ))}
-            </div>
-          </div>
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+          <DashboardCard className="p-5 sm:p-6"><SectionTitle title="Project progress" description="Weekly completion trend from sample site updates." action={<StatusPill tone="green">+4.2% this week</StatusPill>} /><div className="mt-4 flex items-end gap-4"><p className="text-4xl font-semibold tracking-[-0.05em] text-[var(--dashboard-ink)]">{project.progress}%</p><p className="pb-1 text-xs text-[var(--dashboard-muted)]">current completion<br /><span className="font-semibold text-[#84C59A]">{Math.max(0, project.progress - 4)}%</span> previous update</p></div><div className="mt-5"><ProgressTrend project={project} /></div><div className="mt-5 grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-3">{['Structure level 04 slab poured', 'Foundation inspection approved', 'Masonry work started in Tower A'].map((item, index) => <div className="flex gap-2 text-xs" key={item}><CheckCircle2 size={15} className="shrink-0 text-[#84C59A]" /><span className="text-[var(--dashboard-muted)]">{item}<span className="mt-1 block text-[10px] text-[var(--dashboard-subtle)]">{index === 0 ? 'Today' : `${index + 1} days ago`}</span></span></div>)}</div></DashboardCard>
+          <DashboardCard className="p-5 sm:p-6"><SectionTitle title="Construction milestones" description="Sample schedule · not saved backend data." /><MilestoneRail milestones={project.milestones} /></DashboardCard>
         </section>
 
-        {/* Quick Actions (PM-specific tools only) */}
-        <section>
-          <div className="mb-4">
-            <h2 className="font-semibold text-[#323232]">Site Quick Actions</h2>
-            <p className="mt-1 text-xs text-[#8E827A]">Core site tools for {currentProject.name}.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              ['Record Daily Log', Plus, `/projects/${currentProject.code}/logs/new`],
-              ['Inward Stock (Challan)', Truck, '/app/stock-in'],
-              ['Issue Stock (Usage)', Wrench, '/app/stock-out'],
-              ['Upload Invoice / Bill', ClipboardList, '/app/bills'],
-            ].map(([label, Icon, path]) => (
-              <button
-                type="button"
-                onClick={() => goTo(path as string)}
-                className="group rounded-2xl border border-[#C8BCB4]/70 bg-white p-4 text-left shadow-sm hover:-translate-y-0.5 hover:border-[#B87A4F]"
-                key={label as string}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="rounded-xl bg-[#F7F3EE] p-2.5 text-[#595552] group-hover:text-[#9A5E3A]"><Icon size={18} /></div>
-                  <ArrowUpRight size={15} className="text-[#A59A93]" />
-                </div>
-                <p className="mt-4 text-sm font-medium text-[#323232]">{label as string}</p>
-              </button>
-            ))}
-          </div>
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_0.85fr]">
+          <DashboardCard><SectionTitle title="Site activity timeline" description={`Latest field signals from ${project.name}.`} action={<Clock3 size={17} className="text-[var(--dashboard-amber)]" />} /><div className="divide-y divide-white/[0.08]">{activity.map(({ title, detail, time, icon: Icon, tone }) => <div className="flex gap-3 px-5 py-4" key={title}><span className={`dashboard-icon dashboard-icon-${tone}`}><Icon size={16} /></span><div className="min-w-0 flex-1"><p className="text-sm font-medium text-[var(--dashboard-ink)]">{title}</p><p className="mt-1 text-xs text-[var(--dashboard-muted)]">{detail}</p><p className="mt-1 text-[10px] text-[var(--dashboard-subtle)]">{time}</p></div></div>)}</div></DashboardCard>
+          <DashboardCard><SectionTitle title="Priority panel" description="Items needing attention from the field team." action={<AlertTriangle size={17} className="text-[#ED8B78]" />} /><div className="divide-y divide-white/[0.08]">{[['Missing daily log', 'Tomorrow’s log is not yet submitted', ClipboardList, `/projects/${project.code}/logs/new`], ['Upcoming deadline', `${project.stage} review due in 12 days`, CalendarClock, `/projects/${project.code}/progress`], ['Open site issue', `${project.issues} material and safety items need review`, ShieldAlert, '/app/daily-logs'], ['Delayed activity', 'Material delivery is one day behind', Truck, '/app/stock-in']].map(([title, detail, Icon, path]) => <button type="button" onClick={() => goTo(path as string)} className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-white/[0.03]" key={title as string}><span className="dashboard-icon dashboard-icon-red"><Icon size={16} /></span><span className="min-w-0 flex-1"><span className="block text-sm font-medium text-[var(--dashboard-ink)]">{title as string}</span><span className="mt-1 block text-xs text-[var(--dashboard-muted)]">{detail as string}</span></span><ArrowUpRight size={15} className="text-[var(--dashboard-subtle)]" /></button>)}</div></DashboardCard>
         </section>
+
+        <section><div className="mb-4"><p className="dashboard-eyebrow">Site shortcuts</p><h2 className="mt-1 text-xl font-semibold text-[var(--dashboard-ink)]">Coordinate the next move</h2></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">{[['Add daily log', Plus, `/projects/${project.code}/logs/new`], ['View daily logs', ClipboardList, `/projects/${project.code}/logs`], ['Update progress', BarChart3, `/projects/${project.code}/progress`], ['View labour', Users, '/app/daily-logs'], ['View machinery', Wrench, '/app/daily-logs']].map(([label, Icon, path]) => <button type="button" onClick={() => quickAction(label as string, path as string)} className="dashboard-card group p-4 text-left transition hover:-translate-y-0.5 hover:border-[#F2A65A]/40" key={label as string}><div className="flex items-center justify-between"><span className="dashboard-icon dashboard-icon-amber"><Icon size={17} /></span><ArrowUpRight size={15} className="text-[var(--dashboard-subtle)] group-hover:text-[var(--dashboard-amber)]" /></div><p className="mt-4 text-sm font-medium text-[var(--dashboard-ink)]">{label as string}</p></button>)}</div></section>
       </div>
+      {notice && <button type="button" onClick={() => setNotice('')} className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-[#F2A65A]/30 bg-[#171b1f] px-4 py-3 text-xs text-white shadow-2xl"><CheckCircle2 size={15} className="text-[#84C59A]" />{notice}</button>}
     </AppShell>
   )
 }
-export default ProjectManagerDashboardPage
