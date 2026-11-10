@@ -96,6 +96,80 @@ body {
   color: var(--dashboard-green);
 }
 
+.dashboard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.dashboard-button:hover {
+  transform: translateY(-1px);
+}
+
+.dashboard-button-ghost {
+  border: 1px solid var(--dashboard-border);
+  background: var(--dashboard-surface);
+  color: var(--dashboard-ink);
+}
+
+.dashboard-button-ghost:hover {
+  border-color: rgba(242, 166, 90, 0.45);
+  background: var(--dashboard-surface-hover);
+}
+
+.dashboard-button-primary {
+  background: var(--dashboard-amber);
+  color: #171717;
+}
+
+.dashboard-button-primary:hover {
+  background: var(--dashboard-amber-bright);
+}
+
+.dashboard-input {
+  height: 2.45rem;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 0.7rem;
+  background: var(--dashboard-surface);
+  padding: 0 0.75rem;
+  color: var(--dashboard-ink);
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.dashboard-input:focus {
+  border-color: rgba(242, 166, 90, 0.55);
+  box-shadow: 0 0 0 3px rgba(242, 166, 90, 0.1);
+}
+
+.dashboard-input::placeholder {
+  color: var(--dashboard-subtle);
+}
+
+.dashboard-view-button {
+  display: inline-flex;
+  height: 2.45rem;
+  width: 2.45rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 0.7rem;
+  background: var(--dashboard-surface);
+  color: var(--dashboard-subtle);
+}
+
+.dashboard-view-active,
+.dashboard-view-button:hover {
+  border-color: rgba(242, 166, 90, 0.45);
+  color: var(--dashboard-amber);
+}
+
 .dashboard-card {
   border: 1px solid var(--dashboard-border);
   border-radius: 1rem;
