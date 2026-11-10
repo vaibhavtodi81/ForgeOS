@@ -87,7 +87,7 @@ export function Sidebar({
     <>
       {mobileOpen && (
         <button
-          className="fixed inset-0 z-30 bg-[#323232]/30 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onCloseMobile}
           type="button"
           aria-label="Close navigation"
@@ -95,7 +95,7 @@ export function Sidebar({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#E8E0DA] bg-[#FBF9F7] transition-all duration-200 lg:static lg:z-auto ${
+        className={`dashboard-sidebar fixed inset-y-0 left-0 z-40 flex flex-col border-r transition-all duration-200 lg:static lg:z-auto ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${collapsed ? 'w-[76px]' : 'w-[250px]'}`}
       >
@@ -105,19 +105,19 @@ export function Sidebar({
           }`}
         >
           <a className="flex items-center gap-2" href="/">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#323232] text-xs font-bold text-[#F7F3EE]">
+            <span className="dashboard-logo flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold">
               F
             </span>
             {!collapsed && (
-              <span className="text-sm font-bold tracking-[0.18em] text-[#323232]">
-                FORGE<span className="font-light text-[#8E827A]">OS</span>
+              <span className="text-sm font-bold tracking-[0.18em] text-white">
+                FORGE<span className="font-light text-white/40">OS</span>
               </span>
             )}
           </a>
 
           {!collapsed && (
             <button
-              className="hidden rounded-lg p-2 text-[#8E827A] hover:bg-[#E8E0DA] lg:block"
+              className="hidden rounded-lg p-2 text-white/40 hover:bg-white/10 hover:text-white lg:block"
               onClick={onToggleCollapsed}
               type="button"
               aria-label="Collapse sidebar"
@@ -130,19 +130,19 @@ export function Sidebar({
         <div className="flex-1 overflow-y-auto p-3">
           {!collapsed && (
             <div className="mb-2">
-              <p className="px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#A59A93]">
+              <p className="px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">
                 {isPm ? 'Site Operations' : 'Administration'}
               </p>
               {isPm && assigned && (
-                <div className="mx-2 mt-2 rounded-xl border border-[#E8DCD4] bg-[#F3E9E1] p-2.5">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9A5E3A]">
+                <div className="mx-2 mt-2 rounded-xl border border-white/10 bg-white/[0.05] p-2.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#F2A65A]">
                     <Building2 size={12} />
                     <span>Assigned Site</span>
                   </div>
-                  <p className="mt-0.5 truncate text-xs font-bold text-[#323232]" title={assigned.name}>
+                  <p className="mt-0.5 truncate text-xs font-bold text-white" title={assigned.name}>
                     {assigned.name}
                   </p>
-                  <p className="text-[10px] font-mono text-[#8E827A]">{assigned.code}</p>
+                  <p className="text-[10px] font-mono text-white/40">{assigned.code}</p>
                 </div>
               )}
             </div>
@@ -161,8 +161,8 @@ export function Sidebar({
               <a
                 className={`mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
                   active
-                    ? 'bg-[#F3E9E1] font-semibold text-[#9A5E3A]'
-                    : 'font-medium text-[#595552] hover:bg-[#F3E9E1] hover:text-[#9A5E3A]'
+                    ? 'bg-[#F2A65A]/15 font-semibold text-[#F2A65A]'
+                    : 'font-medium text-white/55 hover:bg-white/[0.07] hover:text-white'
                 } ${collapsed ? 'justify-center' : ''}`}
                 href={href}
                 key={label}
@@ -176,26 +176,26 @@ export function Sidebar({
           })}
         </div>
 
-        <div className={`border-t border-[#E8E0DA] p-3 ${collapsed ? 'flex justify-center' : ''}`}>
+        <div className={`border-t border-white/10 p-3 ${collapsed ? 'flex justify-center' : ''}`}>
           {!collapsed && (
-            <div className="mb-3 rounded-xl bg-[#F3E9E1] p-3">
+            <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.05] p-3">
               <div className="flex items-center gap-2">
-                <PackageCheck className="h-4 w-4 text-[#9A5E3A]" />
-                <span className="text-xs font-semibold text-[#323232]">
+                <PackageCheck className="h-4 w-4 text-[#F2A65A]" />
+                <span className="text-xs font-semibold text-white/80">
                   {isPm ? 'Site milestone' : 'Portfolio progress'}
                 </span>
               </div>
-              <div className="mt-2 h-1.5 rounded-full bg-white">
-                <div className="h-full w-[65%] rounded-full bg-[#B87A4F]" />
+              <div className="mt-2 h-1.5 rounded-full bg-white/10">
+                <div className="h-full w-[65%] rounded-full bg-[#F2A65A]" />
               </div>
-              <p className="mt-1 text-[10px] text-[#8E827A]">
+              <p className="mt-1 text-[10px] text-white/35">
                 {isPm ? (assigned ? `${assigned.code} on schedule` : 'On track') : '5 projects active'}
               </p>
             </div>
           )}
 
           <button
-            className="flex items-center gap-2 rounded-lg p-2 text-xs font-medium text-[#8E827A] hover:bg-[#E8E0DA]"
+            className="flex items-center gap-2 rounded-lg p-2 text-xs font-medium text-white/40 hover:bg-white/10 hover:text-white"
             onClick={onToggleCollapsed}
             type="button"
             aria-label="Toggle sidebar width"

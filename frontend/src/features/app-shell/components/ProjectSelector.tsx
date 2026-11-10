@@ -1,8 +1,8 @@
 import { ChevronDown, MapPin } from 'lucide-react'
 
 const defaultProjects = [
-  { id: 'GVR-001', name: 'Green Valley Residency' },
-  { id: 'SHV-002', name: 'Skyline Commercial Hub' },
+  { id: 'PRJ-001', name: 'Green Valley Residency' },
+  { id: 'PRJ-002', name: 'Skyline Commercial Hub' },
 ]
 
 interface ProjectSelectorProps {

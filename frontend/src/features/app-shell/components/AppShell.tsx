@@ -16,7 +16,7 @@ interface AppShellProps {
 export function AppShell({ currentPath, children, projectSelector }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  return <div className="min-h-screen bg-[#F7F3EE] text-[#323232]">
+  return <div className="dashboard-shell min-h-screen text-[var(--dashboard-ink)]">
     <div className="flex min-h-screen">
       <Sidebar collapsed={collapsed} currentPath={currentPath} mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} onToggleCollapsed={() => setCollapsed((value) => !value)} />
       <div className="min-w-0 flex-1">
