@@ -78,7 +78,7 @@ export function Sidebar({
     { label: 'Wastage', href: '/app/wastage', icon: TrendingUp },
     { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
     { label: 'Bills', href: '/app/bills', icon: CreditCard },
-    { label: 'Upload Bills & Challans', href: '/app/bills', icon: CreditCard },
+    { label: 'Upload Bills & Challans', href: '/app/bills/upload', icon: CreditCard },
   ]
 
   const navItems = isPm ? managerItems : adminItems

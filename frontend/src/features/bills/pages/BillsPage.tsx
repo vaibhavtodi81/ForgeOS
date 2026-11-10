@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -51,7 +51,7 @@ function isBillOverdue(bill: Bill): boolean {
   return bill.dueDate < today;
 }
 
-export function BillsPage() {
+export function BillsPage({ openUpload = false }: { openUpload?: boolean }) {
   const [bills, setBills] = useState<Bill[]>(() => getStoredBills());
   const admin = isAdmin();
   const currentUser = getCurrentUser();
@@ -284,6 +284,12 @@ export function BillsPage() {
     setCreateError('');
     setActiveModal('CREATE');
   };
+
+  useEffect(() => {
+    if (openUpload) {
+      setActiveModal('CREATE');
+    }
+  }, [openUpload]);
 
   const handleConfirmCreate = () => {
     if (!newVendorName.trim()) {
