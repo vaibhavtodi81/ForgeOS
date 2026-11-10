@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { StatCard } from '../components/dashboard-ui'
 import { getAssignedProject, getCurrentUser } from '../../authentication/utils/permissions'
 
 type AssignedProject = {
@@ -60,7 +61,8 @@ function goTo(path: string) {
 }
 
 function Stat({ label, value, note, icon: Icon, tone }: { label: string; value: string; note: string; icon: typeof Users; tone: string }) {
-  return <div className="rounded-2xl border border-[#C8BCB4]/70 bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><div><p className="text-sm text-[#8E827A]">{label}</p><p className="mt-3 text-3xl font-semibold text-[#323232]">{value}</p></div><div className={`rounded-xl p-3 ${tone}`}><Icon size={20} /></div></div><p className="mt-4 text-xs text-[#8E827A]">{note}</p></div>
+  const accent: 'amber' | 'green' | 'red' | 'violet' = tone.includes('E8EFE5') ? 'green' : tone.includes('F1EAF6') ? 'violet' : 'amber'
+  return <StatCard label={label} value={value} note={note} icon={Icon} accent={accent} />
 }
 
 export function ProjectManagerDashboardPage() {
