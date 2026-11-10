@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Bell, ChevronDown, Menu, Search, UserCircle, LogOut, Check } from 'lucide-react'
+import { Bell, ChevronDown, Menu, Search, UserCircle, LogOut, Check, Building2 } from 'lucide-react'
 import { ProjectSelector } from './ProjectSelector'
+import { getCurrentRole, getCurrentUser, getAssignedProject } from '../../authentication/utils/permissions'
 
 interface TopbarProps {
   collapsed: boolean
@@ -8,22 +9,15 @@ interface TopbarProps {
 }
 
 export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
-  const savedUser = localStorage.getItem('forgeos_demo_user')
+  const currentRole = getCurrentRole() || 'Admin'
+  const currentUser = getCurrentUser()
+  const isPm = currentRole === 'Project Manager'
+  const assigned = getAssignedProject()
 
-  let role = 'Administrator'
-  let email = 'admin@forgeos.com'
+  const roleTitle = isPm ? 'Project Manager' : 'Administrator'
+  const email = currentUser?.email || (isPm ? 'pm@forgeos.com' : 'admin@forgeos.com')
+  const initials = isPm ? 'PM' : 'AD'
 
-  try {
-    if (savedUser) {
-      const user = JSON.parse(savedUser)
-      role = user.role === 'pm' ? 'Project Manager' : 'Administrator'
-      email = user.email || email
-    }
-  } catch {
-    // Use default demo profile if stored data is invalid.
-  }
-
-  const initials = role === 'Administrator' ? 'AD' : 'PM'
   const [profileOpen, setProfileOpen] = useState(false)
 
   const handleLogout = () => {
@@ -32,9 +26,17 @@ export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
   }
 
   const switchDemoRole = (nextRole: 'admin' | 'pm') => {
+    const extra = nextRole === 'pm' ? {
+      assignedProjectId: '1',
+      assignedProjectCode: 'PRJ-001',
+      assignedProjectName: 'Green Valley Residency',
+    } : {}
+
     localStorage.setItem('forgeos_demo_user', JSON.stringify({
       role: nextRole,
       email: nextRole === 'admin' ? 'admin@forgeos.com' : 'pm@forgeos.com',
+      name: nextRole === 'admin' ? 'Administrator' : 'Aarav Sharma',
+      ...extra,
     }))
     window.location.href = nextRole === 'admin' ? '/app/admin/dashboard' : '/app/pm/dashboard'
   }
@@ -51,10 +53,27 @@ export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <ProjectSelector />
-          <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-emerald-700 sm:inline-flex">
-            ACTIVE
-          </span>
+
+          {isPm ? (
+            <div className="flex items-center gap-2 rounded-xl border border-[#C8BCB4] bg-white px-3 py-1.5 shadow-xs">
+              <Building2 className="h-4 w-4 text-[#9A5E3A]" />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-[#323232] truncate max-w-[220px]">
+                  {assigned?.name || 'Green Valley Residency'}
+                </span>
+                <span className="text-[10px] font-mono text-[#8E827A]">
+                  {assigned?.code || 'PRJ-001'} • Assigned Site
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <ProjectSelector />
+              <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-emerald-700 sm:inline-flex">
+                ORGANIZATION VIEW
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2">
@@ -86,40 +105,45 @@ export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
                 {initials}
               </div>
               <div className="hidden md:block">
-                <p className="text-xs font-semibold text-[#323232]">{role}</p>
+                <p className="text-xs font-semibold text-[#323232]">{roleTitle}</p>
                 <p className="max-w-40 truncate text-[10px] text-[#8E827A]">{email}</p>
               </div>
               <ChevronDown className="h-3.5 w-3.5 text-[#8E827A]" />
             </button>
 
             {profileOpen && (
-              <div className="absolute right-0 top-12 z-50 w-60 rounded-xl border border-[#C8BCB4] bg-white p-2 shadow-xl">
+              <div className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-[#C8BCB4] bg-white p-2 shadow-xl">
                 <div className="border-b border-[#E8DCD4] px-3 py-3">
                   <div className="flex items-center gap-2 text-sm font-semibold text-[#323232]">
                     <UserCircle size={17} />
-                    {role}
+                    {roleTitle}
                   </div>
                   <p className="mt-1 truncate text-xs text-[#8E827A]">{email}</p>
+                  {isPm && assigned && (
+                    <div className="mt-2 rounded-md bg-[#F7F3EE] p-1.5 text-[11px] text-[#595552]">
+                      <span className="font-semibold text-[#9A5E3A]">Assigned Site:</span> {assigned.code}
+                    </div>
+                  )}
                 </div>
                 <div className="border-b border-[#E8DCD4] px-2 py-2">
                   <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#A59A93]">
-                    Demo role switcher
+                    Switch Workspace Role
                   </p>
                   <button
                     type="button"
                     onClick={() => switchDemoRole('admin')}
                     className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-[#595552] hover:bg-[#F7F3EE]"
                   >
-                    Administrator
-                    {role === 'Administrator' && <Check size={15} className="text-[#9A5E3A]" />}
+                    Administrator (All Access)
+                    {!isPm && <Check size={15} className="text-[#9A5E3A]" />}
                   </button>
                   <button
                     type="button"
                     onClick={() => switchDemoRole('pm')}
                     className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-[#595552] hover:bg-[#F7F3EE]"
                   >
-                    Project Manager
-                    {role === 'Project Manager' && <Check size={15} className="text-[#9A5E3A]" />}
+                    Project Manager (Site Scoped)
+                    {isPm && <Check size={15} className="text-[#9A5E3A]" />}
                   </button>
                 </div>
                 <button
@@ -138,3 +162,4 @@ export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
     </header>
   )
 }
+export default Topbar

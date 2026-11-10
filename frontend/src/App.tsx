@@ -1,11 +1,10 @@
-import { hasPermission } from './features/authentication/utils/permissions'
+import { hasPermission, isAdmin } from './features/authentication/utils/permissions'
 import { LandsPage } from './features/lands/pages/LandsPage'
 import { ProjectsPage } from './features/projects/pages/ProjectsPage'
 import { ProjectDetailsPage } from './features/projects/pages/ProjectDetailsPage'
 import { UsersPage } from './features/users/pages/UsersPage'
 import { BillsPage } from './features/bills/pages/BillsPage'
 import { VendorsPage } from './features/vendors/pages/VendorsPage'
-import { DashboardPage } from './features/app-shell/pages/DashboardPage'
 import { useEffect, useState } from 'react'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
@@ -98,10 +97,10 @@ export function App() {
     return <ProgressHistoryPage />
   }
   if (pathname === '/app') {
-    return <DashboardPage />
+    return isAdmin() ? <AdminDashboardPage /> : <ProjectManagerDashboardPage />
   }
   if (pathname === '/app/pm/dashboard') {
-    return hasPermission(['Project Manager'])
+    return hasPermission(['Project Manager', 'Admin'])
       ? <ProjectManagerDashboardPage />
       : <ComingSoonPage title="Access Denied - Project Manager Only" />
   }
@@ -130,7 +129,9 @@ export function App() {
     return <BillsPage />
   }
   if (pathname === '/app/vendors') {
-    return <VendorsPage />
+    return hasPermission(['Admin'])
+      ? <VendorsPage />
+      : <ComingSoonPage title="Access Denied - Admin Only" />
   }
   if (pathname === '/app/materials') {
     return <MaterialsPage />
