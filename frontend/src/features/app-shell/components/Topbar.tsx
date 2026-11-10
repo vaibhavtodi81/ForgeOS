@@ -5,9 +5,14 @@ import { ProjectSelector } from './ProjectSelector'
 interface TopbarProps {
   collapsed: boolean
   onOpenMobileNav: () => void
+  projectSelector?: {
+    value: string
+    options: Array<{ id: string; name: string }>
+    onChange: (value: string) => void
+  }
 }
 
-export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
+export function Topbar({ collapsed, onOpenMobileNav, projectSelector }: TopbarProps) {
   const savedUser = localStorage.getItem('forgeos_demo_user')
 
   let role = 'Administrator'
@@ -51,7 +56,7 @@ export function Topbar({ collapsed, onOpenMobileNav }: TopbarProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <ProjectSelector />
+          <ProjectSelector {...projectSelector} />
           <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-emerald-700 sm:inline-flex">
             ACTIVE
           </span>

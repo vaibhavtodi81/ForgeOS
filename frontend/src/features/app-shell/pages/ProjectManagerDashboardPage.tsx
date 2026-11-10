@@ -64,7 +64,14 @@ export function ProjectManagerDashboardPage() {
   const project = assignedProjects.find((item) => item.id === selectedId) ?? assignedProjects[0]
   const today = new Intl.DateTimeFormat('en-IN', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())
 
-  return <AppShell currentPath="/app/pm/dashboard">
+  return <AppShell
+    currentPath="/app/pm/dashboard"
+    projectSelector={{
+      value: selectedId,
+      options: assignedProjects,
+      onChange: setSelectedId,
+    }}
+  >
     <div className="mx-auto max-w-[1500px] space-y-7 p-5 sm:p-7 lg:p-8">
       <section className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div><p className="text-sm font-medium text-[#8E827A]">{today}</p><h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#323232] sm:text-3xl">Welcome, Project Manager</h1><p className="mt-2 text-sm text-[#8E827A]">Keep today’s site operations moving and your project milestones on track.</p></div>

@@ -79,8 +79,8 @@ export function Sidebar({
     { label: 'My Projects', href: '/app/projects', icon: FolderKanban },
     { label: 'Daily Site Logs', href: '/app/daily-logs', icon: ClipboardList },
     { label: 'Progress History', href: '/projects/GVR-001/progress', icon: BarChart3 },
-    { label: 'Labour Records', href: '/app/labour', icon: HardHat },
-    { label: 'Machinery Usage', href: '/app/machinery', icon: Truck },
+    { label: 'Labour Records', href: '/app/daily-logs', icon: HardHat },
+    { label: 'Machinery Usage', href: '/app/daily-logs', icon: Truck },
     { label: 'Materials', href: '/app/materials', icon: Boxes },
     { label: 'Material Planning', href: '/app/material-planning', icon: ClipboardCheck },
     { label: 'Available Stock', href: '/app/stock', icon: PackageSearch },
@@ -90,7 +90,7 @@ export function Sidebar({
     { label: 'Wastage', href: '/app/wastage', icon: TrendingUp },
     { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
     { label: 'Bills', href: '/app/bills', icon: CreditCard },
-    { label: 'Issues & Activities', href: '/app/issues', icon: AlertTriangle },
+    { label: 'Issues & Activities', href: '/app/daily-logs', icon: AlertTriangle },
   ]
 
   const navItems = role === 'admin' ? adminItems : managerItems
