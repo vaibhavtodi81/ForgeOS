@@ -3,7 +3,7 @@ import { LoginForm } from '../components/LoginForm'
 
 export function LoginPage() {
   return (
-    <main className="min-h-screen bg-[#DDD0C8] px-4 py-6 text-[#323232] sm:px-8 lg:px-12 lg:py-10">
+    <main className="forgeos-auth-shell min-h-screen px-4 py-6 text-[#F5F2ED] sm:px-8 lg:px-12 lg:py-10">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col">
         <header className="flex items-center justify-between">
           <a href="/" className="flex items-center gap-3" aria-label="ForgeOS home">

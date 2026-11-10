@@ -114,6 +114,11 @@ export const Hero: React.FC = () => {
           
           {/* Main Dashboard Preview Card */}
           <div className="relative z-10 bg-[#E8DCD4] rounded-3xl p-3 sm:p-5 border border-[#323232]/15 shadow-2xl overflow-hidden text-left">
+            <div className="forgeos-hero-scene" aria-hidden="true">
+              <div className="forgeos-hero-building forgeos-hero-building-back" />
+              <div className="forgeos-hero-building forgeos-hero-building-front" />
+              <div className="forgeos-hero-crane" />
+            </div>
             {/* Window chrome header */}
             <div className="flex items-center justify-between pb-3 px-3 border-b border-[#323232]/10 mb-4 text-xs">
               <div className="flex items-center gap-2">
