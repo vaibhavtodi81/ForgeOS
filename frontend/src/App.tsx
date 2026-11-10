@@ -161,7 +161,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#DDD0C8] text-[#323232] flex flex-col font-sans selection:bg-[#323232] selection:text-[#DDD0C8]">
+    <div className="forgeos-landing min-h-screen flex flex-col font-sans selection:bg-[#F2A65A] selection:text-[#171717]">
       <Navbar />
       <main className="flex-grow">
         <Hero />

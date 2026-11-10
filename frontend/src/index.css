@@ -379,3 +379,193 @@ body {
     background-size: 36px 36px;
   }
 }
+
+.forgeos-landing {
+  --landing-void: #0b0d0f;
+  --landing-surface: #111417;
+  --landing-raised: #171b1f;
+  --landing-border: rgba(255, 255, 255, 0.1);
+  --landing-ink: #f5f2ed;
+  --landing-muted: #9aa2a6;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(242, 166, 90, 0.14), transparent 34rem),
+    var(--landing-void);
+  color: var(--landing-ink);
+}
+
+.forgeos-landing section,
+.forgeos-landing footer {
+  background-color: transparent !important;
+  border-color: var(--landing-border) !important;
+}
+
+.forgeos-landing [class*="bg-[#DDD0C8"],
+.forgeos-landing [class*="bg-[#E8DCD4"],
+.forgeos-landing [class*="bg-[#E8DCD4]/"],
+.forgeos-landing [class*="bg-[#F7F3EE"] {
+  background-color: var(--landing-surface) !important;
+}
+
+.forgeos-landing [class*="text-[#323232"] {
+  color: var(--landing-ink) !important;
+}
+
+.forgeos-landing [class*="text-[#595552"],
+.forgeos-landing [class*="text-[#7A7470"],
+.forgeos-landing [class*="text-[#8E827A"] {
+  color: var(--landing-muted) !important;
+}
+
+.forgeos-landing [class*="border-[#323232"] {
+  border-color: var(--landing-border) !important;
+}
+
+.forgeos-landing [class*="bg-[#323232"] {
+  background-color: var(--dashboard-amber) !important;
+  color: #171717 !important;
+}
+
+.forgeos-landing [class*="text-[#DDD0C8"] {
+  color: var(--landing-ink) !important;
+}
+
+.forgeos-landing header {
+  background-color: rgba(11, 13, 15, 0.72) !important;
+  border-color: var(--landing-border) !important;
+}
+
+.forgeos-landing header [class*="bg-[#323232"] {
+  background-color: var(--dashboard-amber) !important;
+}
+
+.forgeos-landing header [class*="text-[#DDD0C8"] {
+  color: #171717 !important;
+}
+
+.forgeos-landing header [class*="bg-[#DDD0C8"] {
+  background-color: var(--landing-surface) !important;
+}
+
+.forgeos-landing main > section:first-child {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(242, 166, 90, 0.1), transparent 28rem),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px) !important;
+  background-size: auto, 56px 56px, 56px 56px !important;
+}
+
+.forgeos-landing .forgeos-hero-scene {
+  position: absolute;
+  inset: -5rem 10% auto;
+  height: 20rem;
+  perspective: 900px;
+  opacity: 0.72;
+  pointer-events: none;
+  transform: rotateX(58deg) rotateZ(-14deg);
+  transform-style: preserve-3d;
+}
+
+.forgeos-landing .forgeos-hero-scene ~ * {
+  position: relative;
+  z-index: 1;
+}
+
+.forgeos-hero-building {
+  position: absolute;
+  bottom: 1rem;
+  width: 8rem;
+  height: 11rem;
+  border: 1px solid rgba(242, 166, 90, 0.55);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 1.4rem, rgba(242, 166, 90, 0.45) 1.45rem 1.5rem),
+    repeating-linear-gradient(0deg, transparent 0 1.4rem, rgba(242, 166, 90, 0.4) 1.45rem 1.5rem),
+    linear-gradient(135deg, rgba(242, 166, 90, 0.18), rgba(17, 20, 23, 0.8));
+  box-shadow: 0 0 3rem rgba(242, 166, 90, 0.14);
+  transform-style: preserve-3d;
+  animation: forgeos-building-float 8s ease-in-out infinite;
+}
+
+.forgeos-hero-building::after {
+  position: absolute;
+  inset: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  content: "";
+}
+
+.forgeos-hero-building-back {
+  left: 18%;
+  height: 8rem;
+  transform: translateZ(-3rem) rotateY(-12deg);
+}
+
+.forgeos-hero-building-front {
+  right: 16%;
+  height: 13rem;
+  animation-delay: -3s;
+  transform: translateZ(2rem) rotateY(12deg);
+}
+
+.forgeos-hero-crane {
+  position: absolute;
+  bottom: 2rem;
+  left: 48%;
+  width: 1px;
+  height: 14rem;
+  background: linear-gradient(to top, rgba(242, 166, 90, 0.8), transparent);
+  transform: translateZ(4rem);
+}
+
+.forgeos-hero-crane::before {
+  position: absolute;
+  top: 0;
+  left: -4rem;
+  width: 8rem;
+  height: 1px;
+  background: var(--dashboard-amber);
+  box-shadow: 4rem 1rem 0 -0.5px rgba(242, 166, 90, 0.7);
+  content: "";
+}
+
+@keyframes forgeos-building-float {
+  0%, 100% { transform: translateZ(0) rotateY(-12deg) translateY(0); }
+  50% { transform: translateZ(0) rotateY(-8deg) translateY(-0.75rem); }
+}
+
+.forgeos-auth-shell {
+  background:
+    radial-gradient(circle at 80% 10%, rgba(242, 166, 90, 0.14), transparent 26rem),
+    var(--dashboard-void);
+}
+
+.forgeos-auth-shell [class*="bg-[#F7F3EE"],
+.forgeos-auth-shell [class*="bg-[#E8DCD4"] {
+  background-color: var(--dashboard-surface-raised) !important;
+}
+
+.forgeos-auth-shell [class*="text-[#323232"] {
+  color: var(--dashboard-ink) !important;
+}
+
+.forgeos-auth-shell [class*="text-[#595552"],
+.forgeos-auth-shell [class*="text-[#7A7470"],
+.forgeos-auth-shell [class*="text-[#8E827A"] {
+  color: var(--dashboard-muted) !important;
+}
+
+.forgeos-auth-shell [class*="border-[#C8BCB4"] {
+  border-color: var(--dashboard-border) !important;
+}
+
+.forgeos-auth-shell [class*="bg-[#323232"] {
+  background-color: var(--dashboard-amber) !important;
+  color: #171717 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forgeos-hero-building,
+  .dashboard-page-transition,
+  .dashboard-popover,
+  .dashboard-skeleton {
+    animation: none !important;
+  }
+}

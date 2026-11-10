@@ -27,31 +27,31 @@ export const Navbar: React.FC = () => {
     {
       label: 'Features',
       href: '#features',
-      icon: <LayoutDashboard className="w-4 h-4 text-[#323232]" />,
+      icon: <LayoutDashboard className="w-4 h-4 text-[#F2A65A]" />,
       fx: 'glow',
     },
     {
       label: 'How It Works',
       href: '#how-it-works',
-      icon: <ClipboardList className="w-4 h-4 text-[#323232]" />,
+      icon: <ClipboardList className="w-4 h-4 text-[#F2A65A]" />,
       fx: 'spin',
     },
     {
       label: 'Gallery',
       href: '#gallery',
-      icon: <Package className="w-4 h-4 text-[#323232]" />,
+      icon: <Package className="w-4 h-4 text-[#F2A65A]" />,
       fx: 'pop',
     },
     {
       label: 'Showcase',
       href: '#showcase',
-      icon: <Layers className="w-4 h-4 text-[#323232]" />,
+      icon: <Layers className="w-4 h-4 text-[#F2A65A]" />,
       fx: 'wave',
     },
     {
       label: 'Testimonials',
       href: '#testimonials',
-      icon: <Star className="w-4 h-4 text-[#323232]" />,
+      icon: <Star className="w-4 h-4 text-[#F2A65A]" />,
       fx: 'drop',
     },
   ];
@@ -71,11 +71,11 @@ export const Navbar: React.FC = () => {
             href="#"
             className="flex items-center gap-2.5 group focus:outline-none rounded-lg"
           >
-            <div className="w-8 h-8 rounded-full bg-[#323232] text-[#DDD0C8] flex items-center justify-center transition-transform group-hover:scale-105">
+            <div className="w-8 h-8 rounded-full bg-[#F2A65A] text-[#171717] flex items-center justify-center transition-transform group-hover:scale-105">
               <Building2 className="w-4 h-4" />
             </div>
-            <span className="text-lg font-bold tracking-[0.2em] uppercase text-[#323232]">
-              FORGE<span className="font-light text-[#595552]">OS</span>
+            <span className="text-lg font-bold tracking-[0.2em] uppercase text-white">
+              FORGE<span className="font-light text-white/45">OS</span>
             </span>
           </a>
 
@@ -83,7 +83,7 @@ export const Navbar: React.FC = () => {
           <div className="hidden lg:flex items-center justify-center">
             <LiquidNavbar
               items={liquidNavItems}
-              tone="light"
+              tone="dark"
               defaultActive={0}
               sound={false}
               className="scale-95 shadow-sm"
@@ -94,13 +94,13 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center gap-4">
             <a
               href="#login"
-              className="text-xs font-semibold uppercase tracking-wider text-[#323232] hover:text-black px-3 py-2 transition-colors"
+              className="text-xs font-semibold uppercase tracking-wider text-white/65 hover:text-white px-3 py-2 transition-colors"
             >
               Log In
             </a>
             <a
               href="/login"
-              className="text-xs font-semibold uppercase tracking-wider text-[#DDD0C8] bg-[#323232] hover:bg-[#1E1E1E] px-6 py-2.5 rounded-full shadow-sm transition-all duration-200 transform hover:-translate-y-0.5"
+              className="text-xs font-semibold uppercase tracking-wider text-[#171717] bg-[#F2A65A] hover:bg-[#FFC078] px-6 py-2.5 rounded-full shadow-sm transition-all duration-200 transform hover:-translate-y-0.5"
             >
               Get Started
             </a>
@@ -111,7 +111,7 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-lg text-[#323232] hover:bg-[#323232]/10 transition-colors"
+              className="p-2 rounded-lg text-white/70 hover:bg-white/10 transition-colors"
               aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? (
@@ -126,13 +126,13 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Dropdown Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-[#DDD0C8]/95 backdrop-blur-xl border-b border-[#323232]/15 px-4 pt-4 pb-6 space-y-2 mt-2 shadow-lg">
+        <div className="lg:hidden bg-[#111417]/95 backdrop-blur-xl border-b border-white/10 px-4 pt-4 pb-6 space-y-2 mt-2 shadow-lg">
           {liquidNavItems.map((link) => (
             <a
               key={link.label}
               href={link.href}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#323232] hover:bg-[#323232]/10 transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/75 hover:bg-white/10 transition-colors"
             >
               {link.icon}
               {link.label}
@@ -142,14 +142,14 @@ export const Navbar: React.FC = () => {
             <a
               href="#login"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-center py-2 text-sm font-medium text-[#323232]"
+              className="text-center py-2 text-sm font-medium text-white/70"
             >
               Log In
             </a>
             <a
               href="/login"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-center py-2.5 text-xs font-semibold uppercase tracking-wider text-[#DDD0C8] bg-[#323232] rounded-full shadow-sm"
+              className="text-center py-2.5 text-xs font-semibold uppercase tracking-wider text-[#171717] bg-[#F2A65A] rounded-full shadow-sm"
             >
               Get Started
             </a>
