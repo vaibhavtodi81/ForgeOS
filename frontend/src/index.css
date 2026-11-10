@@ -20,6 +20,7 @@
   --dashboard-surface: #111417;
   --dashboard-surface-raised: #171b1f;
   --dashboard-surface-hover: #1c2227;
+  --dashboard-surface-warm: #1c1917;
   --dashboard-border: rgba(255, 255, 255, 0.09);
   --dashboard-ink: #f5f2ed;
   --dashboard-muted: #8d969b;
@@ -236,6 +237,44 @@ body {
 
 .dashboard-shell main [class*="bg-[#F7F3EE"] {
   background-color: rgba(255, 255, 255, 0.035) !important;
+}
+
+.dashboard-shell main [class*="bg-[#FBF9F7"],
+.dashboard-shell main [class*="bg-[#F0E9E4"],
+.dashboard-shell main [class*="bg-[#F7F3EE]/"],
+.dashboard-shell main [class*="bg-[#DDD0C8"] {
+  background-color: var(--dashboard-surface-warm) !important;
+}
+
+.dashboard-shell main input,
+.dashboard-shell main select,
+.dashboard-shell main textarea {
+  background-color: var(--dashboard-surface) !important;
+  border-color: var(--dashboard-border) !important;
+  color: var(--dashboard-ink) !important;
+}
+
+.dashboard-shell main input::placeholder,
+.dashboard-shell main textarea::placeholder {
+  color: var(--dashboard-subtle) !important;
+}
+
+.dashboard-shell main table thead {
+  background: rgba(242, 166, 90, 0.08) !important;
+  color: var(--dashboard-muted) !important;
+}
+
+.dashboard-shell main table thead th {
+  color: var(--dashboard-muted) !important;
+  border-color: var(--dashboard-border) !important;
+}
+
+.dashboard-shell main table tbody tr {
+  border-color: var(--dashboard-border) !important;
+}
+
+.dashboard-shell main table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025) !important;
 }
 
 .dashboard-shell main [class*="bg-[#F3E9E1"],
