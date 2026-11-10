@@ -1,0 +1,19 @@
+{
+  "name": "forgeos-server",
+  "version": "1.0.0",
+  "description": "ForgeOS Backend & Database Services",
+  "main": "src/index.js",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5",
+    "prisma": "^5.19.0"
+  }
+}
