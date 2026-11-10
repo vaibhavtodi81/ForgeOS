@@ -3,11 +3,13 @@ import {
   ArrowUpFromLine,
   BarChart3,
   Boxes,
+  Building2,
   ClipboardCheck,
   ClipboardList,
   CreditCard,
   FolderKanban,
   LayoutDashboard,
+  Map,
   Menu,
   PackageCheck,
   PackageSearch,
@@ -16,13 +18,9 @@ import {
   ScrollText,
   TrendingUp,
   UsersRound,
-  FileBarChart,
-  Settings,
-  HardHat,
-  Truck,
-  AlertTriangle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { getCurrentRole, getAssignedProject } from '../../authentication/utils/permissions'
 
 interface SidebarProps {
   currentPath: string
@@ -45,55 +43,45 @@ export function Sidebar({
   onCloseMobile,
   onToggleCollapsed,
 }: SidebarProps) {
-  let role = 'admin'
-
-  try {
-    const savedUser = localStorage.getItem('forgeos_demo_user')
-    if (savedUser) {
-      role = JSON.parse(savedUser).role === 'pm' ? 'pm' : 'admin'
-    }
-  } catch {
-    role = 'admin'
-  }
+  const currentRole = getCurrentRole() || 'Admin'
+  const isPm = currentRole === 'Project Manager'
+  const assigned = getAssignedProject()
+  const projectCode = assigned?.code || 'PRJ-001'
 
   const adminItems: NavItem[] = [
     { label: 'Dashboard', href: '/app/admin/dashboard', icon: LayoutDashboard },
     { label: 'All Projects', href: '/app/projects', icon: FolderKanban },
     { label: 'Project Managers', href: '/app/users', icon: UsersRound },
+    { label: 'Lands Portfolio', href: '/app/lands', icon: Map },
     { label: 'Daily Logs', href: '/app/daily-logs', icon: ClipboardList },
-    { label: 'Materials', href: '/app/materials', icon: Boxes },
+    { label: 'Materials Master', href: '/app/materials', icon: Boxes },
     { label: 'Material Planning', href: '/app/material-planning', icon: ClipboardCheck },
     { label: 'Available Stock', href: '/app/stock', icon: PackageSearch },
-    { label: 'Stock IN', href: '/app/stock-in', icon: ArrowDownToLine },
-    { label: 'Stock OUT', href: '/app/stock-out', icon: ArrowUpFromLine },
+    { label: 'Stock IN (Deliveries)', href: '/app/stock-in', icon: ArrowDownToLine },
+    { label: 'Stock OUT (Consumption)', href: '/app/stock-out', icon: ArrowUpFromLine },
     { label: 'Stock Ledger', href: '/app/stock-ledger', icon: ScrollText },
-    { label: 'Wastage', href: '/app/wastage', icon: TrendingUp },
-    { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
-    { label: 'Bills', href: '/app/bills', icon: CreditCard },
-    { label: 'Reports', href: '/app/reports', icon: FileBarChart },
-    { label: 'Settings', href: '/app/settings', icon: Settings },
+    { label: 'Wastage Analysis', href: '/app/wastage', icon: TrendingUp },
+    { label: 'Vendors & Negotiations', href: '/app/vendors', icon: UsersRound },
+    { label: 'Bills & Approvals', href: '/app/bills', icon: CreditCard },
   ]
 
   const managerItems: NavItem[] = [
-    { label: 'Dashboard', href: '/app/pm/dashboard', icon: LayoutDashboard },
-    { label: 'My Projects', href: '/app/projects', icon: FolderKanban },
+    { label: 'Site Dashboard', href: '/app/pm/dashboard', icon: LayoutDashboard },
+    { label: 'My Project', href: '/app/projects', icon: FolderKanban },
     { label: 'Daily Site Logs', href: '/app/daily-logs', icon: ClipboardList },
-    { label: 'Progress History', href: '/projects/GVR-001/progress', icon: BarChart3 },
-    { label: 'Labour Records', href: '/app/daily-logs', icon: HardHat },
-    { label: 'Machinery Usage', href: '/app/daily-logs', icon: Truck },
-    { label: 'Materials', href: '/app/materials', icon: Boxes },
-    { label: 'Material Planning', href: '/app/material-planning', icon: ClipboardCheck },
+    { label: 'Progress History', href: `/projects/${projectCode}/progress`, icon: BarChart3 },
+    { label: 'Site Material Planning', href: '/app/material-planning', icon: ClipboardCheck },
     { label: 'Available Stock', href: '/app/stock', icon: PackageSearch },
-    { label: 'Stock IN', href: '/app/stock-in', icon: ArrowDownToLine },
-    { label: 'Stock OUT', href: '/app/stock-out', icon: ArrowUpFromLine },
+    { label: 'Stock IN (Deliveries)', href: '/app/stock-in', icon: ArrowDownToLine },
+    { label: 'Stock OUT (Usage)', href: '/app/stock-out', icon: ArrowUpFromLine },
     { label: 'Stock Ledger', href: '/app/stock-ledger', icon: ScrollText },
     { label: 'Wastage', href: '/app/wastage', icon: TrendingUp },
     { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
     { label: 'Bills', href: '/app/bills', icon: CreditCard },
-    { label: 'Issues & Activities', href: '/app/daily-logs', icon: AlertTriangle },
+    { label: 'Upload Bills & Challans', href: '/app/bills', icon: CreditCard },
   ]
 
-  const navItems = role === 'admin' ? adminItems : managerItems
+  const navItems = isPm ? managerItems : adminItems
 
   return (
     <>
@@ -141,18 +129,33 @@ export function Sidebar({
 
         <div className="flex-1 overflow-y-auto p-3">
           {!collapsed && (
-            <p className="mb-2 px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#A59A93]">
-              {role === 'admin' ? 'Administration' : 'Project Workspace'}
-            </p>
+            <div className="mb-2">
+              <p className="px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#A59A93]">
+                {isPm ? 'Site Operations' : 'Administration'}
+              </p>
+              {isPm && assigned && (
+                <div className="mx-2 mt-2 rounded-xl border border-[#E8DCD4] bg-[#F3E9E1] p-2.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9A5E3A]">
+                    <Building2 size={12} />
+                    <span>Assigned Site</span>
+                  </div>
+                  <p className="mt-0.5 truncate text-xs font-bold text-[#323232]" title={assigned.name}>
+                    {assigned.name}
+                  </p>
+                  <p className="text-[10px] font-mono text-[#8E827A]">{assigned.code}</p>
+                </div>
+              )}
+            </div>
           )}
 
           {navItems.map(({ label, href, icon: Icon }) => {
             const active =
               currentPath === href ||
               (href === '/app' && currentPath === '/app/') ||
-              (label === 'Daily Logs' && (currentPath === '/app/daily-logs' || currentPath.endsWith('/logs'))) ||
-              (label === 'Daily Site Logs' && (currentPath === '/app/daily-logs' || currentPath.endsWith('/logs'))) ||
-              (label === 'Progress History' && currentPath.endsWith('/progress'))
+              (href === '/app/admin/dashboard' && (currentPath === '/app/admin/dashboard' || currentPath === '/app')) ||
+              (href === '/app/pm/dashboard' && (currentPath === '/app/pm/dashboard' || (isPm && currentPath === '/app'))) ||
+              (label.includes('Daily') && (currentPath === '/app/daily-logs' || currentPath.endsWith('/logs'))) ||
+              (label.includes('Progress') && currentPath.endsWith('/progress'))
 
             return (
               <a
@@ -167,7 +170,7 @@ export function Sidebar({
                 title={collapsed ? label : undefined}
               >
                 <Icon className="h-[17px] w-[17px] shrink-0" />
-                {!collapsed && <span>{label}</span>}
+                {!collapsed && <span className="truncate">{label}</span>}
               </a>
             )
           })}
@@ -179,13 +182,15 @@ export function Sidebar({
               <div className="flex items-center gap-2">
                 <PackageCheck className="h-4 w-4 text-[#9A5E3A]" />
                 <span className="text-xs font-semibold text-[#323232]">
-                  {role === 'admin' ? 'Portfolio progress' : 'Project progress'}
+                  {isPm ? 'Site milestone' : 'Portfolio progress'}
                 </span>
               </div>
               <div className="mt-2 h-1.5 rounded-full bg-white">
-                <div className="h-full w-[42%] rounded-full bg-[#B87A4F]" />
+                <div className="h-full w-[65%] rounded-full bg-[#B87A4F]" />
               </div>
-              <p className="mt-1 text-[10px] text-[#8E827A]">42% complete</p>
+              <p className="mt-1 text-[10px] text-[#8E827A]">
+                {isPm ? (assigned ? `${assigned.code} on schedule` : 'On track') : '5 projects active'}
+              </p>
             </div>
           )}
 
@@ -207,3 +212,4 @@ export function Sidebar({
     </>
   )
 }
+export default Sidebar
