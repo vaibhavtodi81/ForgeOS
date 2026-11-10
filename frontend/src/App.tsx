@@ -125,6 +125,9 @@ export function App() {
       ? <LandsPage />
       : <ComingSoonPage title="Access Denied - Admin Only" />
   }
+  if (pathname === '/app/bills/upload') {
+    return <BillsPage openUpload />
+  }
   if (pathname === '/app/bills') {
     return <BillsPage />
   }
