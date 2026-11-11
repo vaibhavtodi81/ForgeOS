@@ -1,19 +1,18 @@
-import { ArrowUpRight, BarChart3, CheckCircle2, Circle, TrendingUp } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { AppShell } from '../../app-shell/components/AppShell'
-import { Breadcrumbs } from '../../app-shell/components/Breadcrumbs'
-
-const activities = [
-  { name: 'Structure and civil works', detail: 'Foundation, columns, slabs, and masonry', progress: 58, target: 'Jul 12', color: '#B87A4F' },
-  { name: 'MEP first fix', detail: 'Electrical conduits and plumbing risers', progress: 36, target: 'Jul 28', color: '#7E9A87' },
-  { name: 'External works', detail: 'Roads, landscape, and boundary wall', progress: 22, target: 'Aug 16', color: '#8C8AA8' },
-  { name: 'Interior finishes', detail: 'Plaster, flooring, paint, and joinery', progress: 12, target: 'Sep 04', color: '#C4A15A' },
-]
+import { useProjects } from '../../projects/useProjects'
+import { ProjectProgressPage } from './ProjectProgressPage'
 
 export function ProgressHistoryPage() {
-  return <AppShell currentPath="/app/progress-history"><div className="mx-auto max-w-6xl p-6 lg:p-10"><Breadcrumbs current="Progress History" /><div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9A5E3A]">Green Valley Residency · GVR-001</p><h1 className="mt-2 text-3xl font-bold tracking-tight">Progress history</h1><p className="mt-2 text-sm text-[#8E827A]">Track the project’s work packages against the planned schedule.</p></div><button className="inline-flex items-center gap-2 self-start rounded-xl bg-[#323232] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#9A5E3A]" type="button">Export report <ArrowUpRight className="h-3.5 w-3.5" /></button></div><div className="mb-5 grid gap-4 sm:grid-cols-3"><Metric icon={<TrendingUp />} label="Overall progress" value="42%" note="+4.2% this month" /><Metric icon={<CheckCircle2 />} label="Completed activities" value="18" note="of 46 tracked activities" /><Metric icon={<BarChart3 />} label="Schedule health" value="On track" note="No critical delays" /></div><div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]"><section className="rounded-2xl border border-[#E8E0DA] bg-white p-5 shadow-[0_8px_24px_rgba(50,50,50,0.04)]"><div className="mb-6 flex items-center justify-between"><div><h2 className="font-semibold">Work package progress</h2><p className="mt-1 text-xs text-[#8E827A]">Current completion by major activity</p></div><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">Updated today</span></div><div className="space-y-6">{activities.map((activity) => <div key={activity.name}><div className="mb-2 flex items-start justify-between gap-3"><div><p className="text-sm font-semibold">{activity.name}</p><p className="mt-1 text-xs text-[#8E827A]">{activity.detail}</p></div><span className="text-sm font-bold">{activity.progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-[#F0E9E4]"><div className="h-full rounded-full" style={{ backgroundColor: activity.color, width: `${activity.progress}%` }} /></div><p className="mt-1.5 text-[11px] text-[#A59A93]">Target completion: {activity.target}</p></div>)}</div></section><section className="rounded-2xl border border-[#E8E0DA] bg-white p-5 shadow-[0_8px_24px_rgba(50,50,50,0.04)]"><h2 className="font-semibold">Recent milestones</h2><p className="mt-1 text-xs text-[#8E827A]">Key project updates</p><div className="mt-6 space-y-5">{['Level 04 slab poured', 'Tower A structure reached Level 04', 'MEP coordination package approved', 'Foundation works completed'].map((item, index) => <div className="flex gap-3" key={item}><div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F3E9E1] text-[#9A5E3A]">{index < 3 ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}</div><div><p className="text-sm font-medium">{item}</p><p className="mt-1 text-xs text-[#8E827A]">{index < 3 ? `Jun ${18 - index * 2}, 2024` : 'Jun 04, 2024'}</p></div></div>)}</div></section></div></div></AppShell>
-}
+  const { selectedProject, isLoading, error, retry } = useProjects()
 
-function Metric({ icon, label, value, note }: { icon: ReactNode; label: string; value: string; note: string }) {
-  return <div className="rounded-2xl border border-[#E8E0DA] bg-white p-5 shadow-[0_8px_24px_rgba(50,50,50,0.04)]"><div className="flex items-center gap-2 text-[#9A5E3A]"><span className="h-4 w-4 [&>svg]:h-4 [&>svg]:w-4">{icon}</span><span className="text-xs font-medium text-[#8E827A]">{label}</span></div><p className="mt-3 text-2xl font-bold">{value}</p><p className="mt-1 text-xs text-[#8E827A]">{note}</p></div>
+  if (isLoading) {
+    return <AppShell currentPath="/app/progress-history"><div aria-live="polite" className="mx-auto max-w-5xl p-8 text-sm text-[#8E827A]">Loading your selected project…</div></AppShell>
+  }
+  if (error) {
+    return <AppShell currentPath="/app/progress-history"><div role="alert" className="mx-auto max-w-5xl p-8"><p className="text-sm text-rose-700">{error}</p><button type="button" onClick={retry} className="mt-4 rounded-lg bg-[#323232] px-4 py-2 text-sm text-white">Retry</button></div></AppShell>
+  }
+  if (!selectedProject) {
+    return <AppShell currentPath="/app/progress-history"><div className="mx-auto max-w-5xl p-8"><h1 className="text-xl font-semibold">No accessible project selected</h1><p className="mt-2 text-sm text-[#8E827A]">Select a project to view its progress history.</p></div></AppShell>
+  }
+  return <ProjectProgressPage projectId={String(selectedProject.id)} />
 }
