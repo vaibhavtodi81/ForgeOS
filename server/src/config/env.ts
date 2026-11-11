@@ -7,6 +7,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  JWT_SECRET: z.string().min(32).default('development-only-forgeos-jwt-secret-change-me'),
+  JWT_EXPIRES_IN: z.string().default('15m'),
 })
 
 export const env = envSchema.parse(process.env)
