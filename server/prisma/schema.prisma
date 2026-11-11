@@ -33,6 +33,14 @@ enum ProjectStatus {
   COMPLETED
 }
 
+enum MilestoneStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
 enum MaterialCategory {
   CEMENT
   STEEL
@@ -48,6 +56,12 @@ enum MaterialCategory {
 enum StockTxnType {
   IN
   OUT
+  ADJUSTMENT
+}
+
+enum AdjustmentDirection {
+  INCREASE
+  DECREASE
 }
 
 enum OutReason {
@@ -70,6 +84,14 @@ enum BillStatus {
   REJECTED
   PARTIALLY_PAID
   PAID
+}
+
+enum VendorType {
+  MATERIAL_SUPPLIER
+  LABOUR_CONTRACTOR
+  MACHINERY_RENTAL
+  SERVICE_PROVIDER
+  OTHER
 }
 
 enum PaymentMode {
@@ -114,15 +136,16 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  projectsManaged     Project[]          @relation("ProjectPM")
-  projectsCreated     Project[]          @relation("ProjectCreatedBy")
+  projectsManaged     Project[]                 @relation("ProjectPM")
+  projectsCreated     Project[]                 @relation("ProjectCreatedBy")
   landsCreated        Land[]
   dailyLogsCreated    DailyLog[]
-  stockTxnsCreated    StockTransaction[] @relation("StockTxnCreatedBy")
-  stockTxnsVoided     StockTransaction[] @relation("StockTxnVoidedBy")
-  billsSubmitted      Bill[]             @relation("BillSubmittedBy")
-  billsApproved       Bill[]             @relation("BillApprovedBy")
+  stockTxnsCreated    StockTransaction[]        @relation("StockTxnCreatedBy")
+  stockTxnsVoided     StockTransaction[]        @relation("StockTxnVoidedBy")
+  billsSubmitted      Bill[]                    @relation("BillSubmittedBy")
+  billsApproved       Bill[]                    @relation("BillApprovedBy")
   paymentsRecorded    Payment[]
+  vendorAssignments   ProjectVendorAssignment[]
   auditLogs           AuditLog[]
   notifications       Notification[]
   attachmentsUploaded Attachment[]
@@ -177,6 +200,8 @@ model Project {
   createdBy  User  @relation("ProjectCreatedBy", fields: [createdById], references: [id])
 
   materialPlans     ProjectMaterialPlan[]
+  vendorAssignments ProjectVendorAssignment[]
+  milestones        ProjectMilestone[]
   dailyLogs         DailyLog[]
   stockTransactions StockTransaction[]
   bills             Bill[]
@@ -188,14 +213,38 @@ model Project {
   @@map("projects")
 }
 
+model ProjectMilestone {
+  id               Int             @id @default(autoincrement())
+  projectId        Int             @map("project_id")
+  name             String
+  description      String?
+  sequence         Int
+  plannedStartDate DateTime?       @map("planned_start_date") @db.Date
+  plannedEndDate   DateTime?       @map("planned_end_date") @db.Date
+  actualStartDate  DateTime?       @map("actual_start_date") @db.Date
+  actualEndDate    DateTime?       @map("actual_end_date") @db.Date
+  status           MilestoneStatus @default(PLANNED)
+  progressPercent  Decimal         @default(0) @map("progress_percent") @db.Decimal(5, 2)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, sequence])
+  @@index([projectId, sequence])
+  @@index([projectId, status])
+  @@map("project_milestones")
+}
+
 model Material {
-  id        Int              @id @default(autoincrement())
-  name      String           @unique
-  category  MaterialCategory
-  unit      String
-  isActive  Boolean          @default(true) @map("is_active")
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  category    MaterialCategory
+  unit        String
+  description String?
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
   plans             ProjectMaterialPlan[]
   stockTransactions StockTransaction[]
@@ -204,27 +253,47 @@ model Material {
 }
 
 model Vendor {
-  id            Int      @id @default(autoincrement())
-  name          String   @unique
-  contactPerson String?  @map("contact_person")
+  id            Int        @id @default(autoincrement())
+  name          String     @unique
+  vendorType    VendorType @default(OTHER) @map("vendor_type")
+  contactPerson String?    @map("contact_person")
   phone         String?
   email         String?
-  gstin         String?  @unique
+  gstin         String?    @unique
   address       String?
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
 
-  bills             Bill[]
-  stockTransactions StockTransaction[]
+  bills              Bill[]
+  stockTransactions  StockTransaction[]
+  projectAssignments ProjectVendorAssignment[]
 
   @@map("vendors")
+}
+
+model ProjectVendorAssignment {
+  id           Int       @id @default(autoincrement())
+  projectId    Int       @map("project_id")
+  vendorId     Int       @map("vendor_id")
+  assignedById Int       @map("assigned_by_id")
+  assignedAt   DateTime  @default(now()) @map("assigned_at")
+  unassignedAt DateTime? @map("unassigned_at")
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendor     Vendor  @relation(fields: [vendorId], references: [id])
+  assignedBy User    @relation(fields: [assignedById], references: [id])
+
+  @@index([projectId, vendorId, unassignedAt])
+  @@index([vendorId, assignedAt])
+  @@map("project_vendor_assignments")
 }
 
 model ProjectMaterialPlan {
   id                  Int      @id @default(autoincrement())
   projectId           Int      @map("project_id")
   materialId          Int      @map("material_id")
+  openingQuantity     Decimal  @default(0) @map("opening_quantity") @db.Decimal(14, 3)
   plannedQuantity     Decimal  @map("planned_quantity") @db.Decimal(14, 3)
   plannedUnitRate     Decimal? @map("planned_unit_rate") @db.Decimal(12, 2)
   lowStockThreshold   Decimal? @map("low_stock_threshold") @db.Decimal(14, 3)
@@ -232,7 +301,7 @@ model ProjectMaterialPlan {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
-  project  Project  @relation(fields: [projectId], references: [id])
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   material Material @relation(fields: [materialId], references: [id])
 
   @@unique([projectId, materialId])
@@ -251,7 +320,7 @@ model DailyLog {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  project           Project            @relation(fields: [projectId], references: [id])
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdBy         User               @relation(fields: [createdById], references: [id])
   labourEntries     LabourEntry[]
   machineryEntries  MachineryEntry[]
@@ -294,25 +363,26 @@ model MachineryEntry {
 }
 
 model StockTransaction {
-  id            Int          @id @default(autoincrement())
-  projectId     Int          @map("project_id")
-  materialId    Int          @map("material_id")
-  txnType       StockTxnType @map("txn_type")
-  quantity      Decimal      @db.Decimal(14, 3)
-  unitRate      Decimal?     @map("unit_rate") @db.Decimal(12, 2)
-  vendorId      Int?         @map("vendor_id")
-  billId        Int?         @map("bill_id")
-  challanNumber String?      @map("challan_number")
-  outReason     OutReason?   @map("out_reason")
-  txnDate       DateTime     @map("txn_date") @db.Date
-  dailyLogId    Int?         @map("daily_log_id")
-  remarks       String?
-  createdById   Int          @map("created_by_id")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  isVoided      Boolean      @default(false) @map("is_voided")
-  voidedById    Int?         @map("voided_by_id")
-  voidedAt      DateTime?    @map("voided_at")
-  voidReason    String?      @map("void_reason")
+  id                  Int                  @id @default(autoincrement())
+  projectId           Int                  @map("project_id")
+  materialId          Int                  @map("material_id")
+  txnType             StockTxnType         @map("txn_type")
+  quantity            Decimal              @db.Decimal(14, 3)
+  unitRate            Decimal?             @map("unit_rate") @db.Decimal(12, 2)
+  vendorId            Int?                 @map("vendor_id")
+  billId              Int?                 @map("bill_id")
+  challanNumber       String?              @map("challan_number")
+  outReason           OutReason?           @map("out_reason")
+  adjustmentDirection AdjustmentDirection? @map("adjustment_direction")
+  txnDate             DateTime             @map("txn_date") @db.Date
+  dailyLogId          Int?                 @map("daily_log_id")
+  remarks             String?
+  createdById         Int                  @map("created_by_id")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  isVoided            Boolean              @default(false) @map("is_voided")
+  voidedById          Int?                 @map("voided_by_id")
+  voidedAt            DateTime?            @map("voided_at")
+  voidReason          String?              @map("void_reason")
 
   project   Project   @relation(fields: [projectId], references: [id])
   material  Material  @relation(fields: [materialId], references: [id])
@@ -412,7 +482,7 @@ model Notification {
   dedupeKey String?          @unique @map("dedupe_key")
   createdAt DateTime         @default(now()) @map("created_at")
 
-  user    User     @relation(fields: [userId], references: [id])
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [projectId], references: [id])
 
   @@index([userId, isRead, createdAt])
