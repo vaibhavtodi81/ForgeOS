@@ -1,0 +1,16 @@
+                                                   QUERY PLAN                                                   
+----------------------------------------------------------------------------------------------------------------
+ Limit  (cost=25.74..25.79 rows=20 width=121) (actual time=0.053..0.054 rows=2 loops=1)
+   Buffers: shared hit=4
+   ->  Sort  (cost=25.74..26.82 rows=430 width=121) (actual time=0.051..0.052 rows=2 loops=1)
+         Sort Key: created_at DESC
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=4
+         ->  Seq Scan on users  (cost=0.00..14.30 rows=430 width=121) (actual time=0.021..0.022 rows=2 loops=1)
+               Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=120
+ Planning Time: 0.648 ms
+ Execution Time: 0.081 ms
+(12 rows)
+

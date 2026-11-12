@@ -1,0 +1,19 @@
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Insert on audit_logs  (cost=0.04..0.07 rows=1 width=152) (actual time=1.235..1.239 rows=1 loops=1)
+   Buffers: shared hit=191
+   CTE new_milestone
+     ->  Insert on project_milestones  (cost=0.00..0.04 rows=1 width=124) (actual time=0.686..0.688 rows=1 loops=1)
+           Buffers: shared hit=100
+           ->  Result  (cost=0.00..0.04 rows=1 width=124) (actual time=0.107..0.108 rows=1 loops=1)
+                 Buffers: shared hit=13
+   ->  CTE Scan on new_milestone  (cost=0.00..0.04 rows=1 width=152) (actual time=0.841..0.843 rows=1 loops=1)
+         Buffers: shared hit=119
+ Planning:
+   Buffers: shared hit=6
+ Planning Time: 0.216 ms
+ Trigger for constraint project_milestones_project_id_fkey on project_milestones: time=1.645 calls=1
+ Trigger for constraint audit_logs_user_id_fkey on audit_logs: time=0.672 calls=1
+ Execution Time: 3.683 ms
+(15 rows)
+

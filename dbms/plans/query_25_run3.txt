@@ -1,0 +1,23 @@
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
+ Hash Right Join  (cost=20.26..25.30 rows=1 width=118) (actual time=0.030..0.033 rows=1 loops=1)
+   Hash Cond: (payments.bill_id = b.id)
+   Buffers: shared hit=2
+   ->  HashAggregate  (cost=18.85..21.35 rows=200 width=36) (actual time=0.009..0.010 rows=1 loops=1)
+         Group Key: payments.bill_id
+         Batches: 1  Memory Usage: 40kB
+         Buffers: shared hit=1
+         ->  Seq Scan on payments  (cost=0.00..15.90 rows=590 width=22) (actual time=0.002..0.002 rows=1 loops=1)
+               Buffers: shared hit=1
+   ->  Hash  (cost=1.40..1.40 rows=1 width=54) (actual time=0.007..0.007 rows=1 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         Buffers: shared hit=1
+         ->  Seq Scan on bills b  (cost=0.00..1.40 rows=1 width=54) (actual time=0.002..0.003 rows=1 loops=1)
+               Filter: (project_id = 1)
+               Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=50
+ Planning Time: 0.257 ms
+ Execution Time: 0.082 ms
+(19 rows)
+

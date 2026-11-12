@@ -1,0 +1,13 @@
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Delete on daily_logs  (cost=0.15..8.17 rows=1 width=6) (actual time=0.020..0.020 rows=0 loops=1)
+   Buffers: shared hit=1
+   ->  Index Scan using daily_logs_pkey on daily_logs  (cost=0.15..8.17 rows=1 width=6) (actual time=0.019..0.019 rows=0 loops=1)
+         Index Cond: (id = 1)
+         Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=125
+ Planning Time: 0.840 ms
+ Execution Time: 0.147 ms
+(9 rows)
+

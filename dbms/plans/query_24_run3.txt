@@ -1,0 +1,22 @@
+                                                QUERY PLAN                                                
+----------------------------------------------------------------------------------------------------------
+ Insert on audit_logs  (cost=0.05..0.08 rows=1 width=152) (actual time=0.987..0.988 rows=1 loops=1)
+   Buffers: shared hit=223
+   CTE new_bill
+     ->  Insert on bills  (cost=0.00..0.05 rows=1 width=222) (actual time=0.688..0.689 rows=1 loops=1)
+           Buffers: shared hit=137
+           ->  Result  (cost=0.00..0.05 rows=1 width=222) (actual time=0.087..0.087 rows=1 loops=1)
+                 Buffers: shared hit=13
+   ->  CTE Scan on new_bill  (cost=0.00..0.04 rows=1 width=152) (actual time=0.775..0.776 rows=1 loops=1)
+         Buffers: shared hit=156
+ Planning:
+   Buffers: shared hit=24
+ Planning Time: 0.300 ms
+ Trigger for constraint bills_project_id_fkey on bills: time=0.893 calls=1
+ Trigger for constraint bills_vendor_id_fkey on bills: time=0.466 calls=1
+ Trigger for constraint bills_submitted_by_id_fkey on bills: time=0.219 calls=1
+ Trigger for constraint bills_approved_by_id_fkey on bills: time=0.011 calls=1
+ Trigger for constraint audit_logs_user_id_fkey on audit_logs: time=0.051 calls=1
+ Execution Time: 2.704 ms
+(18 rows)
+

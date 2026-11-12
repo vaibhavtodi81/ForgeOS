@@ -1,0 +1,33 @@
+                                                                       QUERY PLAN                                                                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+ Update on daily_logs  (cost=22.71..30.73 rows=1 width=122) (actual time=0.020..0.020 rows=0 loops=1)
+   Buffers: shared hit=1
+   CTE deleted_labour
+     ->  Delete on labour_entries  (cost=4.17..11.28 rows=3 width=6) (actual time=0.005..0.005 rows=0 loops=1)
+           Buffers: shared hit=2
+           ->  Bitmap Heap Scan on labour_entries  (cost=4.17..11.28 rows=3 width=6) (actual time=0.005..0.005 rows=0 loops=1)
+                 Recheck Cond: (daily_log_id = 1)
+                 Heap Blocks: exact=1
+                 Buffers: shared hit=2
+                 ->  Bitmap Index Scan on labour_entries_daily_log_id_idx  (cost=0.00..4.17 rows=3 width=0) (actual time=0.004..0.004 rows=1 loops=1)
+                       Index Cond: (daily_log_id = 1)
+                       Buffers: shared hit=1
+   CTE deleted_machinery
+     ->  Delete on machinery_entries  (cost=4.17..11.28 rows=3 width=6) (actual time=0.005..0.005 rows=0 loops=1)
+           Buffers: shared hit=2
+           ->  Bitmap Heap Scan on machinery_entries  (cost=4.17..11.28 rows=3 width=6) (actual time=0.005..0.005 rows=0 loops=1)
+                 Recheck Cond: (daily_log_id = 1)
+                 Heap Blocks: exact=1
+                 Buffers: shared hit=2
+                 ->  Bitmap Index Scan on machinery_entries_daily_log_id_idx  (cost=0.00..4.17 rows=3 width=0) (actual time=0.002..0.002 rows=1 loops=1)
+                       Index Cond: (daily_log_id = 1)
+                       Buffers: shared hit=1
+   ->  Index Scan using daily_logs_pkey on daily_logs  (cost=0.15..8.17 rows=1 width=122) (actual time=0.018..0.018 rows=0 loops=1)
+         Index Cond: (id = 1)
+         Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=203
+ Planning Time: 0.995 ms
+ Execution Time: 0.182 ms
+(29 rows)
+

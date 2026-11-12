@@ -1,0 +1,43 @@
+                                                                                       QUERY PLAN                                                                                        
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=37.73..37.84 rows=3 width=166) (actual time=0.100..0.101 rows=1 loops=1)
+   Group Key: pmp.material_id, m.name, m.unit, pmp.planned_quantity, pmp.planned_unit_rate
+   Buffers: shared hit=14
+   ->  Sort  (cost=37.73..37.74 rows=3 width=124) (actual time=0.092..0.093 rows=1 loops=1)
+         Sort Key: pmp.material_id, m.name, m.unit, pmp.planned_quantity, pmp.planned_unit_rate
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=14
+         ->  Nested Loop Left Join  (cost=15.48..37.70 rows=3 width=124) (actual time=0.052..0.054 rows=1 loops=1)
+               Join Filter: (st.material_id = pmp.material_id)
+               Buffers: shared hit=5
+               ->  Hash Join  (cost=11.32..28.15 rows=3 width=106) (actual time=0.044..0.045 rows=1 loops=1)
+                     Hash Cond: (m.id = pmp.material_id)
+                     Buffers: shared hit=3
+                     ->  Seq Scan on materials m  (cost=0.00..15.40 rows=540 width=68) (actual time=0.003..0.003 rows=1 loops=1)
+                           Buffers: shared hit=1
+                     ->  Hash  (cost=11.28..11.28 rows=3 width=42) (actual time=0.019..0.019 rows=1 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           Buffers: shared hit=2
+                           ->  Bitmap Heap Scan on project_material_plans pmp  (cost=4.17..11.28 rows=3 width=42) (actual time=0.013..0.014 rows=1 loops=1)
+                                 Recheck Cond: (project_id = 1)
+                                 Heap Blocks: exact=1
+                                 Buffers: shared hit=2
+                                 ->  Bitmap Index Scan on project_material_plans_project_id_material_id_key  (cost=0.00..4.17 rows=3 width=0) (actual time=0.009..0.009 rows=18 loops=1)
+                                       Index Cond: (project_id = 1)
+                                       Buffers: shared hit=1
+               ->  Materialize  (cost=4.16..9.51 rows=1 width=30) (actual time=0.006..0.007 rows=1 loops=1)
+                     Buffers: shared hit=2
+                     ->  Bitmap Heap Scan on stock_transactions st  (cost=4.16..9.51 rows=1 width=30) (actual time=0.004..0.005 rows=1 loops=1)
+                           Recheck Cond: (project_id = 1)
+                           Filter: ((NOT is_voided) AND (txn_type = 'OUT'::"StockTxnType"))
+                           Heap Blocks: exact=1
+                           Buffers: shared hit=2
+                           ->  Bitmap Index Scan on stock_transactions_project_id_material_id_txn_date_idx  (cost=0.00..4.16 rows=2 width=0) (actual time=0.002..0.002 rows=24 loops=1)
+                                 Index Cond: (project_id = 1)
+                                 Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=142
+ Planning Time: 0.758 ms
+ Execution Time: 0.208 ms
+(39 rows)
+

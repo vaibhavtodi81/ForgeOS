@@ -1,0 +1,12 @@
+                                            QUERY PLAN                                            
+--------------------------------------------------------------------------------------------------
+ Insert on payments  (cost=0.00..0.03 rows=1 width=110) (actual time=0.137..0.138 rows=1 loops=1)
+   Buffers: shared hit=44
+   ->  Result  (cost=0.00..0.03 rows=1 width=110) (actual time=0.036..0.036 rows=1 loops=1)
+         Buffers: shared hit=12
+ Planning Time: 0.012 ms
+ Trigger for constraint payments_bill_id_fkey: time=0.210 calls=1
+ Trigger for constraint payments_recorded_by_id_fkey: time=0.037 calls=1
+ Execution Time: 0.394 ms
+(8 rows)
+

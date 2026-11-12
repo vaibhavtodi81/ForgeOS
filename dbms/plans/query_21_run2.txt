@@ -1,0 +1,14 @@
+                                                                    QUERY PLAN                                                                     
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ Update on project_milestones  (cost=0.15..8.18 rows=1 width=98) (actual time=0.040..0.041 rows=1 loops=1)
+   Buffers: shared hit=11
+   ->  Index Scan using project_milestones_pkey on project_milestones  (cost=0.15..8.18 rows=1 width=98) (actual time=0.010..0.010 rows=1 loops=1)
+         Index Cond: (id = 25)
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=28
+ Planning Time: 0.167 ms
+ Trigger for constraint project_milestones_project_id_fkey: time=0.048 calls=1
+ Execution Time: 0.146 ms
+(10 rows)
+

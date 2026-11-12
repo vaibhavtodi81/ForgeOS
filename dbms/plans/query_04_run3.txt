@@ -1,0 +1,31 @@
+                                                                                                               QUERY PLAN                                                                                                                
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=22.72..22.81 rows=2 width=324) (actual time=0.153..0.155 rows=1 loops=1)
+   Buffers: shared hit=23
+   ->  Unique  (cost=22.72..22.81 rows=2 width=324) (actual time=0.152..0.153 rows=1 loops=1)
+         Buffers: shared hit=23
+         ->  Sort  (cost=22.72..22.73 rows=2 width=324) (actual time=0.151..0.152 rows=1 loops=1)
+               Sort Key: l.created_at DESC, l.id, l.name, l.address_line, l.city, l.state, l.pincode, l.area_value, l.area_unit, l.survey_number, l.owner_name, l.purchase_date, l.purchase_cost, l.notes, l.created_by_id, l.updated_at
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=23
+               ->  Hash Join  (cost=9.53..22.71 rows=2 width=324) (actual time=0.039..0.040 rows=1 loops=1)
+                     Hash Cond: (l.id = p.land_id)
+                     Buffers: shared hit=3
+                     ->  Seq Scan on lands l  (cost=0.00..12.30 rows=230 width=324) (actual time=0.009..0.009 rows=1 loops=1)
+                           Buffers: shared hit=1
+                     ->  Hash  (cost=9.50..9.50 rows=2 width=4) (actual time=0.016..0.016 rows=1 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           Buffers: shared hit=2
+                           ->  Bitmap Heap Scan on projects p  (cost=4.16..9.50 rows=2 width=4) (actual time=0.010..0.010 rows=1 loops=1)
+                                 Recheck Cond: (assigned_pm_id = 2)
+                                 Heap Blocks: exact=1
+                                 Buffers: shared hit=2
+                                 ->  Bitmap Index Scan on projects_assigned_pm_id_idx  (cost=0.00..4.16 rows=2 width=0) (actual time=0.003..0.003 rows=1 loops=1)
+                                       Index Cond: (assigned_pm_id = 2)
+                                       Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=279
+ Planning Time: 1.376 ms
+ Execution Time: 0.302 ms
+(27 rows)
+

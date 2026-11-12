@@ -1,0 +1,15 @@
+                                            QUERY PLAN                                            
+--------------------------------------------------------------------------------------------------
+ Insert on projects  (cost=0.00..0.03 rows=1 width=174) (actual time=0.520..0.521 rows=1 loops=1)
+   Buffers: shared hit=116
+   ->  Result  (cost=0.00..0.03 rows=1 width=174) (actual time=0.063..0.064 rows=1 loops=1)
+         Buffers: shared hit=13
+ Planning:
+   Buffers: shared hit=6
+ Planning Time: 0.086 ms
+ Trigger for constraint projects_land_id_fkey: time=0.715 calls=1
+ Trigger for constraint projects_assigned_pm_id_fkey: time=0.400 calls=1
+ Trigger for constraint projects_created_by_id_fkey: time=0.071 calls=1
+ Execution Time: 1.737 ms
+(11 rows)
+

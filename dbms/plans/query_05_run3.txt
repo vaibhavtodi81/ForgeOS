@@ -1,0 +1,36 @@
+                                                                            QUERY PLAN                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=30.91..30.92 rows=2 width=306) (actual time=0.096..0.099 rows=1 loops=1)
+   Buffers: shared hit=8
+   ->  Sort  (cost=30.91..30.92 rows=2 width=306) (actual time=0.095..0.097 rows=1 loops=1)
+         Sort Key: p.created_at DESC
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=8
+         ->  Nested Loop Left Join  (cost=9.68..30.90 rows=2 width=306) (actual time=0.063..0.066 rows=1 loops=1)
+               Buffers: shared hit=5
+               ->  Hash Join  (cost=9.53..22.71 rows=2 width=238) (actual time=0.037..0.039 rows=1 loops=1)
+                     Hash Cond: (l.id = p.land_id)
+                     Buffers: shared hit=3
+                     ->  Seq Scan on lands l  (cost=0.00..12.30 rows=230 width=68) (actual time=0.009..0.009 rows=1 loops=1)
+                           Buffers: shared hit=1
+                     ->  Hash  (cost=9.50..9.50 rows=2 width=174) (actual time=0.016..0.016 rows=1 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           Buffers: shared hit=2
+                           ->  Bitmap Heap Scan on projects p  (cost=4.16..9.50 rows=2 width=174) (actual time=0.009..0.010 rows=1 loops=1)
+                                 Recheck Cond: (assigned_pm_id = 2)
+                                 Heap Blocks: exact=1
+                                 Buffers: shared hit=2
+                                 ->  Bitmap Index Scan on projects_assigned_pm_id_idx  (cost=0.00..4.16 rows=2 width=0) (actual time=0.004..0.004 rows=1 loops=1)
+                                       Index Cond: (assigned_pm_id = 2)
+                                       Buffers: shared hit=1
+               ->  Materialize  (cost=0.15..8.17 rows=1 width=68) (actual time=0.024..0.024 rows=1 loops=1)
+                     Buffers: shared hit=2
+                     ->  Index Scan using users_pkey on users u  (cost=0.15..8.17 rows=1 width=68) (actual time=0.021..0.021 rows=1 loops=1)
+                           Index Cond: (id = 2)
+                           Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=382
+ Planning Time: 2.053 ms
+ Execution Time: 0.205 ms
+(32 rows)
+

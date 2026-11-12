@@ -1,0 +1,13 @@
+                                                       QUERY PLAN                                                        
+-------------------------------------------------------------------------------------------------------------------------
+ Update on users  (cost=0.15..8.18 rows=1 width=22) (actual time=0.287..0.288 rows=1 loops=1)
+   Buffers: shared hit=30
+   ->  Index Scan using users_pkey on users  (cost=0.15..8.18 rows=1 width=22) (actual time=0.051..0.052 rows=1 loops=1)
+         Index Cond: (id = 1)
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=101
+ Planning Time: 0.654 ms
+ Execution Time: 0.412 ms
+(9 rows)
+

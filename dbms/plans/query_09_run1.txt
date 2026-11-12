@@ -1,0 +1,29 @@
+                                                                    QUERY PLAN                                                                     
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=8.49..45.68 rows=18 width=284) (actual time=0.018..0.019 rows=0 loops=1)
+   Buffers: shared hit=3
+   ->  Nested Loop Left Join  (cost=4.32..34.17 rows=6 width=222) (actual time=0.018..0.018 rows=0 loops=1)
+         Buffers: shared hit=3
+         ->  Nested Loop Left Join  (cost=0.15..22.81 rows=2 width=170) (actual time=0.018..0.018 rows=0 loops=1)
+               Buffers: shared hit=3
+               ->  Index Scan using daily_logs_pkey on daily_logs dl  (cost=0.15..8.17 rows=1 width=140) (actual time=0.017..0.018 rows=0 loops=1)
+                     Index Cond: (id = 1)
+                     Buffers: shared hit=3
+               ->  Seq Scan on stock_transactions st  (cost=0.00..14.62 rows=2 width=34) (never executed)
+                     Filter: (daily_log_id = 1)
+         ->  Materialize  (cost=4.17..11.30 rows=3 width=56) (never executed)
+               ->  Bitmap Heap Scan on labour_entries le  (cost=4.17..11.28 rows=3 width=56) (never executed)
+                     Recheck Cond: (daily_log_id = 1)
+                     ->  Bitmap Index Scan on labour_entries_daily_log_id_idx  (cost=0.00..4.17 rows=3 width=0) (never executed)
+                           Index Cond: (daily_log_id = 1)
+   ->  Materialize  (cost=4.17..11.29 rows=3 width=66) (never executed)
+         ->  Bitmap Heap Scan on machinery_entries me  (cost=4.17..11.28 rows=3 width=66) (never executed)
+               Recheck Cond: (daily_log_id = 1)
+               ->  Bitmap Index Scan on machinery_entries_daily_log_id_idx  (cost=0.00..4.17 rows=3 width=0) (never executed)
+                     Index Cond: (daily_log_id = 1)
+ Planning:
+   Buffers: shared hit=399 dirtied=2
+ Planning Time: 1.515 ms
+ Execution Time: 0.107 ms
+(25 rows)
+

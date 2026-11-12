@@ -1,0 +1,277 @@
+---
+title: ForgeOS PostgreSQL Entity Relationship Diagram
+---
+erDiagram
+    USERS {
+        int id PK
+        string name
+        string email UK
+        string password_hash
+        enum role
+        string phone
+        boolean is_active
+        datetime last_login_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    LANDS {
+        int id PK
+        string name
+        string address_line
+        string city
+        string state
+        string pincode
+        decimal area_value
+        enum area_unit
+        string survey_number
+        string owner_name
+        date purchase_date
+        decimal purchase_cost
+        string notes
+        int created_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROJECTS {
+        int id PK
+        int land_id FK
+        string code UK
+        string name
+        string description
+        enum status
+        date start_date
+        date expected_end_date
+        date actual_end_date
+        decimal total_budget
+        decimal wastage_threshold_pct
+        int assigned_pm_id FK
+        int created_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROJECT_MILESTONES {
+        int id PK
+        int project_id FK
+        string name
+        string description
+        int sequence
+        date planned_start_date
+        date planned_end_date
+        date actual_start_date
+        date actual_end_date
+        enum status
+        decimal progress_percent
+        datetime created_at
+        datetime updated_at
+    }
+
+    MATERIALS {
+        int id PK
+        string name UK
+        enum category
+        string unit
+        string description
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROJECT_MATERIAL_PLANS {
+        int id PK
+        int project_id FK
+        int material_id FK
+        decimal opening_quantity
+        decimal planned_quantity
+        decimal planned_unit_rate
+        decimal low_stock_threshold
+        decimal wastage_threshold_pct
+        datetime created_at
+        datetime updated_at
+    }
+
+    VENDORS {
+        int id PK
+        string name UK
+        enum vendor_type
+        string contact_person
+        string phone
+        string email
+        string gstin UK
+        string address
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROJECT_VENDOR_ASSIGNMENTS {
+        int id PK
+        int project_id FK
+        int vendor_id FK
+        int assigned_by_id FK
+        datetime assigned_at
+        datetime unassigned_at
+    }
+
+    DAILY_LOGS {
+        int id PK
+        int project_id FK
+        date log_date
+        decimal progress_percent
+        string work_summary
+        string weather
+        string issues
+        int created_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    LABOUR_ENTRIES {
+        int id PK
+        int daily_log_id FK
+        string trade
+        string contractor_name
+        int head_count
+        decimal hours_worked
+        string remarks
+    }
+
+    MACHINERY_ENTRIES {
+        int id PK
+        int daily_log_id FK
+        string machine_name
+        string operator_name
+        decimal hours_used
+        decimal fuel_litres
+        string remarks
+    }
+
+    STOCK_TRANSACTIONS {
+        int id PK
+        int project_id FK
+        int material_id FK
+        enum txn_type
+        decimal quantity
+        decimal unit_rate
+        int vendor_id FK
+        int bill_id FK
+        string challan_number
+        enum out_reason
+        enum adjustment_direction
+        date txn_date
+        int daily_log_id FK
+        string remarks
+        int created_by_id FK
+        datetime created_at
+        boolean is_voided
+        int voided_by_id FK
+        datetime voided_at
+        string void_reason
+    }
+
+    BILLS {
+        int id PK
+        int project_id FK
+        int vendor_id FK
+        string bill_number
+        date bill_date
+        date due_date
+        enum category
+        string description
+        decimal base_amount
+        decimal gst_percent
+        decimal gst_amount
+        decimal total_amount
+        enum status
+        int submitted_by_id FK
+        int approved_by_id FK
+        datetime approved_at
+        string rejection_reason
+        datetime created_at
+        datetime updated_at
+    }
+
+    PAYMENTS {
+        int id PK
+        int bill_id FK
+        decimal amount
+        date payment_date
+        enum mode
+        string reference_number
+        string remarks
+        int recorded_by_id FK
+        datetime created_at
+    }
+
+    AUDIT_LOGS {
+        int id PK
+        int user_id FK
+        enum action
+        string entity_type
+        int entity_id
+        json old_values
+        json new_values
+        string ip_address
+        datetime created_at
+    }
+
+    NOTIFICATIONS {
+        int id PK
+        int user_id FK
+        enum type
+        string title
+        string message
+        int project_id FK
+        string link
+        boolean is_read
+        string dedupe_key UK
+        datetime created_at
+    }
+
+    ATTACHMENTS {
+        int id PK
+        int daily_log_id FK
+        int bill_id FK
+        string file_name
+        string stored_path
+        string mime_type
+        int size_bytes
+        int uploaded_by_id FK
+        datetime created_at
+    }
+
+    USERS ||--o{ LANDS : creates
+    USERS ||--o{ PROJECTS : creates
+    USERS o|--o{ PROJECTS : manages
+    LANDS ||--o{ PROJECTS : contains
+    PROJECTS ||--o{ PROJECT_MILESTONES : has
+    PROJECTS ||--o{ PROJECT_MATERIAL_PLANS : plans
+    MATERIALS ||--o{ PROJECT_MATERIAL_PLANS : planned_for
+    PROJECTS ||--o{ PROJECT_VENDOR_ASSIGNMENTS : assigns
+    VENDORS ||--o{ PROJECT_VENDOR_ASSIGNMENTS : assigned_to
+    USERS ||--o{ PROJECT_VENDOR_ASSIGNMENTS : assigns
+    PROJECTS ||--o{ DAILY_LOGS : records
+    USERS ||--o{ DAILY_LOGS : creates
+    DAILY_LOGS ||--o{ LABOUR_ENTRIES : includes
+    DAILY_LOGS ||--o{ MACHINERY_ENTRIES : includes
+    PROJECTS ||--o{ STOCK_TRANSACTIONS : records
+    MATERIALS ||--o{ STOCK_TRANSACTIONS : tracks
+    VENDORS o|--o{ STOCK_TRANSACTIONS : supplies
+    BILLS o|--o{ STOCK_TRANSACTIONS : supports
+    DAILY_LOGS o|--o{ STOCK_TRANSACTIONS : references
+    USERS ||--o{ STOCK_TRANSACTIONS : creates
+    USERS o|--o{ STOCK_TRANSACTIONS : voids
+    PROJECTS ||--o{ BILLS : incurs
+    VENDORS ||--o{ BILLS : issues
+    USERS ||--o{ BILLS : submits
+    USERS o|--o{ BILLS : approves
+    BILLS ||--o{ PAYMENTS : receives
+    USERS ||--o{ PAYMENTS : records
+    USERS o|--o{ AUDIT_LOGS : performs
+    USERS ||--o{ NOTIFICATIONS : receives
+    PROJECTS o|--o{ NOTIFICATIONS : concerns
+    DAILY_LOGS o|--o{ ATTACHMENTS : contains
+    BILLS o|--o{ ATTACHMENTS : contains
+    USERS ||--o{ ATTACHMENTS : uploads

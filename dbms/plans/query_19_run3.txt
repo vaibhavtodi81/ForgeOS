@@ -1,0 +1,23 @@
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Insert on audit_logs  (cost=0.03..0.06 rows=1 width=152) (actual time=0.444..0.445 rows=1 loops=1)
+   Buffers: shared hit=92
+   CTE new_transaction
+     ->  Insert on stock_transactions  (cost=0.00..0.03 rows=1 width=195) (actual time=0.062..0.063 rows=1 loops=1)
+           Buffers: shared hit=6
+           ->  Result  (cost=0.00..0.03 rows=1 width=195) (actual time=0.006..0.006 rows=1 loops=1)
+                 Buffers: shared hit=1
+   ->  CTE Scan on new_transaction  (cost=0.00..0.04 rows=1 width=152) (actual time=0.187..0.188 rows=1 loops=1)
+         Buffers: shared hit=25
+ Planning Time: 0.074 ms
+ Trigger for constraint stock_transactions_project_id_fkey on stock_transactions: time=0.067 calls=1
+ Trigger for constraint stock_transactions_material_id_fkey on stock_transactions: time=0.043 calls=1
+ Trigger for constraint stock_transactions_vendor_id_fkey on stock_transactions: time=0.003 calls=1
+ Trigger for constraint stock_transactions_bill_id_fkey on stock_transactions: time=0.003 calls=1
+ Trigger for constraint stock_transactions_daily_log_id_fkey on stock_transactions: time=0.002 calls=1
+ Trigger for constraint stock_transactions_created_by_id_fkey on stock_transactions: time=0.028 calls=1
+ Trigger for constraint stock_transactions_voided_by_id_fkey on stock_transactions: time=0.001 calls=1
+ Trigger for constraint audit_logs_user_id_fkey on audit_logs: time=0.056 calls=1
+ Execution Time: 0.698 ms
+(19 rows)
+

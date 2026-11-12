@@ -1,0 +1,11 @@
+                                                       QUERY PLAN                                                        
+-------------------------------------------------------------------------------------------------------------------------
+ Index Scan using users_email_key on users  (cost=0.15..8.17 rows=1 width=161) (actual time=0.027..0.028 rows=1 loops=1)
+   Index Cond: (email = 'admin@forgeos.local'::text)
+   Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=104
+ Planning Time: 0.577 ms
+ Execution Time: 0.065 ms
+(7 rows)
+

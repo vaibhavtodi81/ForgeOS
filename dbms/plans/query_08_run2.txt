@@ -1,0 +1,26 @@
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ Insert on machinery_entries  (cost=0.06..0.08 rows=1 width=130) (actual time=0.538..0.540 rows=1 loops=1)
+   Buffers: shared hit=132
+   CTE new_log
+     ->  Insert on daily_logs  (cost=0.00..0.03 rows=1 width=140) (actual time=0.386..0.386 rows=1 loops=1)
+           Buffers: shared hit=91
+           ->  Result  (cost=0.00..0.03 rows=1 width=140) (actual time=0.068..0.069 rows=1 loops=1)
+                 Buffers: shared hit=13
+   CTE new_labour
+     ->  Insert on labour_entries  (cost=0.00..0.03 rows=1 width=120) (actual time=0.160..0.161 rows=1 loops=1)
+           Buffers: shared hit=44
+           ->  CTE Scan on new_log new_log_1  (cost=0.00..0.03 rows=1 width=120) (actual time=0.041..0.041 rows=1 loops=1)
+                 Buffers: shared hit=12
+   ->  CTE Scan on new_log  (cost=0.00..0.03 rows=1 width=130) (actual time=0.428..0.429 rows=1 loops=1)
+         Buffers: shared hit=103
+ Planning:
+   Buffers: shared hit=6
+ Planning Time: 0.170 ms
+ Trigger for constraint daily_logs_project_id_fkey on daily_logs: time=0.857 calls=1
+ Trigger for constraint daily_logs_created_by_id_fkey on daily_logs: time=0.326 calls=1
+ Trigger for constraint labour_entries_daily_log_id_fkey on labour_entries: time=0.051 calls=1
+ Trigger for constraint machinery_entries_daily_log_id_fkey on machinery_entries: time=0.157 calls=1
+ Execution Time: 2.149 ms
+(22 rows)
+
