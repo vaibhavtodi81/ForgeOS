@@ -3,7 +3,6 @@ import {
   ArrowUpFromLine,
   BarChart3,
   Boxes,
-  Building2,
   ClipboardCheck,
   ClipboardList,
   CreditCard,
@@ -20,7 +19,7 @@ import {
   UsersRound,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { getCurrentRole, getAssignedProject } from '../../authentication/utils/permissions'
+import { useAuth } from '../../authentication/auth/useAuth'
 
 interface SidebarProps {
   currentPath: string
@@ -43,10 +42,8 @@ export function Sidebar({
   onCloseMobile,
   onToggleCollapsed,
 }: SidebarProps) {
-  const currentRole = getCurrentRole() || 'Admin'
-  const isPm = currentRole === 'Project Manager'
-  const assigned = getAssignedProject()
-  const projectCode = assigned?.code || 'PRJ-001'
+  const { user } = useAuth()
+  const isPm = user?.role === 'PM'
 
   const adminItems: NavItem[] = [
     { label: 'Dashboard', href: '/app/admin/dashboard', icon: LayoutDashboard },
@@ -61,15 +58,16 @@ export function Sidebar({
     { label: 'Stock OUT (Consumption)', href: '/app/stock-out', icon: ArrowUpFromLine },
     { label: 'Stock Ledger', href: '/app/stock-ledger', icon: ScrollText },
     { label: 'Wastage Analysis', href: '/app/wastage', icon: TrendingUp },
-    { label: 'Vendors & Negotiations', href: '/app/vendors', icon: UsersRound },
+    { label: 'Vendors & Assignments', href: '/app/vendors', icon: UsersRound },
     { label: 'Bills & Approvals', href: '/app/bills', icon: CreditCard },
   ]
 
   const managerItems: NavItem[] = [
     { label: 'Site Dashboard', href: '/app/pm/dashboard', icon: LayoutDashboard },
     { label: 'My Project', href: '/app/projects', icon: FolderKanban },
+    { label: 'Project Land', href: '/app/lands', icon: Map },
     { label: 'Daily Site Logs', href: '/app/daily-logs', icon: ClipboardList },
-    { label: 'Progress History', href: `/projects/${projectCode}/progress`, icon: BarChart3 },
+    { label: 'Progress History', href: '/app/progress-history', icon: BarChart3 },
     { label: 'Site Material Planning', href: '/app/material-planning', icon: ClipboardCheck },
     { label: 'Available Stock', href: '/app/stock', icon: PackageSearch },
     { label: 'Stock IN (Deliveries)', href: '/app/stock-in', icon: ArrowDownToLine },
@@ -78,7 +76,7 @@ export function Sidebar({
     { label: 'Wastage', href: '/app/wastage', icon: TrendingUp },
     { label: 'Vendors', href: '/app/vendors', icon: UsersRound },
     { label: 'Bills', href: '/app/bills', icon: CreditCard },
-    { label: 'Upload Bills & Challans', href: '/app/bills/upload', icon: CreditCard },
+    { label: 'Create Bill', href: '/app/bills/upload', icon: CreditCard },
   ]
 
   const navItems = isPm ? managerItems : adminItems
@@ -133,18 +131,6 @@ export function Sidebar({
               <p className="px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">
                 {isPm ? 'Site Operations' : 'Administration'}
               </p>
-              {isPm && assigned && (
-                <div className="mx-2 mt-2 rounded-xl border border-white/10 bg-white/[0.05] p-2.5">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#F2A65A]">
-                    <Building2 size={12} />
-                    <span>Assigned Site</span>
-                  </div>
-                  <p className="mt-0.5 truncate text-xs font-bold text-white" title={assigned.name}>
-                    {assigned.name}
-                  </p>
-                  <p className="text-[10px] font-mono text-white/40">{assigned.code}</p>
-                </div>
-              )}
             </div>
           )}
 
@@ -189,7 +175,7 @@ export function Sidebar({
                 <div className="h-full w-[65%] rounded-full bg-[#F2A65A]" />
               </div>
               <p className="mt-1 text-[10px] text-white/35">
-                {isPm ? (assigned ? `${assigned.code} on schedule` : 'On track') : '5 projects active'}
+                {isPm ? 'Project-scoped progress' : 'Portfolio overview'}
               </p>
             </div>
           )}
