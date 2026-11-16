@@ -1,24 +1,45 @@
 # Logs
+# Ignores generated logs so machine-specific output does not clutter version history.
 logs
+# Ignores generated logs so machine-specific output does not clutter version history.
 *.log
+# Ignores generated logs so machine-specific output does not clutter version history.
 npm-debug.log*
+# Ignores generated logs so machine-specific output does not clutter version history.
 yarn-debug.log*
+# Ignores generated logs so machine-specific output does not clutter version history.
 yarn-error.log*
+# Ignores generated logs so machine-specific output does not clutter version history.
 pnpm-debug.log*
+# Ignores generated logs so machine-specific output does not clutter version history.
 lerna-debug.log*
 
+# Keeps installed third-party packages out of Git because package manifests can recreate them.
 node_modules
+# Excludes generated build output because it can be recreated from source.
 dist
+# Excludes generated build output because it can be recreated from source.
 dist-ssr
+# Leaves local-only settings out of shared commits.
 *.local
 
 # Editor directories and files
+# Ignores local editor or operating-system metadata rather than application source.
 .vscode/*
+# Ignores local editor or operating-system metadata rather than application source.
 !.vscode/extensions.json
+# Ignores local editor or operating-system metadata rather than application source.
 .idea
+# Ignores local editor or operating-system metadata rather than application source.
 .DS_Store
+# Ignores local editor or operating-system metadata rather than application source.
 *.suo
+# Ignores local editor or operating-system metadata rather than application source.
 *.ntvs*
+# Ignores local editor or operating-system metadata rather than application source.
 *.njsproj
+# Ignores local editor or operating-system metadata rather than application source.
 *.sln
+# Ignores local editor or operating-system metadata rather than application source.
 *.sw?
+# File purpose: Lists local, generated, and sensitive files Git should not track.
