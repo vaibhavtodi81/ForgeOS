@@ -1,24 +1,25 @@
-import { Router } from 'express'
-import { requireAuth, requireRole } from '../../middleware/auth.middleware.js'
-import { validateRequest } from '../../middleware/validate.middleware.js'
-import * as controller from './billing.controller.js'
-import {
-  billIdParamsSchema, billListQuerySchema, createBillSchema, paymentListQuerySchema,
-  paymentSchema, rejectBillSchema, reportDateQuerySchema, updateBillSchema,
-} from './billing.validator.js'
-import { projectScopedIdParamsSchema } from '../projects/projects.validator.js'
+import { Router } from 'express' // Imports Express types or tools used to build the HTTP API.
+import { requireAuth, requireRole } from '../../middleware/auth.middleware.js' // Imports { requireAuth, requireRole } from '../../middleware/auth.middleware.js' so this module can reuse that functionality.
+import { validateRequest } from '../../middleware/validate.middleware.js' // Imports { validateRequest } from '../../middleware/validate.middleware.js' so this module can reuse that functionality.
+import * as controller from './billing.controller.js' // Imports * as controller from './billing.controller.js' so this module can reuse that functionality.
+import { // Imports { from  so this module can reuse that functionality.
+  billIdParamsSchema, billListQuerySchema, createBillSchema, paymentListQuerySchema, // Separates this argument or property from the next item in the surrounding call or object.
+  paymentSchema, rejectBillSchema, reportDateQuerySchema, updateBillSchema, // Separates this argument or property from the next item in the surrounding call or object.
+} from './billing.validator.js' // Provides `} from './billing.validator.js'` as part of this server module.
+import { projectScopedIdParamsSchema } from '../projects/projects.validator.js' // Imports { projectScopedIdParamsSchema } from '../projects/projects.validator.js' so this module can reuse that functionality.
 
-export const billingRoutes = Router()
-billingRoutes.use(requireAuth)
-billingRoutes.get('/bills', validateRequest('query', billListQuerySchema), controller.list)
-billingRoutes.post('/bills', validateRequest('body', createBillSchema), controller.create)
-billingRoutes.get('/bills/:id', validateRequest('params', billIdParamsSchema), controller.detail)
-billingRoutes.patch('/bills/:id', validateRequest('params', billIdParamsSchema), validateRequest('body', updateBillSchema), controller.update)
-billingRoutes.delete('/bills/:id', validateRequest('params', billIdParamsSchema), controller.remove)
-billingRoutes.post('/bills/:id/approve', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), controller.approve)
-billingRoutes.post('/bills/:id/reject', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), validateRequest('body', rejectBillSchema), controller.reject)
-billingRoutes.get('/bills/:id/payments', validateRequest('params', billIdParamsSchema), validateRequest('query', paymentListQuerySchema), controller.payments)
-billingRoutes.post('/bills/:id/payments', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), validateRequest('body', paymentSchema), controller.createPayment)
-billingRoutes.get('/projects/:projectId/expenses', validateRequest('params', projectScopedIdParamsSchema), validateRequest('query', reportDateQuerySchema), controller.projectExpenses)
-billingRoutes.get('/reports/vendor-outstanding', validateRequest('query', reportDateQuerySchema), controller.vendorOutstanding)
-billingRoutes.get('/reports/payment-history', validateRequest('query', reportDateQuerySchema), controller.paymentHistory)
+export const billingRoutes = Router() // Provides `export const billingRoutes = Router()` as part of this server module.
+billingRoutes.use(requireAuth) // Provides `billingRoutes.use(requireAuth)` as part of this server module.
+billingRoutes.get('/bills', validateRequest('query', billListQuerySchema), controller.list) // Provides `billingRoutes.get('/bills', validateRequest('query', billListQuerySchema), controller.list)` as part of this server module.
+billingRoutes.post('/bills', validateRequest('body', createBillSchema), controller.create) // Provides `billingRoutes.post('/bills', validateRequest('body', createBillSchema), controller.create)` as part of this server module.
+billingRoutes.get('/bills/:id', validateRequest('params', billIdParamsSchema), controller.detail) // Provides `billingRoutes.get('/bills/:id', validateRequest('params', billIdParamsSchema), controller.detail)` as part of this server module.
+billingRoutes.patch('/bills/:id', validateRequest('params', billIdParamsSchema), validateRequest('body', updateBillSchema), controller.update) // Provides `billingRoutes.patch('/bills/:id', validateRequest('params', billIdParamsSchema), validateRequest('body', updateBillSchema), controller.update)` as part of this server module.
+billingRoutes.delete('/bills/:id', validateRequest('params', billIdParamsSchema), controller.remove) // Provides `billingRoutes.delete('/bills/:id', validateRequest('params', billIdParamsSchema), controller.remove)` as part of this server module.
+billingRoutes.post('/bills/:id/approve', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), controller.approve) // Provides `billingRoutes.post('/bills/:id/approve', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), controller.approve)` as part of this server module.
+billingRoutes.post('/bills/:id/reject', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), validateRequest('body', rejectBillSchema), controller.reject) // Provides `billingRoutes.post('/bills/:id/reject', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), validateRequest('body', rejectBillSchema), controller.reject)` as part of this server module.
+billingRoutes.get('/bills/:id/payments', validateRequest('params', billIdParamsSchema), validateRequest('query', paymentListQuerySchema), controller.payments) // Provides `billingRoutes.get('/bills/:id/payments', validateRequest('params', billIdParamsSchema), validateRequest('query', paymentListQuerySchema), controller.payments)` as part of this server module.
+billingRoutes.post('/bills/:id/payments', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), validateRequest('body', paymentSchema), controller.createPayment) // Provides `billingRoutes.post('/bills/:id/payments', requireRole('ADMIN'), validateRequest('params', billIdParamsSchema), validateRequest('body', paymentSchema), controller.createPayment)` as part of this server module.
+billingRoutes.get('/projects/:projectId/expenses', validateRequest('params', projectScopedIdParamsSchema), validateRequest('query', reportDateQuerySchema), controller.projectExpenses) // Provides `billingRoutes.get('/projects/:projectId/expenses', validateRequest('params', projectScopedIdParamsSchema), validateRequest('query', reportDateQuerySchema), controller.projectExpenses)` as part of this server module.
+billingRoutes.get('/reports/vendor-outstanding', validateRequest('query', reportDateQuerySchema), controller.vendorOutstanding) // Provides `billingRoutes.get('/reports/vendor-outstanding', validateRequest('query', reportDateQuerySchema), controller.vendorOutstanding)` as part of this server module.
+billingRoutes.get('/reports/payment-history', validateRequest('query', reportDateQuerySchema), controller.paymentHistory) // Provides `billingRoutes.get('/reports/payment-history', validateRequest('query', reportDateQuerySchema), controller.paymentHistory)` as part of this server module.
+// File purpose: Defines the HTTP endpoints and middleware chain for the billing API.
