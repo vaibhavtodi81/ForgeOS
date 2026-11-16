@@ -1,13 +1,14 @@
-import { Router } from 'express'
-import { requireAuth } from '../../middleware/auth.middleware.js'
-import { validateRequest } from '../../middleware/validate.middleware.js'
-import * as controller from './inventory.controller.js'
-import { createTransactionSchema, projectInventoryParamsSchema, transactionListQuerySchema, wastageQuerySchema } from './inventory.validator.js'
+import { Router } from 'express' // Imports Express types or tools used to build the HTTP API.
+import { requireAuth } from '../../middleware/auth.middleware.js' // Imports { requireAuth } from '../../middleware/auth.middleware.js' so this module can reuse that functionality.
+import { validateRequest } from '../../middleware/validate.middleware.js' // Imports { validateRequest } from '../../middleware/validate.middleware.js' so this module can reuse that functionality.
+import * as controller from './inventory.controller.js' // Imports * as controller from './inventory.controller.js' so this module can reuse that functionality.
+import { createTransactionSchema, projectInventoryParamsSchema, transactionListQuerySchema, wastageQuerySchema } from './inventory.validator.js' // Imports { createTransactionSchema, projectInventoryParamsSchema, transactionListQuerySchema, wastageQuerySchema } from './inventory.validator.js' so this module can reuse that functionality.
 
-export const inventoryRoutes = Router()
-inventoryRoutes.use(requireAuth)
-inventoryRoutes.get('/projects/:projectId/inventory', validateRequest('params', projectInventoryParamsSchema), controller.inventory)
-inventoryRoutes.post('/projects/:projectId/inventory/transactions', validateRequest('params', projectInventoryParamsSchema), validateRequest('body', createTransactionSchema), controller.createTransaction)
-inventoryRoutes.get('/projects/:projectId/inventory/transactions', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', transactionListQuerySchema), controller.transactions)
-inventoryRoutes.get('/projects/:projectId/inventory/summary', validateRequest('params', projectInventoryParamsSchema), controller.summary)
-inventoryRoutes.get('/projects/:projectId/inventory/wastage', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', wastageQuerySchema), controller.wastage)
+export const inventoryRoutes = Router() // Provides `export const inventoryRoutes = Router()` as part of this server module.
+inventoryRoutes.use(requireAuth) // Provides `inventoryRoutes.use(requireAuth)` as part of this server module.
+inventoryRoutes.get('/projects/:projectId/inventory', validateRequest('params', projectInventoryParamsSchema), controller.inventory) // Provides `inventoryRoutes.get('/projects/:projectId/inventory', validateRequest('params', projectInventoryParamsSchema), controller.inventory)` as part of this server module.
+inventoryRoutes.post('/projects/:projectId/inventory/transactions', validateRequest('params', projectInventoryParamsSchema), validateRequest('body', createTransactionSchema), controller.createTransaction) // Provides `inventoryRoutes.post('/projects/:projectId/inventory/transactions', validateRequest('params', projectInventoryParamsSchema), validateRequest('body', createTransactionSchema), controller.createTransaction)` as part of this server module.
+inventoryRoutes.get('/projects/:projectId/inventory/transactions', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', transactionListQuerySchema), controller.transactions) // Provides `inventoryRoutes.get('/projects/:projectId/inventory/transactions', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', transactionListQuerySchema), controller.transactions)` as part of this server module.
+inventoryRoutes.get('/projects/:projectId/inventory/summary', validateRequest('params', projectInventoryParamsSchema), controller.summary) // Provides `inventoryRoutes.get('/projects/:projectId/inventory/summary', validateRequest('params', projectInventoryParamsSchema), controller.summary)` as part of this server module.
+inventoryRoutes.get('/projects/:projectId/inventory/wastage', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', wastageQuerySchema), controller.wastage) // Provides `inventoryRoutes.get('/projects/:projectId/inventory/wastage', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', wastageQuerySchema), controller.wastage)` as part of this server module.
+// File purpose: Defines the HTTP endpoints and middleware chain for the inventory API.
