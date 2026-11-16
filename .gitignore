@@ -1,7 +1,15 @@
+# Ignore installed JavaScript dependencies.
 node_modules/
+# Ignore local environment files that may contain private settings.
 .env*
+# Keep the safe environment-variable template tracked.
 !.env.example
+# Ignore compiled distribution output.
 dist/
+# Ignore generated build output.
 build/
+# Ignore generated Next.js files.
 .next/
+# Ignore local application log files.
 *.log
+# File purpose: Lists local, generated, and sensitive files Git should not track.
