@@ -1,23 +1,24 @@
-services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: forgeos_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-forgeos_db}
-      POSTGRES_USER: ${POSTGRES_USER:-forgeos_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forgeos_dev_password}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - '${POSTGRES_PORT:-5432}:5432'
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER:-forgeos_user} -d $${POSTGRES_DB:-forgeos_db}']
-      interval: 5s
-      timeout: 5s
-      retries: 5
+services: # Lists the containers Compose should run.
+  postgres: # Names the PostgreSQL database service.
+    image: postgres:16-alpine # Uses the small PostgreSQL 16 container image.
+    container_name: forgeos_postgres # Gives the container a predictable local name.
+    restart: unless-stopped # Restarts the database unless it was deliberately stopped.
+    environment: # Sets the database initialization environment variables.
+      POSTGRES_DB: ${POSTGRES_DB:-forgeos_db} # Chooses the initial database name, or uses forgeos_db by default.
+      POSTGRES_USER: ${POSTGRES_USER:-forgeos_user} # Chooses the initial database user, or uses forgeos_user by default.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forgeos_dev_password} # Chooses a local development password unless one is supplied.
+      PGDATA: /var/lib/postgresql/data/pgdata # Sets the folder where PostgreSQL keeps its database files.
+    ports: # Publishes the database port to the host computer.
+      - '${POSTGRES_PORT:-5432}:5432' # Maps the chosen host port to PostgreSQL port 5432.
+    volumes: # Declares persistent storage used by this service.
+      - pgdata:/var/lib/postgresql/data # Keeps database files in the named persistent volume.
+    healthcheck: # Defines how Compose checks that PostgreSQL is ready.
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER:-forgeos_user} -d $${POSTGRES_DB:-forgeos_db}'] # Runs PostgreSQL’s readiness check with the configured user and database.
+      interval: 5s # Repeats the readiness check every five seconds.
+      timeout: 5s # Allows each readiness check up to five seconds.
+      retries: 5 # Marks the service unhealthy after five failed checks.
 
-volumes:
-  pgdata:
-    driver: local
+volumes: # Declares persistent storage used by this service.
+  pgdata: # Declares the named volume that stores PostgreSQL data.
+    driver: local # Stores this volume on the local machine.
+# File purpose: Starts the local PostgreSQL database and keeps its data in a Docker volume.
