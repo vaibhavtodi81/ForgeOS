@@ -1,277 +1,535 @@
 ---
-title: ForgeOS PostgreSQL Entity Relationship Diagram
+title: ForgeOS PostgreSQL Entity Relationship Diagram # Names the diagram shown in rendered documentation.
 ---
+%% Begins the entity-relationship diagram.
 erDiagram
+    %% Declares the users entity and opens its field list.
     USERS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the name field.
         string name
+        %% Describes the email field (unique value).
         string email UK
+        %% Describes the password hash field.
         string password_hash
+        %% Describes the role field.
         enum role
+        %% Describes the phone field.
         string phone
+        %% Describes the is active field.
         boolean is_active
+        %% Describes the last login at field.
         datetime last_login_at
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the lands entity and opens its field list.
     LANDS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the name field.
         string name
+        %% Describes the address line field.
         string address_line
+        %% Describes the city field.
         string city
+        %% Describes the state field.
         string state
+        %% Describes the pincode field.
         string pincode
+        %% Describes the area value field.
         decimal area_value
+        %% Describes the area unit field.
         enum area_unit
+        %% Describes the survey number field.
         string survey_number
+        %% Describes the owner name field.
         string owner_name
+        %% Describes the purchase date field.
         date purchase_date
+        %% Describes the purchase cost field.
         decimal purchase_cost
+        %% Describes the notes field.
         string notes
+        %% Describes the created by id field (foreign key).
         int created_by_id FK
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the projects entity and opens its field list.
     PROJECTS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the land id field (foreign key).
         int land_id FK
+        %% Describes the code field (unique value).
         string code UK
+        %% Describes the name field.
         string name
+        %% Describes the description field.
         string description
+        %% Describes the status field.
         enum status
+        %% Describes the start date field.
         date start_date
+        %% Describes the expected end date field.
         date expected_end_date
+        %% Describes the actual end date field.
         date actual_end_date
+        %% Describes the total budget field.
         decimal total_budget
+        %% Describes the wastage threshold pct field.
         decimal wastage_threshold_pct
+        %% Describes the assigned pm id field (foreign key).
         int assigned_pm_id FK
+        %% Describes the created by id field (foreign key).
         int created_by_id FK
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the project milestones entity and opens its field list.
     PROJECT_MILESTONES {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the project id field (foreign key).
         int project_id FK
+        %% Describes the name field.
         string name
+        %% Describes the description field.
         string description
+        %% Describes the sequence field.
         int sequence
+        %% Describes the planned start date field.
         date planned_start_date
+        %% Describes the planned end date field.
         date planned_end_date
+        %% Describes the actual start date field.
         date actual_start_date
+        %% Describes the actual end date field.
         date actual_end_date
+        %% Describes the status field.
         enum status
+        %% Describes the progress percent field.
         decimal progress_percent
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the materials entity and opens its field list.
     MATERIALS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the name field (unique value).
         string name UK
+        %% Describes the category field.
         enum category
+        %% Describes the unit field.
         string unit
+        %% Describes the description field.
         string description
+        %% Describes the is active field.
         boolean is_active
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the project material plans entity and opens its field list.
     PROJECT_MATERIAL_PLANS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the project id field (foreign key).
         int project_id FK
+        %% Describes the material id field (foreign key).
         int material_id FK
+        %% Describes the opening quantity field.
         decimal opening_quantity
+        %% Describes the planned quantity field.
         decimal planned_quantity
+        %% Describes the planned unit rate field.
         decimal planned_unit_rate
+        %% Describes the low stock threshold field.
         decimal low_stock_threshold
+        %% Describes the wastage threshold pct field.
         decimal wastage_threshold_pct
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the vendors entity and opens its field list.
     VENDORS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the name field (unique value).
         string name UK
+        %% Describes the vendor type field.
         enum vendor_type
+        %% Describes the contact person field.
         string contact_person
+        %% Describes the phone field.
         string phone
+        %% Describes the email field.
         string email
+        %% Describes the gstin field (unique value).
         string gstin UK
+        %% Describes the address field.
         string address
+        %% Describes the is active field.
         boolean is_active
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the project vendor assignments entity and opens its field list.
     PROJECT_VENDOR_ASSIGNMENTS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the project id field (foreign key).
         int project_id FK
+        %% Describes the vendor id field (foreign key).
         int vendor_id FK
+        %% Describes the assigned by id field (foreign key).
         int assigned_by_id FK
+        %% Describes the assigned at field.
         datetime assigned_at
+        %% Describes the unassigned at field.
         datetime unassigned_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the daily logs entity and opens its field list.
     DAILY_LOGS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the project id field (foreign key).
         int project_id FK
+        %% Describes the log date field.
         date log_date
+        %% Describes the progress percent field.
         decimal progress_percent
+        %% Describes the work summary field.
         string work_summary
+        %% Describes the weather field.
         string weather
+        %% Describes the issues field.
         string issues
+        %% Describes the created by id field (foreign key).
         int created_by_id FK
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the labour entries entity and opens its field list.
     LABOUR_ENTRIES {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the daily log id field (foreign key).
         int daily_log_id FK
+        %% Describes the trade field.
         string trade
+        %% Describes the contractor name field.
         string contractor_name
+        %% Describes the head count field.
         int head_count
+        %% Describes the hours worked field.
         decimal hours_worked
+        %% Describes the remarks field.
         string remarks
+    %% Closes the current entity field list.
     }
 
+    %% Declares the machinery entries entity and opens its field list.
     MACHINERY_ENTRIES {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the daily log id field (foreign key).
         int daily_log_id FK
+        %% Describes the machine name field.
         string machine_name
+        %% Describes the operator name field.
         string operator_name
+        %% Describes the hours used field.
         decimal hours_used
+        %% Describes the fuel litres field.
         decimal fuel_litres
+        %% Describes the remarks field.
         string remarks
+    %% Closes the current entity field list.
     }
 
+    %% Declares the stock transactions entity and opens its field list.
     STOCK_TRANSACTIONS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the project id field (foreign key).
         int project_id FK
+        %% Describes the material id field (foreign key).
         int material_id FK
+        %% Describes the txn type field.
         enum txn_type
+        %% Describes the quantity field.
         decimal quantity
+        %% Describes the unit rate field.
         decimal unit_rate
+        %% Describes the vendor id field (foreign key).
         int vendor_id FK
+        %% Describes the bill id field (foreign key).
         int bill_id FK
+        %% Describes the challan number field.
         string challan_number
+        %% Describes the out reason field.
         enum out_reason
+        %% Describes the adjustment direction field.
         enum adjustment_direction
+        %% Describes the txn date field.
         date txn_date
+        %% Describes the daily log id field (foreign key).
         int daily_log_id FK
+        %% Describes the remarks field.
         string remarks
+        %% Describes the created by id field (foreign key).
         int created_by_id FK
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the is voided field.
         boolean is_voided
+        %% Describes the voided by id field (foreign key).
         int voided_by_id FK
+        %% Describes the voided at field.
         datetime voided_at
+        %% Describes the void reason field.
         string void_reason
+    %% Closes the current entity field list.
     }
 
+    %% Declares the bills entity and opens its field list.
     BILLS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the project id field (foreign key).
         int project_id FK
+        %% Describes the vendor id field (foreign key).
         int vendor_id FK
+        %% Describes the bill number field.
         string bill_number
+        %% Describes the bill date field.
         date bill_date
+        %% Describes the due date field.
         date due_date
+        %% Describes the category field.
         enum category
+        %% Describes the description field.
         string description
+        %% Describes the base amount field.
         decimal base_amount
+        %% Describes the gst percent field.
         decimal gst_percent
+        %% Describes the gst amount field.
         decimal gst_amount
+        %% Describes the total amount field.
         decimal total_amount
+        %% Describes the status field.
         enum status
+        %% Describes the submitted by id field (foreign key).
         int submitted_by_id FK
+        %% Describes the approved by id field (foreign key).
         int approved_by_id FK
+        %% Describes the approved at field.
         datetime approved_at
+        %% Describes the rejection reason field.
         string rejection_reason
+        %% Describes the created at field.
         datetime created_at
+        %% Describes the updated at field.
         datetime updated_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the payments entity and opens its field list.
     PAYMENTS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the bill id field (foreign key).
         int bill_id FK
+        %% Describes the amount field.
         decimal amount
+        %% Describes the payment date field.
         date payment_date
+        %% Describes the mode field.
         enum mode
+        %% Describes the reference number field.
         string reference_number
+        %% Describes the remarks field.
         string remarks
+        %% Describes the recorded by id field (foreign key).
         int recorded_by_id FK
+        %% Describes the created at field.
         datetime created_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the audit logs entity and opens its field list.
     AUDIT_LOGS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the user id field (foreign key).
         int user_id FK
+        %% Describes the action field.
         enum action
+        %% Describes the entity type field.
         string entity_type
+        %% Describes the entity id field.
         int entity_id
+        %% Describes the old values field.
         json old_values
+        %% Describes the new values field.
         json new_values
+        %% Describes the ip address field.
         string ip_address
+        %% Describes the created at field.
         datetime created_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the notifications entity and opens its field list.
     NOTIFICATIONS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the user id field (foreign key).
         int user_id FK
+        %% Describes the type field.
         enum type
+        %% Describes the title field.
         string title
+        %% Describes the message field.
         string message
+        %% Describes the project id field (foreign key).
         int project_id FK
+        %% Describes the link field.
         string link
+        %% Describes the is read field.
         boolean is_read
+        %% Describes the dedupe key field (unique value).
         string dedupe_key UK
+        %% Describes the created at field.
         datetime created_at
+    %% Closes the current entity field list.
     }
 
+    %% Declares the attachments entity and opens its field list.
     ATTACHMENTS {
+        %% Describes the id field (primary key).
         int id PK
+        %% Describes the daily log id field (foreign key).
         int daily_log_id FK
+        %% Describes the bill id field (foreign key).
         int bill_id FK
+        %% Describes the file name field.
         string file_name
+        %% Describes the stored path field.
         string stored_path
+        %% Describes the mime type field.
         string mime_type
+        %% Describes the size bytes field.
         int size_bytes
+        %% Describes the uploaded by id field (foreign key).
         int uploaded_by_id FK
+        %% Describes the created at field.
         datetime created_at
+    %% Closes the current entity field list.
     }
 
+    %% Defines a relationship between two entities.
     USERS ||--o{ LANDS : creates
+    %% Defines a relationship between two entities.
     USERS ||--o{ PROJECTS : creates
+    %% Defines a relationship between two entities.
     USERS o|--o{ PROJECTS : manages
+    %% Defines a relationship between two entities.
     LANDS ||--o{ PROJECTS : contains
+    %% Defines a relationship between two entities.
     PROJECTS ||--o{ PROJECT_MILESTONES : has
+    %% Defines a relationship between two entities.
     PROJECTS ||--o{ PROJECT_MATERIAL_PLANS : plans
+    %% Defines a relationship between two entities.
     MATERIALS ||--o{ PROJECT_MATERIAL_PLANS : planned_for
+    %% Defines a relationship between two entities.
     PROJECTS ||--o{ PROJECT_VENDOR_ASSIGNMENTS : assigns
+    %% Defines a relationship between two entities.
     VENDORS ||--o{ PROJECT_VENDOR_ASSIGNMENTS : assigned_to
+    %% Defines a relationship between two entities.
     USERS ||--o{ PROJECT_VENDOR_ASSIGNMENTS : assigns
+    %% Defines a relationship between two entities.
     PROJECTS ||--o{ DAILY_LOGS : records
+    %% Defines a relationship between two entities.
     USERS ||--o{ DAILY_LOGS : creates
+    %% Defines a relationship between two entities.
     DAILY_LOGS ||--o{ LABOUR_ENTRIES : includes
+    %% Defines a relationship between two entities.
     DAILY_LOGS ||--o{ MACHINERY_ENTRIES : includes
+    %% Defines a relationship between two entities.
     PROJECTS ||--o{ STOCK_TRANSACTIONS : records
+    %% Defines a relationship between two entities.
     MATERIALS ||--o{ STOCK_TRANSACTIONS : tracks
+    %% Defines a relationship between two entities.
     VENDORS o|--o{ STOCK_TRANSACTIONS : supplies
+    %% Defines a relationship between two entities.
     BILLS o|--o{ STOCK_TRANSACTIONS : supports
+    %% Defines a relationship between two entities.
     DAILY_LOGS o|--o{ STOCK_TRANSACTIONS : references
+    %% Defines a relationship between two entities.
     USERS ||--o{ STOCK_TRANSACTIONS : creates
+    %% Defines a relationship between two entities.
     USERS o|--o{ STOCK_TRANSACTIONS : voids
+    %% Defines a relationship between two entities.
     PROJECTS ||--o{ BILLS : incurs
+    %% Defines a relationship between two entities.
     VENDORS ||--o{ BILLS : issues
+    %% Defines a relationship between two entities.
     USERS ||--o{ BILLS : submits
+    %% Defines a relationship between two entities.
     USERS o|--o{ BILLS : approves
+    %% Defines a relationship between two entities.
     BILLS ||--o{ PAYMENTS : receives
+    %% Defines a relationship between two entities.
     USERS ||--o{ PAYMENTS : records
+    %% Defines a relationship between two entities.
     USERS o|--o{ AUDIT_LOGS : performs
+    %% Defines a relationship between two entities.
     USERS ||--o{ NOTIFICATIONS : receives
+    %% Defines a relationship between two entities.
     PROJECTS o|--o{ NOTIFICATIONS : concerns
+    %% Defines a relationship between two entities.
     DAILY_LOGS o|--o{ ATTACHMENTS : contains
+    %% Defines a relationship between two entities.
     BILLS o|--o{ ATTACHMENTS : contains
+    %% Defines a relationship between two entities.
     USERS ||--o{ ATTACHMENTS : uploads
+%% File purpose: Defines the Mermaid entity-relationship diagram in editable text form.
