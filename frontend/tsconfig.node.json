@@ -1,23 +1,23 @@
 {
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "target": "es2023",
-    "lib": ["ES2023"],
-    "types": ["node"],
-    "skipLibCheck": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo", // Store the tooling build cache in node_modules so it can be regenerated.
+    "target": "es2023", // Allow the modern JavaScript features used by the Vite configuration.
+    "lib": ["ES2023"], // Provide JavaScript runtime types without browser-only DOM APIs.
+    "types": ["node"], // Make Node.js globals and APIs available to the build configuration.
+    "skipLibCheck": true, // Avoid spending build time type-checking declarations shipped by dependencies.
 
     /* Bundler mode */
-    "module": "nodenext",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
+    "module": "nodenext", // Match Node's ESM/CommonJS rules for the configuration code executed by tooling.
+    "allowImportingTsExtensions": true, // Allow TypeScript file extensions in imports because the tooling resolves them.
+    "verbatimModuleSyntax": true, // Keep import/export usage explicit, including the distinction for type-only imports.
+    "moduleDetection": "force", // Treat the configuration as a module even if it has no import/export statement.
+    "noEmit": true, // Type-check the configuration but leave JavaScript generation to the build tool.
 
     /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noUnusedLocals": true, // Report local declarations that do not contribute to the configuration.
+    "noUnusedParameters": true, // Report unused function parameters in the configuration.
+    "erasableSyntaxOnly": true, // Use TypeScript syntax that can be erased without additional runtime transforms.
+    "noFallthroughCasesInSwitch": true // Prevent an unintended switch case from running the next case's statements.
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts"] // Apply these settings specifically to Vite's TypeScript configuration file.
 }
