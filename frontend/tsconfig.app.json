@@ -1,29 +1,29 @@
 {
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "target": "es2023",
-    "lib": ["ES2023", "DOM"],
-    "module": "esnext",
-    "types": ["vite/client", "node"],
-    "allowArbitraryExtensions": true,
-    "skipLibCheck": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo", // Keep TypeScript's incremental-build cache in node_modules so it is disposable.
+    "target": "es2023", // Compile using the JavaScript features supported by the project's modern runtime and browsers.
+    "lib": ["ES2023", "DOM"], // Provide type definitions for modern JavaScript and browser APIs used by the UI.
+    "module": "esnext", // Preserve modern import/export syntax for Vite to bundle.
+    "types": ["vite/client", "node"], // Load Vite's browser types and Node types for frontend tooling.
+    "allowArbitraryExtensions": true, // Allow imports with nonstandard extensions when a matching type declaration exists.
+    "skipLibCheck": true, // Skip checking dependency declaration files to reduce build time; application code is still checked.
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"] // Let imports starting with @/ resolve from src instead of using long relative paths.
     },
 
     /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
+    "moduleResolution": "bundler", // Resolve modules using Vite's bundler rules rather than Node's runtime rules.
+    "allowImportingTsExtensions": true, // Permit explicit .ts/.tsx import suffixes when the bundler handles output.
+    "verbatimModuleSyntax": true, // Preserve import/export intent so type-only imports must be marked explicitly.
+    "moduleDetection": "force", // Treat each source file as a module, even when it has no import or export.
+    "noEmit": true, // Let Vite produce the JavaScript instead of asking tsc to emit duplicate files.
+    "jsx": "react-jsx", // Transform JSX using React's automatic runtime without requiring a React import in every file.
 
     /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noUnusedLocals": true, // Catch declared variables that are never used.
+    "noUnusedParameters": true, // Catch function parameters that are never used.
+    "erasableSyntaxOnly": true, // Restrict TypeScript syntax to features that can be removed without runtime transformation.
+    "noFallthroughCasesInSwitch": true // Catch switch cases that accidentally continue into the next case.
   },
-  "include": ["src"]
+  "include": ["src"] // Apply these frontend compiler settings to source files under src.
 }
