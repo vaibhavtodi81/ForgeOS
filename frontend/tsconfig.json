@@ -1,7 +1,7 @@
 {
-  "files": [],
+  "files": [], // Keep this root project from compiling files directly; the referenced configs own the source files.
   "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+    { "path": "./tsconfig.app.json" }, // Build and type-check the browser application with its own compiler settings.
+    { "path": "./tsconfig.node.json" } // Separately type-check Vite's Node-based configuration.
   ]
 }
