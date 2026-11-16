@@ -1,610 +1,611 @@
-@import "tailwindcss";
-
-@theme {
-  --color-beige: #DDD0C8;
-  --color-beige-light: #F7F3EE;
-  --color-beige-card: #E8DCD4;
-  --color-beige-border: #C8BCB4;
-  --color-beige-muted: #8E827A;
-
-  --color-darkgrey: #323232;
-  --color-darkgrey-muted: #595552;
-  --color-darkgrey-subtle: #7A7470;
-  --color-darkgrey-dark: #1E1E1E;
-
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-:root {
-  --dashboard-void: #0b0d0f;
-  --dashboard-surface: #111417;
-  --dashboard-surface-raised: #171b1f;
-  --dashboard-surface-hover: #1c2227;
-  --dashboard-surface-warm: #1c1917;
-  --dashboard-border: rgba(255, 255, 255, 0.09);
-  --dashboard-ink: #f5f2ed;
-  --dashboard-muted: #8d969b;
-  --dashboard-subtle: #636d73;
-  --dashboard-amber: #f2a65a;
-  --dashboard-amber-bright: #ffc078;
-  --dashboard-green: #84c59a;
-  --dashboard-red: #ed8b78;
-  --dashboard-violet: #b7a3e3;
-}
-
-html {
-  scroll-behavior: smooth;
-  background-color: #DDD0C8;
-  color: #323232;
-}
-
-body {
-  font-family: var(--font-sans);
-  background-color: #DDD0C8;
-  color: #323232;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-.dashboard-shell {
-  background:
-    radial-gradient(circle at 75% -10%, rgba(242, 166, 90, 0.08), transparent 28rem),
-    var(--dashboard-void);
-}
-
-.dashboard-shell main {
-  background-image: linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
-
-.dashboard-sidebar {
-  background: rgba(14, 17, 19, 0.96);
-  border-color: var(--dashboard-border);
-}
-
-.dashboard-logo {
-  background: var(--dashboard-amber);
-  color: #171717;
-  box-shadow: 0 0 24px rgba(242, 166, 90, 0.2);
-}
-
-.dashboard-topbar {
-  background: rgba(11, 13, 15, 0.82);
-  border-color: var(--dashboard-border);
-}
-
-.dashboard-topbar .border-\[\#E8E0DA\],
-.dashboard-topbar .border-\[\#C8BCB4\] {
-  border-color: var(--dashboard-border);
-}
-
-.dashboard-topbar label {
-  background: var(--dashboard-surface-raised);
-  border-color: var(--dashboard-border);
-  color: var(--dashboard-ink);
-}
-
-.dashboard-topbar label span {
-  color: var(--dashboard-ink);
-}
-
-.dashboard-topbar label span span:last-child {
-  color: var(--dashboard-muted);
-}
-
-.dashboard-live-pill {
-  background: rgba(132, 197, 154, 0.12);
-  color: var(--dashboard-green);
-}
-
-.dashboard-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 0.75rem;
-  padding: 0.7rem 0.95rem;
-  font-size: 0.78rem;
-  font-weight: 650;
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
-}
-
-.dashboard-button:hover {
-  transform: translateY(-1px);
-}
-
-.dashboard-button-ghost {
-  border: 1px solid var(--dashboard-border);
-  background: var(--dashboard-surface);
-  color: var(--dashboard-ink);
-}
-
-.dashboard-button-ghost:hover {
-  border-color: rgba(242, 166, 90, 0.45);
-  background: var(--dashboard-surface-hover);
-}
-
-.dashboard-button-primary {
-  background: var(--dashboard-amber);
-  color: #171717;
-}
-
-.dashboard-button-primary:hover {
-  background: var(--dashboard-amber-bright);
-}
-
-.dashboard-input {
-  height: 2.45rem;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 0.7rem;
-  background: var(--dashboard-surface);
-  padding: 0 0.75rem;
-  color: var(--dashboard-ink);
-  font-size: 0.75rem;
-  outline: none;
-}
-
-.dashboard-input:focus {
-  border-color: rgba(242, 166, 90, 0.55);
-  box-shadow: 0 0 0 3px rgba(242, 166, 90, 0.1);
-}
-
-.dashboard-input::placeholder {
-  color: var(--dashboard-subtle);
-}
-
-.dashboard-view-button {
-  display: inline-flex;
-  height: 2.45rem;
-  width: 2.45rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--dashboard-border);
-  border-radius: 0.7rem;
-  background: var(--dashboard-surface);
-  color: var(--dashboard-subtle);
-}
-
-.dashboard-view-active,
-.dashboard-view-button:hover {
-  border-color: rgba(242, 166, 90, 0.45);
-  color: var(--dashboard-amber);
-}
-
-.dashboard-page-transition {
-  animation: dashboard-page-enter 420ms ease both;
-}
-
-.dashboard-popover {
-  animation: dashboard-popover-enter 180ms ease both;
-}
-
-.dashboard-skeleton {
-  min-height: 0.75rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.13), rgba(255,255,255,.06));
-  background-size: 200% 100%;
-  animation: dashboard-skeleton-shimmer 1.6s ease-in-out infinite;
-}
-
-@keyframes dashboard-page-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes dashboard-popover-enter {
-  from { opacity: 0; transform: translateY(-6px) scale(.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes dashboard-skeleton-shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
-}
-
-.dashboard-card {
-  border: 1px solid var(--dashboard-border);
-  border-radius: 1rem;
-  background: linear-gradient(145deg, rgba(23, 27, 31, 0.98), rgba(15, 18, 21, 0.98));
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
-}
-
-.dashboard-card-featured {
-  background:
-    radial-gradient(circle at 100% 0%, rgba(242, 166, 90, 0.14), transparent 22rem),
-    linear-gradient(145deg, #1a1d1e, #111417);
-}
-
-.dashboard-shell main .bg-white {
-  background-color: var(--dashboard-surface) !important;
-}
-
-.dashboard-shell main [class*="border-[#C8BCB4"] {
-  border-color: var(--dashboard-border) !important;
-}
-
-.dashboard-shell main [class*="border-[#E8DCD4"] {
-  border-color: var(--dashboard-border) !important;
-}
-
-.dashboard-shell main [class*="divide-[#E8DCD4"] > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--dashboard-border) !important;
-}
-
-.dashboard-shell main [class*="bg-[#E8DCD4"] {
-  background-color: var(--dashboard-surface-raised) !important;
-}
-
-.dashboard-shell main [class*="bg-[#F7F3EE"] {
-  background-color: rgba(255, 255, 255, 0.035) !important;
-}
-
-.dashboard-shell main [class*="bg-[#FBF9F7"],
-.dashboard-shell main [class*="bg-[#F0E9E4"],
-.dashboard-shell main [class*="bg-[#F7F3EE]/"],
-.dashboard-shell main [class*="bg-[#DDD0C8"] {
-  background-color: var(--dashboard-surface-warm) !important;
-}
-
-.dashboard-shell main input,
-.dashboard-shell main select,
-.dashboard-shell main textarea {
-  background-color: var(--dashboard-surface) !important;
-  border-color: var(--dashboard-border) !important;
-  color: var(--dashboard-ink) !important;
-}
-
-.dashboard-shell main input::placeholder,
-.dashboard-shell main textarea::placeholder {
-  color: var(--dashboard-subtle) !important;
-}
-
-.dashboard-shell main table thead {
-  background: rgba(242, 166, 90, 0.08) !important;
-  color: var(--dashboard-muted) !important;
-}
-
-.dashboard-shell main table thead th {
-  color: var(--dashboard-muted) !important;
-  border-color: var(--dashboard-border) !important;
-}
-
-.dashboard-shell main table tbody tr {
-  border-color: var(--dashboard-border) !important;
-}
-
-.dashboard-shell main table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.025) !important;
-}
-
-.dashboard-shell main [class*="bg-[#F3E9E1"],
-.dashboard-shell main [class*="bg-[#F5EDE1"] {
-  background-color: rgba(242, 166, 90, 0.12) !important;
-}
-
-.dashboard-shell main [class*="bg-[#E8EFE5"] {
-  background-color: rgba(132, 197, 154, 0.12) !important;
-}
-
-.dashboard-shell main [class*="bg-[#F8ECEA"] {
-  background-color: rgba(237, 139, 120, 0.12) !important;
-}
-
-.dashboard-shell main [class*="text-[#323232"] {
-  color: var(--dashboard-ink) !important;
-}
-
-.dashboard-shell main [class*="text-[#595552"],
-.dashboard-shell main [class*="text-[#8E827A"] {
-  color: var(--dashboard-muted) !important;
-}
-
-.dashboard-shell main [class*="text-[#A59A93"] {
-  color: var(--dashboard-subtle) !important;
-}
-
-.dashboard-shell main [class*="bg-[#B87A4F"] {
-  background-color: var(--dashboard-amber) !important;
-}
-
-.dashboard-shell main [class*="text-[#9A5E3A"] {
-  color: var(--dashboard-amber) !important;
-}
-
-.dashboard-shell main [class*="text-[#617858"] {
-  color: var(--dashboard-green) !important;
-}
-
-.dashboard-stat-card {
-  padding: 1.25rem;
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-}
-
-.dashboard-stat-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(242, 166, 90, 0.34);
-  background: var(--dashboard-surface-hover);
-}
-
-.dashboard-eyebrow {
-  color: var(--dashboard-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.dashboard-icon {
-  display: inline-flex;
-  border-radius: 0.7rem;
-  padding: 0.65rem;
-}
-
-.dashboard-icon-amber { background: rgba(242, 166, 90, 0.13); color: var(--dashboard-amber); }
-.dashboard-icon-green { background: rgba(132, 197, 154, 0.13); color: var(--dashboard-green); }
-.dashboard-icon-red { background: rgba(237, 139, 120, 0.13); color: var(--dashboard-red); }
-.dashboard-icon-violet { background: rgba(183, 163, 227, 0.13); color: var(--dashboard-violet); }
-
-.dashboard-section-title {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  border-bottom: 1px solid var(--dashboard-border);
-  padding: 1.25rem;
-}
-
-.dashboard-section-title h2 {
-  color: var(--dashboard-ink);
-  font-size: 0.9rem;
-  font-weight: 650;
-}
-
-.dashboard-section-title p {
-  margin-top: 0.3rem;
-  color: var(--dashboard-muted);
-  font-size: 0.72rem;
-}
-
-.dashboard-pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.68rem;
-  font-weight: 650;
-}
-
-.dashboard-pill-amber { background: rgba(242, 166, 90, 0.13); color: var(--dashboard-amber); }
-.dashboard-pill-green { background: rgba(132, 197, 154, 0.13); color: var(--dashboard-green); }
-.dashboard-pill-red { background: rgba(237, 139, 120, 0.13); color: var(--dashboard-red); }
-.dashboard-pill-violet { background: rgba(183, 163, 227, 0.13); color: var(--dashboard-violet); }
-
-.dashboard-progress-track {
-  height: 0.35rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.dashboard-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-}
-
-.dashboard-progress-amber { background: linear-gradient(90deg, var(--dashboard-amber), var(--dashboard-amber-bright)); }
-.dashboard-progress-green { background: var(--dashboard-green); }
-.dashboard-progress-red { background: var(--dashboard-red); }
-
-.dashboard-sparkline {
-  width: 100%;
-  height: 4.5rem;
-}
-
-.dashboard-sparkline-line {
-  fill: none;
-  stroke: var(--dashboard-amber);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.5;
-}
-
-.dashboard-sparkline-fill {
-  fill: url(#dashboard-sparkline-gradient);
-  opacity: 0.3;
-}
-
-@media (max-width: 640px) {
-  .dashboard-shell main {
-    background-size: 36px 36px;
-  }
-}
-
-.forgeos-landing {
-  --landing-void: #0b0d0f;
-  --landing-surface: #111417;
-  --landing-raised: #171b1f;
-  --landing-border: rgba(255, 255, 255, 0.1);
-  --landing-ink: #f5f2ed;
-  --landing-muted: #9aa2a6;
-  background:
-    radial-gradient(circle at 50% -10%, rgba(242, 166, 90, 0.14), transparent 34rem),
-    var(--landing-void);
-  color: var(--landing-ink);
-}
-
-.forgeos-landing section,
-.forgeos-landing footer {
-  background-color: transparent !important;
-  border-color: var(--landing-border) !important;
-}
-
-.forgeos-landing [class*="bg-[#DDD0C8"],
-.forgeos-landing [class*="bg-[#E8DCD4"],
-.forgeos-landing [class*="bg-[#E8DCD4]/"],
-.forgeos-landing [class*="bg-[#F7F3EE"] {
-  background-color: var(--landing-surface) !important;
-}
-
-.forgeos-landing [class*="text-[#323232"] {
-  color: var(--landing-ink) !important;
-}
-
-.forgeos-landing [class*="text-[#595552"],
-.forgeos-landing [class*="text-[#7A7470"],
-.forgeos-landing [class*="text-[#8E827A"] {
-  color: var(--landing-muted) !important;
-}
-
-.forgeos-landing [class*="border-[#323232"] {
-  border-color: var(--landing-border) !important;
-}
-
-.forgeos-landing [class*="bg-[#323232"] {
-  background-color: var(--dashboard-amber) !important;
-  color: #171717 !important;
-}
-
-.forgeos-landing [class*="text-[#DDD0C8"] {
-  color: var(--landing-ink) !important;
-}
-
-.forgeos-landing header {
-  background-color: rgba(11, 13, 15, 0.72) !important;
-  border-color: var(--landing-border) !important;
-}
-
-.forgeos-landing header [class*="bg-[#323232"] {
-  background-color: var(--dashboard-amber) !important;
-}
-
-.forgeos-landing header [class*="text-[#DDD0C8"] {
-  color: #171717 !important;
-}
-
-.forgeos-landing header [class*="bg-[#DDD0C8"] {
-  background-color: var(--landing-surface) !important;
-}
-
-.forgeos-landing main > section:first-child {
-  background:
-    radial-gradient(circle at 50% 30%, rgba(242, 166, 90, 0.1), transparent 28rem),
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px) !important;
-  background-size: auto, 56px 56px, 56px 56px !important;
-}
-
-.forgeos-landing .forgeos-hero-scene {
-  position: absolute;
-  inset: -5rem 10% auto;
-  height: 20rem;
-  perspective: 900px;
-  opacity: 0.72;
-  pointer-events: none;
-  transform: rotateX(58deg) rotateZ(-14deg);
-  transform-style: preserve-3d;
-}
-
-.forgeos-landing .forgeos-hero-scene ~ * {
-  position: relative;
-  z-index: 1;
-}
-
-.forgeos-hero-building {
-  position: absolute;
-  bottom: 1rem;
-  width: 8rem;
-  height: 11rem;
-  border: 1px solid rgba(242, 166, 90, 0.55);
-  background:
-    repeating-linear-gradient(90deg, transparent 0 1.4rem, rgba(242, 166, 90, 0.45) 1.45rem 1.5rem),
-    repeating-linear-gradient(0deg, transparent 0 1.4rem, rgba(242, 166, 90, 0.4) 1.45rem 1.5rem),
-    linear-gradient(135deg, rgba(242, 166, 90, 0.18), rgba(17, 20, 23, 0.8));
-  box-shadow: 0 0 3rem rgba(242, 166, 90, 0.14);
-  transform-style: preserve-3d;
-  animation: forgeos-building-float 8s ease-in-out infinite;
-}
-
-.forgeos-hero-building::after {
-  position: absolute;
-  inset: 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  content: "";
-}
-
-.forgeos-hero-building-back {
-  left: 18%;
-  height: 8rem;
-  transform: translateZ(-3rem) rotateY(-12deg);
-}
-
-.forgeos-hero-building-front {
-  right: 16%;
-  height: 13rem;
-  animation-delay: -3s;
-  transform: translateZ(2rem) rotateY(12deg);
-}
-
-.forgeos-hero-crane {
-  position: absolute;
-  bottom: 2rem;
-  left: 48%;
-  width: 1px;
-  height: 14rem;
-  background: linear-gradient(to top, rgba(242, 166, 90, 0.8), transparent);
-  transform: translateZ(4rem);
-}
-
-.forgeos-hero-crane::before {
-  position: absolute;
-  top: 0;
-  left: -4rem;
-  width: 8rem;
-  height: 1px;
-  background: var(--dashboard-amber);
-  box-shadow: 4rem 1rem 0 -0.5px rgba(242, 166, 90, 0.7);
-  content: "";
-}
-
-@keyframes forgeos-building-float {
-  0%, 100% { transform: translateZ(0) rotateY(-12deg) translateY(0); }
-  50% { transform: translateZ(0) rotateY(-8deg) translateY(-0.75rem); }
-}
-
-.forgeos-auth-shell {
-  background:
-    radial-gradient(circle at 80% 10%, rgba(242, 166, 90, 0.14), transparent 26rem),
-    var(--dashboard-void);
-}
-
-.forgeos-auth-shell [class*="bg-[#F7F3EE"],
-.forgeos-auth-shell [class*="bg-[#E8DCD4"] {
-  background-color: var(--dashboard-surface-raised) !important;
-}
-
-.forgeos-auth-shell [class*="text-[#323232"] {
-  color: var(--dashboard-ink) !important;
-}
-
-.forgeos-auth-shell [class*="text-[#595552"],
-.forgeos-auth-shell [class*="text-[#7A7470"],
-.forgeos-auth-shell [class*="text-[#8E827A"] {
-  color: var(--dashboard-muted) !important;
-}
-
-.forgeos-auth-shell [class*="border-[#C8BCB4"] {
-  border-color: var(--dashboard-border) !important;
-}
-
-.forgeos-auth-shell [class*="bg-[#323232"] {
-  background-color: var(--dashboard-amber) !important;
-  color: #171717 !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .forgeos-hero-building,
-  .dashboard-page-transition,
-  .dashboard-popover,
-  .dashboard-skeleton {
-    animation: none !important;
-  }
-}
+@import "tailwindcss"; /* Loads Tailwind CSS so its base styles, theme support, and utility classes are available. */
+
+@theme { /* Opens Tailwind’s theme-token block so custom colors and fonts become reusable design values. */
+  --color-beige: #DDD0C8; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+  --color-beige-light: #F7F3EE; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+  --color-beige-card: #E8DCD4; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+  --color-beige-border: #C8BCB4; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+  --color-beige-muted: #8E827A; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+
+  --color-darkgrey: #323232; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+  --color-darkgrey-muted: #595552; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+  --color-darkgrey-subtle: #7A7470; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+  --color-darkgrey-dark: #1E1E1E; /* Defines a named palette color so components can reuse the same beige or gray design token. */
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Defines the shared font stack and system-font fallbacks if Inter is unavailable. */
+} /* Ends the Tailwind theme-token block so its styles stay within that section. */
+
+:root { /* Targets the document root so shared color variables are available throughout the page. */
+  --dashboard-void: #0b0d0f; /* Defines the shared dashboard void color so dashboard components stay visually consistent. */
+  --dashboard-surface: #111417; /* Defines the shared dashboard surface color so dashboard components stay visually consistent. */
+  --dashboard-surface-raised: #171b1f; /* Defines the shared dashboard surface raised color so dashboard components stay visually consistent. */
+  --dashboard-surface-hover: #1c2227; /* Defines the shared dashboard surface hover color so dashboard components stay visually consistent. */
+  --dashboard-surface-warm: #1c1917; /* Defines the shared dashboard surface warm color so dashboard components stay visually consistent. */
+  --dashboard-border: rgba(255, 255, 255, 0.09); /* Defines the shared dashboard border color so dashboard components stay visually consistent. */
+  --dashboard-ink: #f5f2ed; /* Defines the shared dashboard ink color so dashboard components stay visually consistent. */
+  --dashboard-muted: #8d969b; /* Defines the shared dashboard muted color so dashboard components stay visually consistent. */
+  --dashboard-subtle: #636d73; /* Defines the shared dashboard subtle color so dashboard components stay visually consistent. */
+  --dashboard-amber: #f2a65a; /* Defines the shared dashboard amber color so dashboard components stay visually consistent. */
+  --dashboard-amber-bright: #ffc078; /* Defines the shared dashboard amber bright color so dashboard components stay visually consistent. */
+  --dashboard-green: #84c59a; /* Defines the shared dashboard green color so dashboard components stay visually consistent. */
+  --dashboard-red: #ed8b78; /* Defines the shared dashboard red color so dashboard components stay visually consistent. */
+  --dashboard-violet: #b7a3e3; /* Defines the shared dashboard violet color so dashboard components stay visually consistent. */
+} /* Ends the rule for :root block so its styles stay within that section. */
+
+html { /* Styles the document root to set page-wide scrolling and fallback colors. */
+  scroll-behavior: smooth; /* Smoothly scrolls when the page moves to an anchor or another scroll position. */
+  background-color: #DDD0C8; /* Sets the solid fill behind the element content. */
+  color: #323232; /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for html block so its styles stay within that section. */
+
+body { /* Sets the base page typography and colors inherited by most visible content. */
+  font-family: var(--font-sans); /* Chooses the text typeface and fallback fonts if an earlier font is unavailable. */
+  background-color: #DDD0C8; /* Sets the solid fill behind the element content. */
+  color: #323232; /* Sets the foreground color used by text and inherited icons. */
+  -webkit-font-smoothing: antialiased; /* Uses antialiased glyph edges on WebKit browsers for smoother small text. */
+  -moz-osx-font-smoothing: grayscale; /* Uses grayscale antialiasing on macOS Firefox for smoother text. */
+} /* Ends the rule for body block so its styles stay within that section. */
+
+.dashboard-shell { /* Scopes these visual overrides to authenticated dashboard pages instead of changing the public landing page. */
+  background: /* Begins a layered background value; the following lines add gradient or base-color layers. */
+    radial-gradient(circle at 75% -10%, rgba(242, 166, 90, 0.08), transparent 28rem), /* Adds a radial glow that fades outward, creating depth without a hard-edged shape. */
+    var(--dashboard-void); /* Adds the shared theme color as a final background layer or solid base. */
+} /* Ends the rule for .dashboard-shell block so its styles stay within that section. */
+
+.dashboard-shell main { /* Scopes these visual overrides to authenticated dashboard pages instead of changing the public landing page. */
+  background-image: linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px); /* Draws gradient layers behind content for depth or a subtle grid. */
+  background-size: 56px 56px; /* Sets the repeating grid spacing so the dashboard background has even squares. */
+} /* Ends the rule for .dashboard-shell main block so its styles stay within that section. */
+
+.dashboard-sidebar { /* Targets the dashboard sidebar component so the following declarations define its appearance. */
+  background: rgba(14, 17, 19, 0.96); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  border-color: var(--dashboard-border); /* Sets the edge color while keeping its existing width and style. */
+} /* Ends the rule for .dashboard-sidebar block so its styles stay within that section. */
+
+.dashboard-logo { /* Targets the dashboard logo component so the following declarations define its appearance. */
+  background: var(--dashboard-amber); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  color: #171717; /* Sets the foreground color used by text and inherited icons. */
+  box-shadow: 0 0 24px rgba(242, 166, 90, 0.2); /* Adds depth or a soft glow without changing the element layout. */
+} /* Ends the rule for .dashboard-logo block so its styles stay within that section. */
+
+.dashboard-topbar { /* Targets the dashboard topbar component so the following declarations define its appearance. */
+  background: rgba(11, 13, 15, 0.82); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  border-color: var(--dashboard-border); /* Sets the edge color while keeping its existing width and style. */
+} /* Ends the rule for .dashboard-topbar block so its styles stay within that section. */
+
+.dashboard-topbar .border-\[\#E8E0DA\], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-topbar .border-\[\#C8BCB4\] { /* Targets the dashboard topbar component so the following declarations define its appearance. */
+  border-color: var(--dashboard-border); /* Sets the edge color while keeping its existing width and style. */
+} /* Ends the rule for .dashboard-topbar .border-\[\#C8BCB4\] block so its styles stay within that section. */
+
+.dashboard-topbar label { /* Targets the dashboard topbar component so the following declarations define its appearance. */
+  background: var(--dashboard-surface-raised); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  border-color: var(--dashboard-border); /* Sets the edge color while keeping its existing width and style. */
+  color: var(--dashboard-ink); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-topbar label block so its styles stay within that section. */
+
+.dashboard-topbar label span { /* Targets the dashboard topbar component so the following declarations define its appearance. */
+  color: var(--dashboard-ink); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-topbar label span block so its styles stay within that section. */
+
+.dashboard-topbar label span span:last-child { /* Targets the dashboard topbar component so the following declarations define its appearance. */
+  color: var(--dashboard-muted); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-topbar label span span:last-child block so its styles stay within that section. */
+
+.dashboard-live-pill { /* Targets the dashboard live pill component so the following declarations define its appearance. */
+  background: rgba(132, 197, 154, 0.12); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  color: var(--dashboard-green); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-live-pill block so its styles stay within that section. */
+
+.dashboard-button { /* Targets the dashboard button component so the following declarations define its appearance. */
+  display: inline-flex; /* Chooses the layout model; inline-flex keeps the element inline while arranging children with flexbox. */
+  align-items: center; /* Aligns flex children across the cross-axis for consistent positioning. */
+  justify-content: center; /* Positions flex children along the main axis, such as centering or spacing them apart. */
+  gap: 0.5rem; /* Adds consistent space between children without giving each child a margin. */
+  border-radius: 0.75rem; /* Rounds corners; a very large value makes a capsule-like shape. */
+  padding: 0.7rem 0.95rem; /* Adds space inside the element, between its border and content. */
+  font-size: 0.78rem; /* Sets text size to create the intended visual hierarchy. */
+  font-weight: 650; /* Sets text thickness to distinguish emphasis and headings. */
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease; /* Animates listed property changes over time so state and hover changes feel less abrupt. */
+} /* Ends the rule for .dashboard-button block so its styles stay within that section. */
+
+.dashboard-button:hover { /* Targets the pointer-hover state of .dashboard-button to give interactive feedback. */
+  transform: translateY(-1px); /* Lifts the hovered button slightly without moving surrounding page content. */
+} /* Ends the rule for .dashboard-button:hover block so its styles stay within that section. */
+
+.dashboard-button-ghost { /* Targets the dashboard button ghost component so the following declarations define its appearance. */
+  border: 1px solid var(--dashboard-border); /* Draws an edge with a chosen thickness, line style, and color. */
+  background: var(--dashboard-surface); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  color: var(--dashboard-ink); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-button-ghost block so its styles stay within that section. */
+
+.dashboard-button-ghost:hover { /* Targets the pointer-hover state of .dashboard-button-ghost to give interactive feedback. */
+  border-color: rgba(242, 166, 90, 0.45); /* Sets the edge color while keeping its existing width and style. */
+  background: var(--dashboard-surface-hover); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+} /* Ends the rule for .dashboard-button-ghost:hover block so its styles stay within that section. */
+
+.dashboard-button-primary { /* Targets the dashboard button primary component so the following declarations define its appearance. */
+  background: var(--dashboard-amber); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  color: #171717; /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-button-primary block so its styles stay within that section. */
+
+.dashboard-button-primary:hover { /* Targets the pointer-hover state of .dashboard-button-primary to give interactive feedback. */
+  background: var(--dashboard-amber-bright); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+} /* Ends the rule for .dashboard-button-primary:hover block so its styles stay within that section. */
+
+.dashboard-input { /* Targets dashboard form controls so fields and entered text stay readable in dark mode. */
+  height: 2.45rem; /* Sets element height; a percentage can make it fill its container. */
+  border: 1px solid var(--dashboard-border); /* Draws an edge with a chosen thickness, line style, and color. */
+  border-radius: 0.7rem; /* Rounds corners; a very large value makes a capsule-like shape. */
+  background: var(--dashboard-surface); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  padding: 0 0.75rem; /* Adds space inside the element, between its border and content. */
+  color: var(--dashboard-ink); /* Sets the foreground color used by text and inherited icons. */
+  font-size: 0.75rem; /* Sets text size to create the intended visual hierarchy. */
+  outline: none; /* Removes the browser's default focus ring because a custom focus style is supplied below. */
+} /* Ends the rule for .dashboard-input block so its styles stay within that section. */
+
+.dashboard-input:focus { /* Targets the focus state of .dashboard-input so the active control is clear. */
+  border-color: rgba(242, 166, 90, 0.55); /* Sets the edge color while keeping its existing width and style. */
+  box-shadow: 0 0 0 3px rgba(242, 166, 90, 0.1); /* Adds depth or a soft glow without changing the element layout. */
+} /* Ends the rule for .dashboard-input:focus block so its styles stay within that section. */
+
+.dashboard-input::placeholder { /* Styles placeholder guidance so it stays visible but less prominent than entered text. */
+  color: var(--dashboard-subtle); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-input::placeholder block so its styles stay within that section. */
+
+.dashboard-view-button { /* Targets the dashboard view button component so the following declarations define its appearance. */
+  display: inline-flex; /* Chooses the layout model; inline-flex keeps the element inline while arranging children with flexbox. */
+  height: 2.45rem; /* Sets element height; a percentage can make it fill its container. */
+  width: 2.45rem; /* Sets element width; a percentage scales it with its container. */
+  align-items: center; /* Aligns flex children across the cross-axis for consistent positioning. */
+  justify-content: center; /* Positions flex children along the main axis, such as centering or spacing them apart. */
+  border: 1px solid var(--dashboard-border); /* Draws an edge with a chosen thickness, line style, and color. */
+  border-radius: 0.7rem; /* Rounds corners; a very large value makes a capsule-like shape. */
+  background: var(--dashboard-surface); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  color: var(--dashboard-subtle); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-view-button block so its styles stay within that section. */
+
+.dashboard-view-active, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-view-button:hover { /* Targets the pointer-hover state of .dashboard-view-button to give interactive feedback. */
+  border-color: rgba(242, 166, 90, 0.45); /* Sets the edge color while keeping its existing width and style. */
+  color: var(--dashboard-amber); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .dashboard-view-button:hover block so its styles stay within that section. */
+
+.dashboard-page-transition { /* Targets the dashboard page transition component so the following declarations define its appearance. */
+  animation: dashboard-page-enter 420ms ease both; /* Runs a named keyframe effect with a duration, timing curve, and repeat behavior. */
+} /* Ends the rule for .dashboard-page-transition block so its styles stay within that section. */
+
+.dashboard-popover { /* Targets the dashboard popover component so the following declarations define its appearance. */
+  animation: dashboard-popover-enter 180ms ease both; /* Runs a named keyframe effect with a duration, timing curve, and repeat behavior. */
+} /* Ends the rule for .dashboard-popover block so its styles stay within that section. */
+
+.dashboard-skeleton { /* Targets the dashboard skeleton component so the following declarations define its appearance. */
+  min-height: 0.75rem; /* Sets a lower height bound so the element remains visible with little content. */
+  border-radius: 999px; /* Rounds corners; a very large value makes a capsule-like shape. */
+  background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.13), rgba(255,255,255,.06)); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  background-size: 200% 100%; /* Makes the gradient wider than the placeholder so the shimmer can move across it. */
+  animation: dashboard-skeleton-shimmer 1.6s ease-in-out infinite; /* Runs a named keyframe effect with a duration, timing curve, and repeat behavior. */
+} /* Ends the rule for .dashboard-skeleton block so its styles stay within that section. */
+
+@keyframes dashboard-page-enter { /* Defines the fade-and-rise entrance used when dashboard pages appear. */
+  from { opacity: 0; transform: translateY(8px); } /* Sets the starting opacity and position so this animation has a defined beginning. */
+  to { opacity: 1; transform: translateY(0); } /* Sets the ending opacity and position so this animation reaches its final state. */
+} /* Ends this animation's keyframe list so its name can be used by an animation property. */
+
+@keyframes dashboard-popover-enter { /* Defines the fade-and-rise entrance used when dashboard popovers appear. */
+  from { opacity: 0; transform: translateY(-6px) scale(.98); } /* Sets the starting opacity and position so this animation has a defined beginning. */
+  to { opacity: 1; transform: translateY(0) scale(1); } /* Sets the ending opacity and position so this animation reaches its final state. */
+} /* Ends this animation's keyframe list so its name can be used by an animation property. */
+
+@keyframes dashboard-skeleton-shimmer { /* Defines the moving highlight that makes loading placeholders appear animated. */
+  from { background-position: 100% 0; } /* Starts the gradient at the right edge before it sweeps across the placeholder. */
+  to { background-position: -100% 0; } /* Moves the gradient to the left edge to complete one shimmer cycle. */
+} /* Ends this animation's keyframe list so its name can be used by an animation property. */
+
+.dashboard-card { /* Targets the dashboard card component so the following declarations define its appearance. */
+  border: 1px solid var(--dashboard-border); /* Draws an edge with a chosen thickness, line style, and color. */
+  border-radius: 1rem; /* Rounds corners; a very large value makes a capsule-like shape. */
+  background: linear-gradient(145deg, rgba(23, 27, 31, 0.98), rgba(15, 18, 21, 0.98)); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12); /* Adds depth or a soft glow without changing the element layout. */
+} /* Ends the rule for .dashboard-card block so its styles stay within that section. */
+
+.dashboard-card-featured { /* Targets the dashboard card featured component so the following declarations define its appearance. */
+  background: /* Begins a layered background value; the following lines add gradient or base-color layers. */
+    radial-gradient(circle at 100% 0%, rgba(242, 166, 90, 0.14), transparent 22rem), /* Adds a radial glow that fades outward, creating depth without a hard-edged shape. */
+    linear-gradient(145deg, #1a1d1e, #111417); /* Adds a directional gradient layer for the grid, highlight, or surface transition. */
+} /* Ends the rule for .dashboard-card-featured block so its styles stay within that section. */
+
+.dashboard-shell main .bg-white { /* Scopes these visual overrides to authenticated dashboard pages instead of changing the public landing page. */
+  background-color: var(--dashboard-surface) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main .bg-white block so its styles stay within that section. */
+
+.dashboard-shell main [class*="border-[#C8BCB4"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  border-color: var(--dashboard-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="border-[#C8BCB4"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="border-[#E8DCD4"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  border-color: var(--dashboard-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="border-[#E8DCD4"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="divide-[#E8DCD4"] > :not([hidden]) ~ :not([hidden]) { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  border-color: var(--dashboard-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="divide-[#E8DCD4"] > :not([hidden]) ~ :not([hidden]) block so its styles stay within that section. */
+
+.dashboard-shell main [class*="bg-[#E8DCD4"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--dashboard-surface-raised) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="bg-[#E8DCD4"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="bg-[#F7F3EE"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: rgba(255, 255, 255, 0.035) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="bg-[#F7F3EE"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="bg-[#FBF9F7"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main [class*="bg-[#F0E9E4"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main [class*="bg-[#F7F3EE]/"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main [class*="bg-[#DDD0C8"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--dashboard-surface-warm) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="bg-[#DDD0C8"] block so its styles stay within that section. */
+
+.dashboard-shell main input, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main select, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main textarea { /* Targets dashboard form controls so fields and entered text stay readable in dark mode. */
+  background-color: var(--dashboard-surface) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+  border-color: var(--dashboard-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+  color: var(--dashboard-ink) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main textarea block so its styles stay within that section. */
+
+.dashboard-shell main input::placeholder, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main textarea::placeholder { /* Styles placeholder guidance so it stays visible but less prominent than entered text. */
+  color: var(--dashboard-subtle) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main textarea::placeholder block so its styles stay within that section. */
+
+.dashboard-shell main table thead { /* Targets dashboard table content so headers, rows, and separators match the dark theme. */
+  background: rgba(242, 166, 90, 0.08) !important; /* Paints the element backdrop; colors and gradient layers create the intended surface. !important gives this theme override priority over the utility class declaration. */
+  color: var(--dashboard-muted) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main table thead block so its styles stay within that section. */
+
+.dashboard-shell main table thead th { /* Targets dashboard table content so headers, rows, and separators match the dark theme. */
+  color: var(--dashboard-muted) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+  border-color: var(--dashboard-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main table thead th block so its styles stay within that section. */
+
+.dashboard-shell main table tbody tr { /* Targets dashboard table content so headers, rows, and separators match the dark theme. */
+  border-color: var(--dashboard-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main table tbody tr block so its styles stay within that section. */
+
+.dashboard-shell main table tbody tr:hover { /* Targets the pointer-hover state of .dashboard-shell main table tbody tr to give interactive feedback. */
+  background: rgba(255, 255, 255, 0.025) !important; /* Paints the element backdrop; colors and gradient layers create the intended surface. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main table tbody tr:hover block so its styles stay within that section. */
+
+.dashboard-shell main [class*="bg-[#F3E9E1"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main [class*="bg-[#F5EDE1"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: rgba(242, 166, 90, 0.12) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="bg-[#F5EDE1"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="bg-[#E8EFE5"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: rgba(132, 197, 154, 0.12) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="bg-[#E8EFE5"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="bg-[#F8ECEA"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: rgba(237, 139, 120, 0.12) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="bg-[#F8ECEA"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="text-[#323232"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--dashboard-ink) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="text-[#323232"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="text-[#595552"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.dashboard-shell main [class*="text-[#8E827A"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--dashboard-muted) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="text-[#8E827A"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="text-[#A59A93"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--dashboard-subtle) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="text-[#A59A93"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="bg-[#B87A4F"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--dashboard-amber) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="bg-[#B87A4F"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="text-[#9A5E3A"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--dashboard-amber) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="text-[#9A5E3A"] block so its styles stay within that section. */
+
+.dashboard-shell main [class*="text-[#617858"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--dashboard-green) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .dashboard-shell main [class*="text-[#617858"] block so its styles stay within that section. */
+
+.dashboard-stat-card { /* Targets the dashboard stat card component so the following declarations define its appearance. */
+  padding: 1.25rem; /* Adds space inside the element, between its border and content. */
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease; /* Animates listed property changes over time so state and hover changes feel less abrupt. */
+} /* Ends the rule for .dashboard-stat-card block so its styles stay within that section. */
+
+.dashboard-stat-card:hover { /* Targets the pointer-hover state of .dashboard-stat-card to give interactive feedback. */
+  transform: translateY(-2px); /* Lifts the hovered card to make it feel interactive without shifting the layout. */
+  border-color: rgba(242, 166, 90, 0.34); /* Sets the edge color while keeping its existing width and style. */
+  background: var(--dashboard-surface-hover); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+} /* Ends the rule for .dashboard-stat-card:hover block so its styles stay within that section. */
+
+.dashboard-eyebrow { /* Targets the dashboard eyebrow component so the following declarations define its appearance. */
+  color: var(--dashboard-muted); /* Sets the foreground color used by text and inherited icons. */
+  font-size: 0.72rem; /* Sets text size to create the intended visual hierarchy. */
+  font-weight: 600; /* Sets text thickness to distinguish emphasis and headings. */
+  letter-spacing: 0.04em; /* Adjusts space between letters for the compact label style. */
+} /* Ends the rule for .dashboard-eyebrow block so its styles stay within that section. */
+
+.dashboard-icon { /* Targets the dashboard icon component so the following declarations define its appearance. */
+  display: inline-flex; /* Chooses the layout model; inline-flex keeps the element inline while arranging children with flexbox. */
+  border-radius: 0.7rem; /* Rounds corners; a very large value makes a capsule-like shape. */
+  padding: 0.65rem; /* Adds space inside the element, between its border and content. */
+} /* Ends the rule for .dashboard-icon block so its styles stay within that section. */
+
+.dashboard-icon-amber { background: rgba(242, 166, 90, 0.13); color: var(--dashboard-amber); } /* Gives each icon badge a matching tinted background and semantic foreground color. */
+.dashboard-icon-green { background: rgba(132, 197, 154, 0.13); color: var(--dashboard-green); } /* Gives each icon badge a matching tinted background and semantic foreground color. */
+.dashboard-icon-red { background: rgba(237, 139, 120, 0.13); color: var(--dashboard-red); } /* Gives each icon badge a matching tinted background and semantic foreground color. */
+.dashboard-icon-violet { background: rgba(183, 163, 227, 0.13); color: var(--dashboard-violet); } /* Gives each icon badge a matching tinted background and semantic foreground color. */
+
+.dashboard-section-title { /* Targets the dashboard section title component so the following declarations define its appearance. */
+  display: flex; /* Chooses the layout model; inline-flex keeps the element inline while arranging children with flexbox. */
+  align-items: flex-start; /* Aligns flex children across the cross-axis for consistent positioning. */
+  justify-content: space-between; /* Positions flex children along the main axis, such as centering or spacing them apart. */
+  gap: 1rem; /* Adds consistent space between children without giving each child a margin. */
+  border-bottom: 1px solid var(--dashboard-border); /* Draws a separator only along the bottom edge of the section. */
+  padding: 1.25rem; /* Adds space inside the element, between its border and content. */
+} /* Ends the rule for .dashboard-section-title block so its styles stay within that section. */
+
+.dashboard-section-title h2 { /* Targets the dashboard section title component so the following declarations define its appearance. */
+  color: var(--dashboard-ink); /* Sets the foreground color used by text and inherited icons. */
+  font-size: 0.9rem; /* Sets text size to create the intended visual hierarchy. */
+  font-weight: 650; /* Sets text thickness to distinguish emphasis and headings. */
+} /* Ends the rule for .dashboard-section-title h2 block so its styles stay within that section. */
+
+.dashboard-section-title p { /* Targets the dashboard section title component so the following declarations define its appearance. */
+  margin-top: 0.3rem; /* Adds space above the element to separate it from previous content. */
+  color: var(--dashboard-muted); /* Sets the foreground color used by text and inherited icons. */
+  font-size: 0.72rem; /* Sets text size to create the intended visual hierarchy. */
+} /* Ends the rule for .dashboard-section-title p block so its styles stay within that section. */
+
+.dashboard-pill { /* Targets the dashboard pill component so the following declarations define its appearance. */
+  display: inline-flex; /* Chooses the layout model; inline-flex keeps the element inline while arranging children with flexbox. */
+  align-items: center; /* Aligns flex children across the cross-axis for consistent positioning. */
+  border-radius: 999px; /* Rounds corners; a very large value makes a capsule-like shape. */
+  padding: 0.35rem 0.65rem; /* Adds space inside the element, between its border and content. */
+  font-size: 0.68rem; /* Sets text size to create the intended visual hierarchy. */
+  font-weight: 650; /* Sets text thickness to distinguish emphasis and headings. */
+} /* Ends the rule for .dashboard-pill block so its styles stay within that section. */
+
+.dashboard-pill-amber { background: rgba(242, 166, 90, 0.13); color: var(--dashboard-amber); } /* Gives each status pill a matching tinted background and semantic text color. */
+.dashboard-pill-green { background: rgba(132, 197, 154, 0.13); color: var(--dashboard-green); } /* Gives each status pill a matching tinted background and semantic text color. */
+.dashboard-pill-red { background: rgba(237, 139, 120, 0.13); color: var(--dashboard-red); } /* Gives each status pill a matching tinted background and semantic text color. */
+.dashboard-pill-violet { background: rgba(183, 163, 227, 0.13); color: var(--dashboard-violet); } /* Gives each status pill a matching tinted background and semantic text color. */
+
+.dashboard-progress-track { /* Targets the dashboard progress track component so the following declarations define its appearance. */
+  height: 0.35rem; /* Sets element height; a percentage can make it fill its container. */
+  overflow: hidden; /* Controls content outside the box; hidden clips it to the element bounds. */
+  border-radius: 999px; /* Rounds corners; a very large value makes a capsule-like shape. */
+  background: rgba(255, 255, 255, 0.08); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+} /* Ends the rule for .dashboard-progress-track block so its styles stay within that section. */
+
+.dashboard-progress-fill { /* Targets the dashboard progress fill component so the following declarations define its appearance. */
+  height: 100%; /* Sets element height; a percentage can make it fill its container. */
+  border-radius: inherit; /* Rounds corners; a very large value makes a capsule-like shape. */
+} /* Ends the rule for .dashboard-progress-fill block so its styles stay within that section. */
+
+.dashboard-progress-amber { background: linear-gradient(90deg, var(--dashboard-amber), var(--dashboard-amber-bright)); } /* Colors the progress bar by status so amber, green, and red communicate different states. */
+.dashboard-progress-green { background: var(--dashboard-green); } /* Colors the progress bar by status so amber, green, and red communicate different states. */
+.dashboard-progress-red { background: var(--dashboard-red); } /* Colors the progress bar by status so amber, green, and red communicate different states. */
+
+.dashboard-sparkline { /* Targets the dashboard sparkline component so the following declarations define its appearance. */
+  width: 100%; /* Sets element width; a percentage scales it with its container. */
+  height: 4.5rem; /* Sets element height; a percentage can make it fill its container. */
+} /* Ends the rule for .dashboard-sparkline block so its styles stay within that section. */
+
+.dashboard-sparkline-line { /* Targets the dashboard sparkline line component so the following declarations define its appearance. */
+  fill: none; /* Sets the interior paint of an SVG shape; none leaves the chart area transparent. */
+  stroke: var(--dashboard-amber); /* Sets the outline color drawn around an SVG path. */
+  stroke-linecap: round; /* Rounds SVG line ends so the chart line looks softer. */
+  stroke-linejoin: round; /* Rounds SVG path corners so connected chart segments look smoother. */
+  stroke-width: 2.5; /* Sets the thickness of the SVG chart line. */
+} /* Ends the rule for .dashboard-sparkline-line block so its styles stay within that section. */
+
+.dashboard-sparkline-fill { /* Targets the dashboard sparkline fill component so the following declarations define its appearance. */
+  fill: url(#dashboard-sparkline-gradient); /* Fills the chart area with the SVG gradient defined by this ID. */
+  opacity: 0.3; /* Controls transparency so an element can fade or remain visually subtle. */
+} /* Ends the rule for .dashboard-sparkline-fill block so its styles stay within that section. */
+
+@media (max-width: 640px) { /* Applies these adjustments on narrow screens so the dashboard grid remains appropriately spaced. */
+  .dashboard-shell main { /* Scopes these visual overrides to authenticated dashboard pages instead of changing the public landing page. */
+    background-size: 36px 36px; /* Reduces the repeating grid spacing on small screens. */
+  } /* Ends the rule for .dashboard-shell main block so its styles stay within that section. */
+} /* Ends the responsive or accessibility media-query block so its styles stay within that section. */
+
+.forgeos-landing { /* Scopes these theme overrides to the public landing page so authenticated screens are unaffected. */
+  --landing-void: #0b0d0f; /* Defines the landing-page void color separately from authenticated dashboard colors. */
+  --landing-surface: #111417; /* Defines the landing-page surface color separately from authenticated dashboard colors. */
+  --landing-raised: #171b1f; /* Defines the landing-page raised color separately from authenticated dashboard colors. */
+  --landing-border: rgba(255, 255, 255, 0.1); /* Defines the landing-page border color separately from authenticated dashboard colors. */
+  --landing-ink: #f5f2ed; /* Defines the landing-page ink color separately from authenticated dashboard colors. */
+  --landing-muted: #9aa2a6; /* Defines the landing-page muted color separately from authenticated dashboard colors. */
+  background: /* Begins a layered background value; the following lines add gradient or base-color layers. */
+    radial-gradient(circle at 50% -10%, rgba(242, 166, 90, 0.14), transparent 34rem), /* Adds a radial glow that fades outward, creating depth without a hard-edged shape. */
+    var(--landing-void); /* Adds the shared theme color as a final background layer or solid base. */
+  color: var(--landing-ink); /* Sets the foreground color used by text and inherited icons. */
+} /* Ends the rule for .forgeos-landing block so its styles stay within that section. */
+
+.forgeos-landing section, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-landing footer { /* Scopes these theme overrides to the public landing page so authenticated screens are unaffected. */
+  background-color: transparent !important; /* Removes the section fill so the landing-page background shows through. !important overrides its utility class color. */
+  border-color: var(--landing-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing footer block so its styles stay within that section. */
+
+.forgeos-landing [class*="bg-[#DDD0C8"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-landing [class*="bg-[#E8DCD4"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-landing [class*="bg-[#E8DCD4]/"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-landing [class*="bg-[#F7F3EE"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--landing-surface) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing [class*="bg-[#F7F3EE"] block so its styles stay within that section. */
+
+.forgeos-landing [class*="text-[#323232"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--landing-ink) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing [class*="text-[#323232"] block so its styles stay within that section. */
+
+.forgeos-landing [class*="text-[#595552"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-landing [class*="text-[#7A7470"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-landing [class*="text-[#8E827A"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--landing-muted) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing [class*="text-[#8E827A"] block so its styles stay within that section. */
+
+.forgeos-landing [class*="border-[#323232"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  border-color: var(--landing-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing [class*="border-[#323232"] block so its styles stay within that section. */
+
+.forgeos-landing [class*="bg-[#323232"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--dashboard-amber) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+  color: #171717 !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing [class*="bg-[#323232"] block so its styles stay within that section. */
+
+.forgeos-landing [class*="text-[#DDD0C8"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--landing-ink) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing [class*="text-[#DDD0C8"] block so its styles stay within that section. */
+
+.forgeos-landing header { /* Scopes these theme overrides to the public landing page so authenticated screens are unaffected. */
+  background-color: rgba(11, 13, 15, 0.72) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+  border-color: var(--landing-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing header block so its styles stay within that section. */
+
+.forgeos-landing header [class*="bg-[#323232"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--dashboard-amber) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing header [class*="bg-[#323232"] block so its styles stay within that section. */
+
+.forgeos-landing header [class*="text-[#DDD0C8"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: #171717 !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing header [class*="text-[#DDD0C8"] block so its styles stay within that section. */
+
+.forgeos-landing header [class*="bg-[#DDD0C8"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--landing-surface) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing header [class*="bg-[#DDD0C8"] block so its styles stay within that section. */
+
+.forgeos-landing main > section:first-child { /* Scopes these theme overrides to the public landing page so authenticated screens are unaffected. */
+  background: /* Begins a layered background value; the following lines add gradient or base-color layers. */
+    radial-gradient(circle at 50% 30%, rgba(242, 166, 90, 0.1), transparent 28rem), /* Adds a radial glow that fades outward, creating depth without a hard-edged shape. */
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px), /* Adds a directional gradient layer for the grid, highlight, or surface transition. */
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px) !important; /* Adds a directional gradient layer for the grid, highlight, or surface transition. */
+  background-size: auto, 56px 56px, 56px 56px !important; /* Keeps the radial glow full-size and tiles both grid layers every 56px. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-landing main > section:first-child block so its styles stay within that section. */
+
+.forgeos-landing .forgeos-hero-scene { /* Positions the 3D decorative scene inside the landing page hero. */
+  position: absolute; /* Chooses how the element is placed so offsets can position or layer it. */
+  inset: -5rem 10% auto; /* Sets top, right, bottom, and left offsets together for the positioned element. */
+  height: 20rem; /* Sets element height; a percentage can make it fill its container. */
+  perspective: 900px; /* Adds depth to 3D transforms by defining how far away the viewer appears. */
+  opacity: 0.72; /* Controls transparency so an element can fade or remain visually subtle. */
+  pointer-events: none; /* Controls pointer interaction; none lets clicks pass through decoration. */
+  transform: rotateX(58deg) rotateZ(-14deg); /* Tilts the hero scene in 3D to create a perspective construction-site illustration. */
+  transform-style: preserve-3d; /* Keeps child transforms in 3D space instead of flattening them. */
+} /* Ends the rule for .forgeos-landing .forgeos-hero-scene block so its styles stay within that section. */
+
+.forgeos-landing .forgeos-hero-scene ~ * { /* Selects content after the scene so text and controls render above the decoration. */
+  position: relative; /* Chooses how the element is placed so offsets can position or layer it. */
+  z-index: 1; /* Controls stacking order so foreground content appears above decorative layers. */
+} /* Ends the rule for .forgeos-landing .forgeos-hero-scene ~ * block so its styles stay within that section. */
+
+.forgeos-hero-building { /* Targets the decorative landing-page building element created by the hero illustration. */
+  position: absolute; /* Chooses how the element is placed so offsets can position or layer it. */
+  bottom: 1rem; /* Sets distance from the bottom edge of the positioning container. */
+  width: 8rem; /* Sets element width; a percentage scales it with its container. */
+  height: 11rem; /* Sets element height; a percentage can make it fill its container. */
+  border: 1px solid rgba(242, 166, 90, 0.55); /* Draws an edge with a chosen thickness, line style, and color. */
+  background: /* Begins a layered background value; the following lines add gradient or base-color layers. */
+    repeating-linear-gradient(90deg, transparent 0 1.4rem, rgba(242, 166, 90, 0.45) 1.45rem 1.5rem), /* Repeats a line pattern to draw the decorative building window/grid details. */
+    repeating-linear-gradient(0deg, transparent 0 1.4rem, rgba(242, 166, 90, 0.4) 1.45rem 1.5rem), /* Repeats a line pattern to draw the decorative building window/grid details. */
+    linear-gradient(135deg, rgba(242, 166, 90, 0.18), rgba(17, 20, 23, 0.8)); /* Adds a directional gradient layer for the grid, highlight, or surface transition. */
+  box-shadow: 0 0 3rem rgba(242, 166, 90, 0.14); /* Adds depth or a soft glow without changing the element layout. */
+  transform-style: preserve-3d; /* Keeps child transforms in 3D space instead of flattening them. */
+  animation: forgeos-building-float 8s ease-in-out infinite; /* Runs a named keyframe effect with a duration, timing curve, and repeat behavior. */
+} /* Ends the rule for .forgeos-hero-building block so its styles stay within that section. */
+
+.forgeos-hero-building::after { /* Creates a decorative pseudo-element without adding extra HTML markup. */
+  position: absolute; /* Chooses how the element is placed so offsets can position or layer it. */
+  inset: 0.6rem; /* Sets top, right, bottom, and left offsets together for the positioned element. */
+  border: 1px solid rgba(255, 255, 255, 0.16); /* Draws an edge with a chosen thickness, line style, and color. */
+  content: ""; /* Creates generated content for a pseudo-element; an empty string enables its decorative box. */
+} /* Ends the rule for .forgeos-hero-building::after block so its styles stay within that section. */
+
+.forgeos-hero-building-back { /* Targets the decorative landing-page building back element created by the hero illustration. */
+  left: 18%; /* Sets distance from the left edge of the positioning container. */
+  height: 8rem; /* Sets element height; a percentage can make it fill its container. */
+  transform: translateZ(-3rem) rotateY(-12deg); /* Places the back building behind the scene and turns it slightly for depth. */
+} /* Ends the rule for .forgeos-hero-building-back block so its styles stay within that section. */
+
+.forgeos-hero-building-front { /* Targets the decorative landing-page building front element created by the hero illustration. */
+  right: 16%; /* Sets distance from the right edge of the positioning container. */
+  height: 13rem; /* Sets element height; a percentage can make it fill its container. */
+  animation-delay: -3s; /* Starts this building partway through its loop so the two buildings do not move in sync. */
+  transform: translateZ(2rem) rotateY(12deg); /* Brings the front building forward and turns it opposite the rear building. */
+} /* Ends the rule for .forgeos-hero-building-front block so its styles stay within that section. */
+
+.forgeos-hero-crane { /* Targets the decorative landing-page crane element created by the hero illustration. */
+  position: absolute; /* Chooses how the element is placed so offsets can position or layer it. */
+  bottom: 2rem; /* Sets distance from the bottom edge of the positioning container. */
+  left: 48%; /* Sets distance from the left edge of the positioning container. */
+  width: 1px; /* Sets element width; a percentage scales it with its container. */
+  height: 14rem; /* Sets element height; a percentage can make it fill its container. */
+  background: linear-gradient(to top, rgba(242, 166, 90, 0.8), transparent); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  transform: translateZ(4rem); /* Brings the crane mast toward the viewer within the 3D hero scene. */
+} /* Ends the rule for .forgeos-hero-crane block so its styles stay within that section. */
+
+.forgeos-hero-crane::before { /* Creates a decorative pseudo-element without adding extra HTML markup. */
+  position: absolute; /* Chooses how the element is placed so offsets can position or layer it. */
+  top: 0; /* Sets distance from the top edge of the positioning container. */
+  left: -4rem; /* Sets distance from the left edge of the positioning container. */
+  width: 8rem; /* Sets element width; a percentage scales it with its container. */
+  height: 1px; /* Sets element height; a percentage can make it fill its container. */
+  background: var(--dashboard-amber); /* Paints the element backdrop; colors and gradient layers create the intended surface. */
+  box-shadow: 4rem 1rem 0 -0.5px rgba(242, 166, 90, 0.7); /* Adds depth or a soft glow without changing the element layout. */
+  content: ""; /* Creates generated content for a pseudo-element; an empty string enables its decorative box. */
+} /* Ends the rule for .forgeos-hero-crane::before block so its styles stay within that section. */
+
+@keyframes forgeos-building-float { /* Defines the named animation timeline used by a visual effect. */
+  0%, 100% { transform: translateZ(0) rotateY(-12deg) translateY(0); } /* Uses the same transform at both ends so the floating animation loops without a jump. */
+  50% { transform: translateZ(0) rotateY(-8deg) translateY(-0.75rem); } /* Defines the animation midpoint, where the illustrated building rises slightly. */
+} /* Ends the building-float animation so the hero illustration can reuse it by name. */
+
+.forgeos-auth-shell { /* Scopes these theme overrides to sign-in screens so other page themes are unaffected. */
+  background: /* Begins a layered background value; the following lines add gradient or base-color layers. */
+    radial-gradient(circle at 80% 10%, rgba(242, 166, 90, 0.14), transparent 26rem), /* Adds a radial glow that fades outward, creating depth without a hard-edged shape. */
+    var(--dashboard-void); /* Adds the shared theme color as a final background layer or solid base. */
+} /* Ends the rule for .forgeos-auth-shell block so its styles stay within that section. */
+
+.forgeos-auth-shell [class*="bg-[#F7F3EE"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-auth-shell [class*="bg-[#E8DCD4"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--dashboard-surface-raised) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-auth-shell [class*="bg-[#E8DCD4"] block so its styles stay within that section. */
+
+.forgeos-auth-shell [class*="text-[#323232"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--dashboard-ink) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-auth-shell [class*="text-[#323232"] block so its styles stay within that section. */
+
+.forgeos-auth-shell [class*="text-[#595552"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-auth-shell [class*="text-[#7A7470"], /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+.forgeos-auth-shell [class*="text-[#8E827A"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  color: var(--dashboard-muted) !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-auth-shell [class*="text-[#8E827A"] block so its styles stay within that section. */
+
+.forgeos-auth-shell [class*="border-[#C8BCB4"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  border-color: var(--dashboard-border) !important; /* Sets the edge color while keeping its existing width and style. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-auth-shell [class*="border-[#C8BCB4"] block so its styles stay within that section. */
+
+.forgeos-auth-shell [class*="bg-[#323232"] { /* Targets a Tailwind utility class by part of its name so light colors can be remapped for this dark theme. */
+  background-color: var(--dashboard-amber) !important; /* Sets the solid fill behind the element content. !important gives this theme override priority over the utility class declaration. */
+  color: #171717 !important; /* Sets the foreground color used by text and inherited icons. !important gives this theme override priority over the utility class declaration. */
+} /* Ends the rule for .forgeos-auth-shell [class*="bg-[#323232"] block so its styles stay within that section. */
+
+@media (prefers-reduced-motion: reduce) { /* Respects the user accessibility setting by disabling nonessential motion. */
+  .forgeos-hero-building, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+  .dashboard-page-transition, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+  .dashboard-popover, /* Adds another selector to a comma-separated group; all selectors share the following declarations. */
+  .dashboard-skeleton { /* Targets the dashboard skeleton component so the following declarations define its appearance. */
+    animation: none !important; /* Disables decorative motion for users who request reduced motion. !important overrides component animations. */
+  } /* Ends the rule for .dashboard-skeleton block so its styles stay within that section. */
+} /* Ends the responsive or accessibility media-query block so its styles stay within that section. */
+/* File purpose: Defines shared dashboard, landing-page, and sign-in themes plus reusable visual effects. */
