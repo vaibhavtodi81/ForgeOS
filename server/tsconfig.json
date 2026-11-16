@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "outDir": "dist",
-    "rootDir": "src",
-    "strict": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "types": ["node"]
+    "target": "ES2022", // Compile to JavaScript features supported by the server's Node.js runtime.
+    "module": "NodeNext", // Use Node's ESM/CommonJS behavior when interpreting imports and exports.
+    "moduleResolution": "NodeNext", // Resolve packages and file extensions using the same rules as Node.
+    "outDir": "dist", // Write compiled server files to dist for the production start command.
+    "rootDir": "src", // Treat src as the source root so the output directory mirrors its folder structure.
+    "strict": true, // Enable TypeScript's strict checks to catch unsafe or incomplete types.
+    "esModuleInterop": true, // Make default imports from CommonJS packages work with TypeScript's module output.
+    "forceConsistentCasingInFileNames": true, // Catch import paths whose letter casing differs across files or platforms.
+    "skipLibCheck": true, // Skip dependency declaration checks while still checking the server's own code.
+    "types": ["node"] // Load Node.js global and built-in module type definitions.
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"] // Compile TypeScript files anywhere under the server's src directory.
 }
