@@ -1,13 +1,27 @@
+<!-- Declares an HTML5 document so browsers use modern, standards-based rendering. -->
 <!doctype html>
+<!-- Starts the document root and declares the language used by its text. -->
 <html lang="en">
+  <!-- Begins metadata that configures the page before its visible content. -->
   <head>
+    <!-- Sets UTF-8 so the page can safely display a wide range of characters. -->
     <meta charset="UTF-8" />
+    <!-- Loads the site icon so browser tabs can identify this application. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Scales the page to the device width so the interface works on mobile screens. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Sets the text shown in the browser tab for this page. -->
     <title>frontend</title>
+  <!-- Closes the current HTML section so following content has the correct document structure. -->
   </head>
+  <!-- Begins the document body where the application interface is mounted. -->
   <body>
+    <!-- Creates the DOM mount point where React renders the application. -->
     <div id="root"></div>
+    <!-- Loads the frontend entry module that starts the React application. -->
     <script type="module" src="/src/main.tsx"></script>
+  <!-- Closes the current HTML section so following content has the correct document structure. -->
   </body>
+<!-- Closes the current HTML section so following content has the correct document structure. -->
 </html>
+<!-- File purpose: Provides the browser document that loads the Vite-powered frontend. -->
