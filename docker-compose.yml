@@ -1,2 +1,20 @@
-# Services: backend, postgres, object storage (e.g. minio), worker, frontend.
-# File purpose: Documents the planned backend, PostgreSQL, storage, worker, and frontend services.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: forgeos_user
+      POSTGRES_PASSWORD: forgeos_dev_password
+      POSTGRES_DB: forgeos_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - forgeos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgeos_user -d forgeos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  forgeos_pgdata:
