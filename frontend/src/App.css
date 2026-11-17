@@ -1,9 +1,9 @@
 .counter { /* Targets the counter control so its text, spacing, border, and interaction states share one style. */
-  font-size: 16px; /* Sets the counter text size so it is readable at a glance. */
+  font-size: 16px;
   padding: 5px 10px; /* Adds inner space between the content and its border so the control is easier to read or click. */
   border-radius: 5px; /* Rounds the corners to make the control or panel look softer. */
-  color: var(--accent); /* Sets the foreground color used for the text. */
-  background: var(--accent-bg); /* Sets the fill behind the content, using a shared theme color when available. */
+  color: var(--accent);
+  background: var(--accent-bg);
   border: 2px solid transparent; /* Draws an edge; a transparent border reserves space so hover styling will not shift the layout. */
   transition: border-color 0.3s; /* Animates the border-color change so hover feedback appears smoothly. */
   margin-bottom: 24px; /* Adds space below the counter before the next element. */
@@ -17,30 +17,30 @@
   } /* Closes the &:focus-visible rule block so its styles remain scoped to that section. */
 } /* Closes the .counter rule block so its styles remain scoped to that section. */
 
-.hero { /* Creates a positioning context for the overlapping framework and Vite hero illustrations. */
-  position: relative; /* Chooses the positioning model so child elements can be layered or offset. */
+.hero {
+  position: relative;
 
   .base, /* Groups related hero images so they share the same centering or positioning behavior. */
   .framework, /* Groups related hero images so they share the same centering or positioning behavior. */
   .vite { /* Groups related hero images so they share the same centering or positioning behavior. */
-    inset-inline: 0; /* Sets the left and right offsets together so the image can be centered across the hero. */
+    inset-inline: 0;
     margin: 0 auto; /* Uses automatic horizontal margins to center the element in its available space. */
   } /* Closes the .vite rule block so its styles remain scoped to that section. */
 
   .base { /* Styles the base hero image that sits behind the layered framework and Vite graphics. */
     width: 170px; /* Fixes the base illustration width so it anchors the layered artwork. */
-    position: relative; /* Chooses the positioning model so child elements can be layered or offset. */
+    position: relative;
     z-index: 0; /* Controls which overlapping illustration layer appears in front. */
   } /* Closes the .base rule block so its styles remain scoped to that section. */
 
   .framework, /* Groups related hero images so they share the same centering or positioning behavior. */
   .vite { /* Groups related hero images so they share the same centering or positioning behavior. */
-    position: absolute; /* Chooses the positioning model so child elements can be layered or offset. */
+    position: absolute;
   } /* Closes the .vite rule block so its styles remain scoped to that section. */
 
   .framework { /* Places and rotates the framework graphic as a foreground layer in the hero illustration. */
     z-index: 1; /* Controls which overlapping illustration layer appears in front. */
-    top: 34px; /* Sets the vertical offset of the absolutely positioned illustration. */
+    top: 34px;
     height: 28px; /* Sets a fixed visual height for the illustration or icon. */
     transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) /* Applies perspective and rotations to create a tilted 3D illustration. */
       scale(1.4); /* Enlarges the rotated framework mark to fit the hero composition. */
@@ -48,7 +48,7 @@
 
   .vite { /* Groups related hero images so they share the same centering or positioning behavior. */
     z-index: 0; /* Controls which overlapping illustration layer appears in front. */
-    top: 107px; /* Sets the vertical offset of the absolutely positioned illustration. */
+    top: 107px;
     height: 26px; /* Sets a fixed visual height for the illustration or icon. */
     width: auto; /* Sets how wide the element is; auto lets the browser preserve the image aspect ratio. */
     transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) /* Applies perspective and rotations to create a tilted 3D illustration. */
@@ -57,7 +57,7 @@
 } /* Closes the .hero rule block so its styles remain scoped to that section. */
 
 #center { /* Targets the main centered content area and arranges its children in a vertical flex column. */
-  display: flex; /* Chooses the flex layout so children can be aligned as a group. */
+  display: flex;
   flex-direction: column; /* Arranges flex children vertically or horizontally, depending on the screen size. */
   gap: 25px; /* Adds equal spacing between flex children without adding margins to each child. */
   place-content: center; /* Aligns the group of grid/flex content in both axes within its available space. */
@@ -71,7 +71,7 @@
 } /* Closes the #center rule block so its styles remain scoped to that section. */
 
 #next-steps { /* Creates the next-steps section as columns on wide screens and a stacked layout on narrow screens. */
-  display: flex; /* Chooses the flex layout so children can be aligned as a group. */
+  display: flex;
   border-top: 1px solid var(--border); /* Draws a divider above this section to separate it from the content before it. */
   text-align: left; /* Aligns the text within this section. */
 
@@ -99,38 +99,38 @@
   border-right: 1px solid var(--border); /* Separates the documentation column from the next-steps column on wide screens. */
 
   @media (max-width: 1024px) { /* Applies the nested layout changes only at this screen width so the page adapts on tablets and smaller devices. */
-    border-right: none; /* Removes the vertical divider after the columns stack on narrow screens. */
+    border-right: none;
     border-bottom: 1px solid var(--border); /* Adds a horizontal separator when the columns stack on narrow screens. */
   } /* Closes the responsive media query block so its styles remain scoped to that section. */
 } /* Closes the #docs rule block so its styles remain scoped to that section. */
 
 #next-steps ul { /* Arranges the next-step links as a compact, responsive list of tiles. */
-  list-style: none; /* Removes browser bullets because these links are styled as visual tiles instead. */
+  list-style: none;
   padding: 0; /* Adds inner space between the content and its border so the control is easier to read or click. */
-  display: flex; /* Chooses the flex layout so children can be aligned as a group. */
+  display: flex;
   gap: 8px; /* Adds equal spacing between flex children without adding margins to each child. */
   margin: 32px 0 0; /* Adds space above the list while keeping its horizontal margins at zero. */
 
-  .logo { /* Sets the displayed logo height so it aligns with the link text. */
+  .logo {
     height: 18px; /* Sets a fixed visual height for the illustration or icon. */
   } /* Closes the .logo rule block so its styles remain scoped to that section. */
 
   a { /* Styles each next-step link like a button while preserving its link behavior. */
-    color: var(--text-h); /* Sets the foreground color used for the text. */
-    font-size: 16px; /* Sets the counter text size so it is readable at a glance. */
+    color: var(--text-h);
+    font-size: 16px;
     border-radius: 6px; /* Rounds the corners to make the control or panel look softer. */
-    background: var(--social-bg); /* Sets the fill behind the content, using a shared theme color when available. */
-    display: flex; /* Chooses the flex layout so children can be aligned as a group. */
+    background: var(--social-bg);
+    display: flex;
     padding: 6px 12px; /* Adds inner space between the content and its border so the control is easier to read or click. */
     align-items: center; /* Vertically centers the icon and text within the link tile. */
     gap: 8px; /* Adds equal spacing between flex children without adding margins to each child. */
-    text-decoration: none; /* Removes the default underline so the link can use the tile/button appearance. */
+    text-decoration: none;
     transition: box-shadow 0.3s; /* Animates the shadow change so hover feedback appears smoothly. */
 
     &:hover { /* Targets the pointer-hover state to give mouse users feedback that the control is interactive. */
       box-shadow: var(--shadow); /* Adds depth to the hovered link without changing the layout. */
     } /* Closes the &:hover rule block so its styles remain scoped to that section. */
-    .button-icon { /* Keeps each link icon at a consistent square size. */
+    .button-icon {
       height: 18px; /* Sets a fixed visual height for the illustration or icon. */
       width: 18px; /* Sets how wide the element is; auto lets the browser preserve the image aspect ratio. */
     } /* Closes the .button-icon rule block so its styles remain scoped to that section. */
@@ -161,19 +161,19 @@
   } /* Closes the responsive media query block so its styles remain scoped to that section. */
 } /* Closes the #spacer rule block so its styles remain scoped to that section. */
 
-.ticks { /* Creates the positioning container for the decorative marks at the divider edges. */
-  position: relative; /* Chooses the positioning model so child elements can be layered or offset. */
+.ticks {
+  position: relative;
   width: 100%; /* Sets how wide the element is; auto lets the browser preserve the image aspect ratio. */
 
   &::before, /* Groups the two decorative pseudo-elements so they share positioning and border setup. */
   &::after { /* Groups the two decorative pseudo-elements so they share positioning and border setup. */
-    content: ''; /* Creates the decorative pseudo-element; an empty string is required for it to be displayed. */
-    position: absolute; /* Chooses the positioning model so child elements can be layered or offset. */
-    top: -4.5px; /* Sets the vertical offset of the absolutely positioned illustration. */
+    content: '';
+    position: absolute;
+    top: -4.5px;
     border: 5px solid transparent; /* Draws an edge; a transparent border reserves space so hover styling will not shift the layout. */
   } /* Closes the &::after rule block so its styles remain scoped to that section. */
 
-  &::before { /* Creates the decorative left-side tick without adding an extra HTML element. */
+  &::before {
     left: 0; /* Places the decorative mark against the left edge of the divider. */
     border-left-color: var(--border); /* Colors only the left edge to form the small left-side tick mark. */
   } /* Closes the &::before rule block so its styles remain scoped to that section. */
