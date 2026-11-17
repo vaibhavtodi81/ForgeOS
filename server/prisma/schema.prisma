@@ -3,514 +3,513 @@
 // Source of truth for models, columns, and relations (PostgreSQL 16+)
 // ========================================================================
 
-generator client { // Starts Prisma's client-generation or database-connection settings.
-  provider = "prisma-client-js" // Selects the PostgreSQL-compatible Prisma client generator.
-} // Closes the `Prisma` definition.
+generator client {
+  provider = "prisma-client-js"
+}
 
-datasource db { // Starts Prisma's client-generation or database-connection settings.
-  provider = "postgresql" // Selects the PostgreSQL-compatible Prisma client generator.
-  url      = env("DATABASE_URL") // Reads the database connection string from the environment rather than hard-coding credentials.
-} // Closes the `Prisma` definition.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 // ───────────── Enums ─────────────
 
-enum Role { // Starts the `Role` enum, which restricts a field to a fixed set of allowed choices.
-  ADMIN // Allows `admin` as a valid `Role` choice.
-  PM // Allows `pm` as a valid `Role` choice.
-} // Closes the `Role` definition.
+enum Role {
+  ADMIN
+  PM
+}
 
-enum AreaUnit { // Starts the `AreaUnit` enum, which restricts a field to a fixed set of allowed choices.
-  SQFT // Allows `sqft` as a valid `AreaUnit` choice.
-  SQYD // Allows `sqyd` as a valid `AreaUnit` choice.
-  SQM // Allows `sqm` as a valid `AreaUnit` choice.
-  ACRE // Allows `acre` as a valid `AreaUnit` choice.
-} // Closes the `AreaUnit` definition.
+enum AreaUnit {
+  SQFT
+  SQYD
+  SQM
+  ACRE
+}
 
-enum ProjectStatus { // Starts the `ProjectStatus` enum, which restricts a field to a fixed set of allowed choices.
-  PLANNING // Allows `planning` as a valid `ProjectStatus` choice.
-  ACTIVE // Allows `active` as a valid `ProjectStatus` choice.
-  ON_HOLD // Allows `on hold` as a valid `ProjectStatus` choice.
-  COMPLETED // Allows `completed` as a valid `ProjectStatus` choice.
-} // Closes the `ProjectStatus` definition.
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+}
 
-enum MilestoneStatus { // Starts the `MilestoneStatus` enum, which restricts a field to a fixed set of allowed choices.
-  PLANNED // Allows `planned` as a valid `MilestoneStatus` choice.
-  IN_PROGRESS // Allows `in progress` as a valid `MilestoneStatus` choice.
-  COMPLETED // Allows `completed` as a valid `MilestoneStatus` choice.
-  ON_HOLD // Allows `on hold` as a valid `MilestoneStatus` choice.
-  CANCELLED // Allows `cancelled` as a valid `MilestoneStatus` choice.
-} // Closes the `MilestoneStatus` definition.
+enum MilestoneStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
 
-enum MaterialCategory { // Starts the `MaterialCategory` enum, which restricts a field to a fixed set of allowed choices.
-  CEMENT // Allows `cement` as a valid `MaterialCategory` choice.
-  STEEL // Allows `steel` as a valid `MaterialCategory` choice.
-  SAND_AGGREGATE // Allows `sand aggregate` as a valid `MaterialCategory` choice.
-  BRICKS_BLOCKS // Allows `bricks blocks` as a valid `MaterialCategory` choice.
-  TIMBER // Allows `timber` as a valid `MaterialCategory` choice.
-  ELECTRICAL // Allows `electrical` as a valid `MaterialCategory` choice.
-  PLUMBING // Allows `plumbing` as a valid `MaterialCategory` choice.
-  PAINT_FINISH // Allows `paint finish` as a valid `MaterialCategory` choice.
-  OTHER // Allows `other` as a valid `MaterialCategory` choice.
-} // Closes the `MaterialCategory` definition.
+enum MaterialCategory {
+  CEMENT
+  STEEL
+  SAND_AGGREGATE
+  BRICKS_BLOCKS
+  TIMBER
+  ELECTRICAL
+  PLUMBING
+  PAINT_FINISH
+  OTHER
+}
 
-enum StockTxnType { // Starts the `StockTxnType` enum, which restricts a field to a fixed set of allowed choices.
-  IN // Allows `in` as a valid `StockTxnType` choice.
-  OUT // Allows `out` as a valid `StockTxnType` choice.
-  ADJUSTMENT // Allows `adjustment` as a valid `StockTxnType` choice.
-} // Closes the `StockTxnType` definition.
+enum StockTxnType {
+  IN
+  OUT
+  ADJUSTMENT
+}
 
-enum AdjustmentDirection { // Starts the `AdjustmentDirection` enum, which restricts a field to a fixed set of allowed choices.
-  INCREASE // Allows `increase` as a valid `AdjustmentDirection` choice.
-  DECREASE // Allows `decrease` as a valid `AdjustmentDirection` choice.
-} // Closes the `AdjustmentDirection` definition.
+enum AdjustmentDirection {
+  INCREASE
+  DECREASE
+}
 
-enum OutReason { // Starts the `OutReason` enum, which restricts a field to a fixed set of allowed choices.
-  USED // Allows `used` as a valid `OutReason` choice.
-  DAMAGED // Allows `damaged` as a valid `OutReason` choice.
-  LOST // Allows `lost` as a valid `OutReason` choice.
-} // Closes the `OutReason` definition.
+enum OutReason {
+  USED
+  DAMAGED
+  LOST
+}
 
-enum BillCategory { // Starts the `BillCategory` enum, which restricts a field to a fixed set of allowed choices.
-  MATERIAL // Allows `material` as a valid `BillCategory` choice.
-  LABOUR // Allows `labour` as a valid `BillCategory` choice.
-  MACHINERY // Allows `machinery` as a valid `BillCategory` choice.
-  SERVICES // Allows `services` as a valid `BillCategory` choice.
-  OTHER // Allows `other` as a valid `BillCategory` choice.
-} // Closes the `BillCategory` definition.
+enum BillCategory {
+  MATERIAL
+  LABOUR
+  MACHINERY
+  SERVICES
+  OTHER
+}
 
-enum BillStatus { // Starts the `BillStatus` enum, which restricts a field to a fixed set of allowed choices.
-  PENDING // Allows `pending` as a valid `BillStatus` choice.
-  APPROVED // Allows `approved` as a valid `BillStatus` choice.
-  REJECTED // Allows `rejected` as a valid `BillStatus` choice.
-  PARTIALLY_PAID // Allows `partially paid` as a valid `BillStatus` choice.
-  PAID // Allows `paid` as a valid `BillStatus` choice.
-} // Closes the `BillStatus` definition.
+enum BillStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PARTIALLY_PAID
+  PAID
+}
 
-enum VendorType { // Starts the `VendorType` enum, which restricts a field to a fixed set of allowed choices.
-  MATERIAL_SUPPLIER // Allows `material supplier` as a valid `VendorType` choice.
-  LABOUR_CONTRACTOR // Allows `labour contractor` as a valid `VendorType` choice.
-  MACHINERY_RENTAL // Allows `machinery rental` as a valid `VendorType` choice.
-  SERVICE_PROVIDER // Allows `service provider` as a valid `VendorType` choice.
-  OTHER // Allows `other` as a valid `VendorType` choice.
-} // Closes the `VendorType` definition.
+enum VendorType {
+  MATERIAL_SUPPLIER
+  LABOUR_CONTRACTOR
+  MACHINERY_RENTAL
+  SERVICE_PROVIDER
+  OTHER
+}
 
-enum PaymentMode { // Starts the `PaymentMode` enum, which restricts a field to a fixed set of allowed choices.
-  CASH // Allows `cash` as a valid `PaymentMode` choice.
-  BANK_TRANSFER // Allows `bank transfer` as a valid `PaymentMode` choice.
-  UPI // Allows `upi` as a valid `PaymentMode` choice.
-  CHEQUE // Allows `cheque` as a valid `PaymentMode` choice.
-  OTHER // Allows `other` as a valid `PaymentMode` choice.
-} // Closes the `PaymentMode` definition.
+enum PaymentMode {
+  CASH
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+  OTHER
+}
 
-enum AuditAction { // Starts the `AuditAction` enum, which restricts a field to a fixed set of allowed choices.
-  CREATE // Allows `create` as a valid `AuditAction` choice.
-  UPDATE // Allows `update` as a valid `AuditAction` choice.
-  DELETE // Allows `delete` as a valid `AuditAction` choice.
-  APPROVE // Allows `approve` as a valid `AuditAction` choice.
-  REJECT // Allows `reject` as a valid `AuditAction` choice.
-  VOID // Allows `void` as a valid `AuditAction` choice.
-  LOGIN // Allows `login` as a valid `AuditAction` choice.
-  ACTIVATE // Allows `activate` as a valid `AuditAction` choice.
-  DEACTIVATE // Allows `deactivate` as a valid `AuditAction` choice.
-  PASSWORD_CHANGE // Allows `password_change` as a valid `AuditAction` choice.
-  ASSIGN // Allows `assign` as a valid `AuditAction` choice.
-  STATUS_CHANGE // Allows `status_change` as a valid `AuditAction` choice.
-} // Closes the `AuditAction` definition.
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  VOID
+  LOGIN
+  ACTIVATE
+  DEACTIVATE
+  PASSWORD_CHANGE
+  ASSIGN
+  STATUS_CHANGE
+}
 
-enum NotificationType { // Starts the `NotificationType` enum, which restricts a field to a fixed set of allowed choices.
-  LOW_STOCK // Allows `low stock` as a valid `NotificationType` choice.
-  WASTAGE_ALERT // Allows `wastage alert` as a valid `NotificationType` choice.
-  BILL_OVERDUE // Allows `bill overdue` as a valid `NotificationType` choice.
-  BILL_SUBMITTED // Allows `bill submitted` as a valid `NotificationType` choice.
-  BILL_APPROVED // Allows `bill approved` as a valid `NotificationType` choice.
-  BILL_REJECTED // Allows `bill rejected` as a valid `NotificationType` choice.
-  BUDGET_ALERT // Allows `budget alert` as a valid `NotificationType` choice.
-} // Closes the `NotificationType` definition.
+enum NotificationType {
+  LOW_STOCK
+  WASTAGE_ALERT
+  BILL_OVERDUE
+  BILL_SUBMITTED
+  BILL_APPROVED
+  BILL_REJECTED
+  BUDGET_ALERT
+}
 
 // ───────────── Models ─────────────
 
-model User { // Starts the `User` model, which describes the columns and relationships for that kind of database record.
-  id           Int       @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `User` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  name         String // Stores the human-readable name in `name` on the `User` record.
-  email        String    @unique // Stores the contact or sign-in email address in `email` on the `User` record; duplicate values are rejected.
-  passwordHash String    @map("password_hash") // Stores the securely hashed password rather than the plain-text password in `passwordHash` on the `User` record; it maps to the database column `password_hash`.
-  role         Role      @default(PM) // Stores the account's permission level in `role` on the `User` record; Prisma supplies a default when the field is omitted.
-  phone        String? // Stores the phone value in `phone` on the `User` record; the field is optional.
-  isActive     Boolean   @default(true) @map("is_active") // Stores whether the account or record can currently be used in `isActive` on the `User` record; Prisma supplies a default when the field is omitted, and it maps to the database column `is_active`.
-  lastLoginAt  DateTime? @map("last_login_at") // Stores when the account last signed in in `lastLoginAt` on the `User` record; the field is optional, and it maps to the database column `last_login_at`.
-  createdAt    DateTime  @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `User` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt    DateTime  @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `User` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         Role      @default(PM)
+  phone        String?
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  projectsManaged     Project[]                 @relation("ProjectPM") // Defines a Prisma relation that connects this `User` record to related `Project` records through the `ProjectPM` relation; Prisma resolves this link through the related model instead of storing an array here.
-  projectsCreated     Project[]                 @relation("ProjectCreatedBy") // Defines a Prisma relation that connects this `User` record to related `Project` records through the `ProjectCreatedBy` relation; Prisma resolves this link through the related model instead of storing an array here.
-  landsCreated        Land[] // Defines a Prisma relation that connects this `User` record to related `Land` records; Prisma resolves this link through the related model instead of storing an array here.
-  dailyLogsCreated    DailyLog[] // Defines a Prisma relation that connects this `User` record to related `DailyLog` records; Prisma resolves this link through the related model instead of storing an array here.
-  stockTxnsCreated    StockTransaction[]        @relation("StockTxnCreatedBy") // Defines a Prisma relation that connects this `User` record to related `StockTransaction` records through the `StockTxnCreatedBy` relation; Prisma resolves this link through the related model instead of storing an array here.
-  stockTxnsVoided     StockTransaction[]        @relation("StockTxnVoidedBy") // Defines a Prisma relation that connects this `User` record to related `StockTransaction` records through the `StockTxnVoidedBy` relation; Prisma resolves this link through the related model instead of storing an array here.
-  billsSubmitted      Bill[]                    @relation("BillSubmittedBy") // Defines a Prisma relation that connects this `User` record to related `Bill` records through the `BillSubmittedBy` relation; Prisma resolves this link through the related model instead of storing an array here.
-  billsApproved       Bill[]                    @relation("BillApprovedBy") // Defines a Prisma relation that connects this `User` record to related `Bill` records through the `BillApprovedBy` relation; Prisma resolves this link through the related model instead of storing an array here.
-  paymentsRecorded    Payment[] // Defines a Prisma relation that connects this `User` record to related `Payment` records; Prisma resolves this link through the related model instead of storing an array here.
-  vendorAssignments   ProjectVendorAssignment[] // Defines a Prisma relation that connects this `User` record to related `ProjectVendorAssignment` records; Prisma resolves this link through the related model instead of storing an array here.
-  auditLogs           AuditLog[] // Defines a Prisma relation that connects this `User` record to related `AuditLog` records; Prisma resolves this link through the related model instead of storing an array here.
-  notifications       Notification[] // Defines a Prisma relation that connects this `User` record to related `Notification` records; Prisma resolves this link through the related model instead of storing an array here.
-  attachmentsUploaded Attachment[] // Defines a Prisma relation that connects this `User` record to related `Attachment` records; Prisma resolves this link through the related model instead of storing an array here.
+  projectsManaged     Project[]                 @relation("ProjectPM")
+  projectsCreated     Project[]                 @relation("ProjectCreatedBy")
+  landsCreated        Land[]
+  dailyLogsCreated    DailyLog[]
+  stockTxnsCreated    StockTransaction[]        @relation("StockTxnCreatedBy")
+  stockTxnsVoided     StockTransaction[]        @relation("StockTxnVoidedBy")
+  billsSubmitted      Bill[]                    @relation("BillSubmittedBy")
+  billsApproved       Bill[]                    @relation("BillApprovedBy")
+  paymentsRecorded    Payment[]
+  vendorAssignments   ProjectVendorAssignment[]
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  attachmentsUploaded Attachment[]
 
-  @@map("users") // Maps this Prisma model to the existing database table `users`.
-} // Closes the `User` definition.
+  @@map("users")
+}
 
-model Land { // Starts the `Land` model, which describes the columns and relationships for that kind of database record.
-  id           Int       @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Land` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  name         String // Stores the human-readable name in `name` on the `Land` record.
-  addressLine  String?   @map("address_line") // Stores the street address for the site in `addressLine` on the `Land` record; the field is optional, and it maps to the database column `address_line`.
-  city         String // Stores the city where the site is located in `city` on the `Land` record.
-  state        String // Stores the state where the site is located in `state` on the `Land` record.
-  pincode      String? // Stores the postal code for the site in `pincode` on the `Land` record; the field is optional.
-  areaValue    Decimal   @map("area_value") @db.Decimal(14, 2) // Stores the measured size of the land in `areaValue` on the `Land` record; it maps to the database column `area_value`.
-  areaUnit     AreaUnit  @map("area_unit") // Stores the unit used to measure the land in `areaUnit` on the `Land` record; it maps to the database column `area_unit`.
-  surveyNumber String?   @map("survey_number") // Stores the official land survey reference in `surveyNumber` on the `Land` record; the field is optional, and it maps to the database column `survey_number`.
-  ownerName    String?   @map("owner_name") // Stores the land owner's name in `ownerName` on the `Land` record; the field is optional, and it maps to the database column `owner_name`.
-  purchaseDate DateTime? @map("purchase_date") @db.Date // Stores when the land was purchased in `purchaseDate` on the `Land` record; the field is optional, and it maps to the database column `purchase_date`.
-  purchaseCost Decimal?  @map("purchase_cost") @db.Decimal(16, 2) // Stores the amount paid for the land in `purchaseCost` on the `Land` record; the field is optional, and it maps to the database column `purchase_cost`.
-  notes        String? // Stores the notes value in `notes` on the `Land` record; the field is optional.
-  createdById  Int       @map("created_by_id") // Stores the user who created this record in `createdById` on the `Land` record; it maps to the database column `created_by_id`.
-  createdAt    DateTime  @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Land` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt    DateTime  @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `Land` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model Land {
+  id           Int       @id @default(autoincrement())
+  name         String
+  addressLine  String?   @map("address_line")
+  city         String
+  state        String
+  pincode      String?
+  areaValue    Decimal   @map("area_value") @db.Decimal(14, 2)
+  areaUnit     AreaUnit  @map("area_unit")
+  surveyNumber String?   @map("survey_number")
+  ownerName    String?   @map("owner_name")
+  purchaseDate DateTime? @map("purchase_date") @db.Date
+  purchaseCost Decimal?  @map("purchase_cost") @db.Decimal(16, 2)
+  notes        String?
+  createdById  Int       @map("created_by_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  createdBy User      @relation(fields: [createdById], references: [id]) // Defines a Prisma relation that connects this `Land` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
-  projects  Project[] // Defines a Prisma relation that connects this `Land` record to related `Project` records; Prisma resolves this link through the related model instead of storing an array here.
+  createdBy User      @relation(fields: [createdById], references: [id])
+  projects  Project[]
 
-  @@index([city, state]) // Stores the @@index([city, value in `@@index([city,` on the `Land` record.
-  @@map("lands") // Maps this Prisma model to the existing database table `lands`.
-} // Closes the `Land` definition.
+  @@index([city, state])
+  @@map("lands")
+}
 
-model Project { // Starts the `Project` model, which describes the columns and relationships for that kind of database record.
-  id                  Int           @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Project` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  landId              Int           @map("land_id") // Stores the land site linked to the project in `landId` on the `Project` record; it maps to the database column `land_id`.
-  code                String        @unique // Stores the short business reference in `code` on the `Project` record; duplicate values are rejected.
-  name                String // Stores the human-readable name in `name` on the `Project` record.
-  description         String? // Stores the description value in `description` on the `Project` record; the field is optional.
-  status              ProjectStatus @default(PLANNING) // Stores the current workflow state in `status` on the `Project` record; Prisma supplies a default when the field is omitted.
-  startDate           DateTime?     @map("start_date") @db.Date // Stores when the work is planned to begin in `startDate` on the `Project` record; the field is optional, and it maps to the database column `start_date`.
-  expectedEndDate     DateTime?     @map("expected_end_date") @db.Date // Stores the planned completion date in `expectedEndDate` on the `Project` record; the field is optional, and it maps to the database column `expected_end_date`.
-  actualEndDate       DateTime?     @map("actual_end_date") @db.Date // Stores the date work was actually completed in `actualEndDate` on the `Project` record; the field is optional, and it maps to the database column `actual_end_date`.
-  totalBudget         Decimal       @default(0) @map("total_budget") @db.Decimal(16, 2) // Stores the approved project budget in `totalBudget` on the `Project` record; Prisma supplies a default when the field is omitted, and it maps to the database column `total_budget`.
-  wastageThresholdPct Decimal       @default(10) @map("wastage_threshold_pct") @db.Decimal(5, 2) // Stores the wastage percentage that triggers an alert in `wastageThresholdPct` on the `Project` record; Prisma supplies a default when the field is omitted, and it maps to the database column `wastage_threshold_pct`.
-  assignedPmId        Int?          @map("assigned_pm_id") // Stores the project manager responsible for the project in `assignedPmId` on the `Project` record; the field is optional, and it maps to the database column `assigned_pm_id`.
-  createdById         Int           @map("created_by_id") // Stores the user who created this record in `createdById` on the `Project` record; it maps to the database column `created_by_id`.
-  createdAt           DateTime      @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Project` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt           DateTime      @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `Project` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model Project {
+  id                  Int           @id @default(autoincrement())
+  landId              Int           @map("land_id")
+  code                String        @unique
+  name                String
+  description         String?
+  status              ProjectStatus @default(PLANNING)
+  startDate           DateTime?     @map("start_date") @db.Date
+  expectedEndDate     DateTime?     @map("expected_end_date") @db.Date
+  actualEndDate       DateTime?     @map("actual_end_date") @db.Date
+  totalBudget         Decimal       @default(0) @map("total_budget") @db.Decimal(16, 2)
+  wastageThresholdPct Decimal       @default(10) @map("wastage_threshold_pct") @db.Decimal(5, 2)
+  assignedPmId        Int?          @map("assigned_pm_id")
+  createdById         Int           @map("created_by_id")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
 
-  land       Land  @relation(fields: [landId], references: [id]) // Defines a Prisma relation that connects this `Project` record to related `Land` records; Prisma resolves this link through the related model instead of storing an array here.
-  assignedPm User? @relation("ProjectPM", fields: [assignedPmId], references: [id]) // Defines a Prisma relation that connects this `Project` record to related `User?` records; Prisma resolves this link through the related model instead of storing an array here.
-  createdBy  User  @relation("ProjectCreatedBy", fields: [createdById], references: [id]) // Defines a Prisma relation that connects this `Project` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
+  land       Land  @relation(fields: [landId], references: [id])
+  assignedPm User? @relation("ProjectPM", fields: [assignedPmId], references: [id])
+  createdBy  User  @relation("ProjectCreatedBy", fields: [createdById], references: [id])
 
-  materialPlans     ProjectMaterialPlan[] // Defines a Prisma relation that connects this `Project` record to related `ProjectMaterialPlan` records; Prisma resolves this link through the related model instead of storing an array here.
-  vendorAssignments ProjectVendorAssignment[] // Defines a Prisma relation that connects this `Project` record to related `ProjectVendorAssignment` records; Prisma resolves this link through the related model instead of storing an array here.
-  milestones        ProjectMilestone[] // Defines a Prisma relation that connects this `Project` record to related `ProjectMilestone` records; Prisma resolves this link through the related model instead of storing an array here.
-  dailyLogs         DailyLog[] // Defines a Prisma relation that connects this `Project` record to related `DailyLog` records; Prisma resolves this link through the related model instead of storing an array here.
-  stockTransactions StockTransaction[] // Defines a Prisma relation that connects this `Project` record to related `StockTransaction` records; Prisma resolves this link through the related model instead of storing an array here.
-  bills             Bill[] // Defines a Prisma relation that connects this `Project` record to related `Bill` records; Prisma resolves this link through the related model instead of storing an array here.
-  notifications     Notification[] // Defines a Prisma relation that connects this `Project` record to related `Notification` records; Prisma resolves this link through the related model instead of storing an array here.
+  materialPlans     ProjectMaterialPlan[]
+  vendorAssignments ProjectVendorAssignment[]
+  milestones        ProjectMilestone[]
+  dailyLogs         DailyLog[]
+  stockTransactions StockTransaction[]
+  bills             Bill[]
+  notifications     Notification[]
 
-  @@index([landId]) // Adds an index so common lookups by these fields can run faster.
-  @@index([assignedPmId]) // Adds an index so common lookups by these fields can run faster.
-  @@index([status]) // Adds an index so common lookups by these fields can run faster.
-  @@map("projects") // Maps this Prisma model to the existing database table `projects`.
-} // Closes the `Project` definition.
+  @@index([landId])
+  @@index([assignedPmId])
+  @@index([status])
+  @@map("projects")
+}
 
-model ProjectMilestone { // Starts the `ProjectMilestone` model, which describes the columns and relationships for that kind of database record.
-  id               Int             @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `ProjectMilestone` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  projectId        Int             @map("project_id") // Stores the project this record belongs to in `projectId` on the `ProjectMilestone` record; it maps to the database column `project_id`.
-  name             String // Stores the human-readable name in `name` on the `ProjectMilestone` record.
-  description      String? // Stores the description value in `description` on the `ProjectMilestone` record; the field is optional.
-  sequence         Int // Stores the sequence value in `sequence` on the `ProjectMilestone` record.
-  plannedStartDate DateTime?       @map("planned_start_date") @db.Date // Stores the planned start date value in `plannedStartDate` on the `ProjectMilestone` record; the field is optional, and it maps to the database column `planned_start_date`.
-  plannedEndDate   DateTime?       @map("planned_end_date") @db.Date // Stores the planned end date value in `plannedEndDate` on the `ProjectMilestone` record; the field is optional, and it maps to the database column `planned_end_date`.
-  actualStartDate  DateTime?       @map("actual_start_date") @db.Date // Stores the actual start date value in `actualStartDate` on the `ProjectMilestone` record; the field is optional, and it maps to the database column `actual_start_date`.
-  actualEndDate    DateTime?       @map("actual_end_date") @db.Date // Stores the date work was actually completed in `actualEndDate` on the `ProjectMilestone` record; the field is optional, and it maps to the database column `actual_end_date`.
-  status           MilestoneStatus @default(PLANNED) // Stores the current workflow state in `status` on the `ProjectMilestone` record; Prisma supplies a default when the field is omitted.
-  progressPercent  Decimal         @default(0) @map("progress_percent") @db.Decimal(5, 2) // Stores the reported project completion percentage in `progressPercent` on the `ProjectMilestone` record; Prisma supplies a default when the field is omitted, and it maps to the database column `progress_percent`.
-  createdAt        DateTime        @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `ProjectMilestone` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt        DateTime        @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `ProjectMilestone` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model ProjectMilestone {
+  id               Int             @id @default(autoincrement())
+  projectId        Int             @map("project_id")
+  name             String
+  description      String?
+  sequence         Int
+  plannedStartDate DateTime?       @map("planned_start_date") @db.Date
+  plannedEndDate   DateTime?       @map("planned_end_date") @db.Date
+  actualStartDate  DateTime?       @map("actual_start_date") @db.Date
+  actualEndDate    DateTime?       @map("actual_end_date") @db.Date
+  status           MilestoneStatus @default(PLANNED)
+  progressPercent  Decimal         @default(0) @map("progress_percent") @db.Decimal(5, 2)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `ProjectMilestone` record to related `Project` records; Prisma resolves this link through the related model instead of storing an array here.
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, sequence]) // Stores the @@unique([project id, value in `@@unique([projectId,` on the `ProjectMilestone` record; duplicate values are rejected.
-  @@index([projectId, sequence]) // Stores the @@index([project id, value in `@@index([projectId,` on the `ProjectMilestone` record.
-  @@index([projectId, status]) // Stores the @@index([project id, value in `@@index([projectId,` on the `ProjectMilestone` record.
-  @@map("project_milestones") // Maps this Prisma model to the existing database table `project_milestones`.
-} // Closes the `ProjectMilestone` definition.
+  @@unique([projectId, sequence])
+  @@index([projectId, sequence])
+  @@index([projectId, status])
+  @@map("project_milestones")
+}
 
-model Material { // Starts the `Material` model, which describes the columns and relationships for that kind of database record.
-  id          Int              @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Material` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  name        String           @unique // Stores the human-readable name in `name` on the `Material` record; duplicate values are rejected.
-  category    MaterialCategory // Stores the business category of this record in `category` on the `Material` record.
-  unit        String // Stores the unit value in `unit` on the `Material` record.
-  description String? // Stores the description value in `description` on the `Material` record; the field is optional.
-  isActive    Boolean          @default(true) @map("is_active") // Stores whether the account or record can currently be used in `isActive` on the `Material` record; Prisma supplies a default when the field is omitted, and it maps to the database column `is_active`.
-  createdAt   DateTime         @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Material` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt   DateTime         @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `Material` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model Material {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  category    MaterialCategory
+  unit        String
+  description String?
+  isActive    Boolean          @default(true) @map("is_active")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
-  plans             ProjectMaterialPlan[] // Defines a Prisma relation that connects this `Material` record to related `ProjectMaterialPlan` records; Prisma resolves this link through the related model instead of storing an array here.
-  stockTransactions StockTransaction[] // Defines a Prisma relation that connects this `Material` record to related `StockTransaction` records; Prisma resolves this link through the related model instead of storing an array here.
+  plans             ProjectMaterialPlan[]
+  stockTransactions StockTransaction[]
 
-  @@map("materials") // Maps this Prisma model to the existing database table `materials`.
-} // Closes the `Material` definition.
+  @@map("materials")
+}
 
-model Vendor { // Starts the `Vendor` model, which describes the columns and relationships for that kind of database record.
-  id            Int        @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Vendor` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  name          String     @unique // Stores the human-readable name in `name` on the `Vendor` record; duplicate values are rejected.
-  vendorType    VendorType @default(OTHER) @map("vendor_type") // Stores the vendor type value in `vendorType` on the `Vendor` record; Prisma supplies a default when the field is omitted, and it maps to the database column `vendor_type`.
-  contactPerson String?    @map("contact_person") // Stores the vendor's primary contact in `contactPerson` on the `Vendor` record; the field is optional, and it maps to the database column `contact_person`.
-  phone         String? // Stores the phone value in `phone` on the `Vendor` record; the field is optional.
-  email         String? // Stores the contact or sign-in email address in `email` on the `Vendor` record; the field is optional.
-  gstin         String?    @unique // Stores the vendor's tax registration number in `gstin` on the `Vendor` record; the field is optional, and duplicate values are rejected.
-  address       String? // Stores the address value in `address` on the `Vendor` record; the field is optional.
-  isActive      Boolean    @default(true) @map("is_active") // Stores whether the account or record can currently be used in `isActive` on the `Vendor` record; Prisma supplies a default when the field is omitted, and it maps to the database column `is_active`.
-  createdAt     DateTime   @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Vendor` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt     DateTime   @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `Vendor` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model Vendor {
+  id            Int        @id @default(autoincrement())
+  name          String     @unique
+  vendorType    VendorType @default(OTHER) @map("vendor_type")
+  contactPerson String?    @map("contact_person")
+  phone         String?
+  email         String?
+  gstin         String?    @unique
+  address       String?
+  isActive      Boolean    @default(true) @map("is_active")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
 
-  bills              Bill[] // Defines a Prisma relation that connects this `Vendor` record to related `Bill` records; Prisma resolves this link through the related model instead of storing an array here.
-  stockTransactions  StockTransaction[] // Defines a Prisma relation that connects this `Vendor` record to related `StockTransaction` records; Prisma resolves this link through the related model instead of storing an array here.
-  projectAssignments ProjectVendorAssignment[] // Defines a Prisma relation that connects this `Vendor` record to related `ProjectVendorAssignment` records; Prisma resolves this link through the related model instead of storing an array here.
+  bills              Bill[]
+  stockTransactions  StockTransaction[]
+  projectAssignments ProjectVendorAssignment[]
 
-  @@map("vendors") // Maps this Prisma model to the existing database table `vendors`.
-} // Closes the `Vendor` definition.
+  @@map("vendors")
+}
 
-model ProjectVendorAssignment { // Starts the `ProjectVendorAssignment` model, which describes the columns and relationships for that kind of database record.
-  id           Int       @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `ProjectVendorAssignment` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  projectId    Int       @map("project_id") // Stores the project this record belongs to in `projectId` on the `ProjectVendorAssignment` record; it maps to the database column `project_id`.
-  vendorId     Int       @map("vendor_id") // Stores the supplier or contractor linked to this record in `vendorId` on the `ProjectVendorAssignment` record; it maps to the database column `vendor_id`.
-  assignedById Int       @map("assigned_by_id") // Stores the assigned by id value in `assignedById` on the `ProjectVendorAssignment` record; it maps to the database column `assigned_by_id`.
-  assignedAt   DateTime  @default(now()) @map("assigned_at") // Stores the assigned at value in `assignedAt` on the `ProjectVendorAssignment` record; Prisma supplies a default when the field is omitted, and it maps to the database column `assigned_at`.
-  unassignedAt DateTime? @map("unassigned_at") // Stores the unassigned at value in `unassignedAt` on the `ProjectVendorAssignment` record; the field is optional, and it maps to the database column `unassigned_at`.
+model ProjectVendorAssignment {
+  id           Int       @id @default(autoincrement())
+  projectId    Int       @map("project_id")
+  vendorId     Int       @map("vendor_id")
+  assignedById Int       @map("assigned_by_id")
+  assignedAt   DateTime  @default(now()) @map("assigned_at")
+  unassignedAt DateTime? @map("unassigned_at")
 
-  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `ProjectVendorAssignment` record to related `Project` records; Prisma resolves this link through the related model instead of storing an array here.
-  vendor     Vendor  @relation(fields: [vendorId], references: [id]) // Defines a Prisma relation that connects this `ProjectVendorAssignment` record to related `Vendor` records; Prisma resolves this link through the related model instead of storing an array here.
-  assignedBy User    @relation(fields: [assignedById], references: [id]) // Defines a Prisma relation that connects this `ProjectVendorAssignment` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendor     Vendor  @relation(fields: [vendorId], references: [id])
+  assignedBy User    @relation(fields: [assignedById], references: [id])
 
-  @@index([projectId, vendorId, unassignedAt]) // Stores the @@index([project id, value in `@@index([projectId,` on the `ProjectVendorAssignment` record.
-  @@index([vendorId, assignedAt]) // Stores the @@index([vendor id, value in `@@index([vendorId,` on the `ProjectVendorAssignment` record.
-  @@map("project_vendor_assignments") // Maps this Prisma model to the existing database table `project_vendor_assignments`.
-} // Closes the `ProjectVendorAssignment` definition.
+  @@index([projectId, vendorId, unassignedAt])
+  @@index([vendorId, assignedAt])
+  @@map("project_vendor_assignments")
+}
 
-model ProjectMaterialPlan { // Starts the `ProjectMaterialPlan` model, which describes the columns and relationships for that kind of database record.
-  id                  Int      @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `ProjectMaterialPlan` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  projectId           Int      @map("project_id") // Stores the project this record belongs to in `projectId` on the `ProjectMaterialPlan` record; it maps to the database column `project_id`.
-  materialId          Int      @map("material_id") // Stores the material referenced by this record in `materialId` on the `ProjectMaterialPlan` record; it maps to the database column `material_id`.
-  openingQuantity     Decimal  @default(0) @map("opening_quantity") @db.Decimal(14, 3) // Stores the opening quantity value in `openingQuantity` on the `ProjectMaterialPlan` record; Prisma supplies a default when the field is omitted, and it maps to the database column `opening_quantity`.
-  plannedQuantity     Decimal  @map("planned_quantity") @db.Decimal(14, 3) // Stores the planned quantity value in `plannedQuantity` on the `ProjectMaterialPlan` record; it maps to the database column `planned_quantity`.
-  plannedUnitRate     Decimal? @map("planned_unit_rate") @db.Decimal(12, 2) // Stores the planned unit rate value in `plannedUnitRate` on the `ProjectMaterialPlan` record; the field is optional, and it maps to the database column `planned_unit_rate`.
-  lowStockThreshold   Decimal? @map("low_stock_threshold") @db.Decimal(14, 3) // Stores the low stock threshold value in `lowStockThreshold` on the `ProjectMaterialPlan` record; the field is optional, and it maps to the database column `low_stock_threshold`.
-  wastageThresholdPct Decimal? @map("wastage_threshold_pct") @db.Decimal(5, 2) // Stores the wastage percentage that triggers an alert in `wastageThresholdPct` on the `ProjectMaterialPlan` record; the field is optional, and it maps to the database column `wastage_threshold_pct`.
-  createdAt           DateTime @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `ProjectMaterialPlan` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt           DateTime @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `ProjectMaterialPlan` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model ProjectMaterialPlan {
+  id                  Int      @id @default(autoincrement())
+  projectId           Int      @map("project_id")
+  materialId          Int      @map("material_id")
+  openingQuantity     Decimal  @default(0) @map("opening_quantity") @db.Decimal(14, 3)
+  plannedQuantity     Decimal  @map("planned_quantity") @db.Decimal(14, 3)
+  plannedUnitRate     Decimal? @map("planned_unit_rate") @db.Decimal(12, 2)
+  lowStockThreshold   Decimal? @map("low_stock_threshold") @db.Decimal(14, 3)
+  wastageThresholdPct Decimal? @map("wastage_threshold_pct") @db.Decimal(5, 2)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
-  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `ProjectMaterialPlan` record to related `Project` records; Prisma resolves this link through the related model instead of storing an array here.
-  material Material @relation(fields: [materialId], references: [id]) // Defines a Prisma relation that connects this `ProjectMaterialPlan` record to related `Material` records; Prisma resolves this link through the related model instead of storing an array here.
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id])
 
-  @@unique([projectId, materialId]) // Stores the @@unique([project id, value in `@@unique([projectId,` on the `ProjectMaterialPlan` record; duplicate values are rejected.
-  @@map("project_material_plans") // Maps this Prisma model to the existing database table `project_material_plans`.
-} // Closes the `ProjectMaterialPlan` definition.
+  @@unique([projectId, materialId])
+  @@map("project_material_plans")
+}
 
-model DailyLog { // Starts the `DailyLog` model, which describes the columns and relationships for that kind of database record.
-  id              Int      @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `DailyLog` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  projectId       Int      @map("project_id") // Stores the project this record belongs to in `projectId` on the `DailyLog` record; it maps to the database column `project_id`.
-  logDate         DateTime @map("log_date") @db.Date // Stores the date covered by the daily report in `logDate` on the `DailyLog` record; it maps to the database column `log_date`.
-  progressPercent Decimal  @map("progress_percent") @db.Decimal(5, 2) // Stores the reported project completion percentage in `progressPercent` on the `DailyLog` record; it maps to the database column `progress_percent`.
-  workSummary     String   @map("work_summary") // Stores the work completed that day in `workSummary` on the `DailyLog` record; it maps to the database column `work_summary`.
-  weather         String? // Stores the weather value in `weather` on the `DailyLog` record; the field is optional.
-  issues          String? // Stores the issues value in `issues` on the `DailyLog` record; the field is optional.
-  createdById     Int      @map("created_by_id") // Stores the user who created this record in `createdById` on the `DailyLog` record; it maps to the database column `created_by_id`.
-  createdAt       DateTime @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `DailyLog` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt       DateTime @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `DailyLog` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model DailyLog {
+  id              Int      @id @default(autoincrement())
+  projectId       Int      @map("project_id")
+  logDate         DateTime @map("log_date") @db.Date
+  progressPercent Decimal  @map("progress_percent") @db.Decimal(5, 2)
+  workSummary     String   @map("work_summary")
+  weather         String?
+  issues          String?
+  createdById     Int      @map("created_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `DailyLog` record to related `Project` records; Prisma resolves this link through the related model instead of storing an array here.
-  createdBy         User               @relation(fields: [createdById], references: [id]) // Defines a Prisma relation that connects this `DailyLog` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
-  labourEntries     LabourEntry[] // Defines a Prisma relation that connects this `DailyLog` record to related `LabourEntry` records; Prisma resolves this link through the related model instead of storing an array here.
-  machineryEntries  MachineryEntry[] // Defines a Prisma relation that connects this `DailyLog` record to related `MachineryEntry` records; Prisma resolves this link through the related model instead of storing an array here.
-  stockTransactions StockTransaction[] // Defines a Prisma relation that connects this `DailyLog` record to related `StockTransaction` records; Prisma resolves this link through the related model instead of storing an array here.
-  attachments       Attachment[] // Defines a Prisma relation that connects this `DailyLog` record to related `Attachment` records; Prisma resolves this link through the related model instead of storing an array here.
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy         User               @relation(fields: [createdById], references: [id])
+  labourEntries     LabourEntry[]
+  machineryEntries  MachineryEntry[]
+  stockTransactions StockTransaction[]
+  attachments       Attachment[]
 
-  @@unique([projectId, logDate]) // Stores the @@unique([project id, value in `@@unique([projectId,` on the `DailyLog` record; duplicate values are rejected.
-  @@index([projectId, logDate(sort: Desc)]) // Stores the @@index([project id, value in `@@index([projectId,` on the `DailyLog` record.
-  @@map("daily_logs") // Maps this Prisma model to the existing database table `daily_logs`.
-} // Closes the `DailyLog` definition.
+  @@unique([projectId, logDate])
+  @@index([projectId, logDate(sort: Desc)])
+  @@map("daily_logs")
+}
 
-model LabourEntry { // Starts the `LabourEntry` model, which describes the columns and relationships for that kind of database record.
-  id             Int     @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `LabourEntry` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  dailyLogId     Int     @map("daily_log_id") // Stores the daily report associated with this entry in `dailyLogId` on the `LabourEntry` record; it maps to the database column `daily_log_id`.
-  trade          String // Stores the trade value in `trade` on the `LabourEntry` record.
-  contractorName String? @map("contractor_name") // Stores the contractor name value in `contractorName` on the `LabourEntry` record; the field is optional, and it maps to the database column `contractor_name`.
-  headCount      Int     @map("head_count") // Stores the number of workers recorded in `headCount` on the `LabourEntry` record; it maps to the database column `head_count`.
-  hoursWorked    Decimal @default(8) @map("hours_worked") @db.Decimal(4, 1) // Stores the labour hours recorded in `hoursWorked` on the `LabourEntry` record; Prisma supplies a default when the field is omitted, and it maps to the database column `hours_worked`.
-  remarks        String? // Stores the remarks value in `remarks` on the `LabourEntry` record; the field is optional.
+model LabourEntry {
+  id             Int     @id @default(autoincrement())
+  dailyLogId     Int     @map("daily_log_id")
+  trade          String
+  contractorName String? @map("contractor_name")
+  headCount      Int     @map("head_count")
+  hoursWorked    Decimal @default(8) @map("hours_worked") @db.Decimal(4, 1)
+  remarks        String?
 
-  dailyLog DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `LabourEntry` record to related `DailyLog` records; Prisma resolves this link through the related model instead of storing an array here.
+  dailyLog DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
 
-  @@index([dailyLogId]) // Adds an index so common lookups by these fields can run faster.
-  @@map("labour_entries") // Maps this Prisma model to the existing database table `labour_entries`.
-} // Closes the `LabourEntry` definition.
+  @@index([dailyLogId])
+  @@map("labour_entries")
+}
 
-model MachineryEntry { // Starts the `MachineryEntry` model, which describes the columns and relationships for that kind of database record.
-  id           Int      @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `MachineryEntry` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  dailyLogId   Int      @map("daily_log_id") // Stores the daily report associated with this entry in `dailyLogId` on the `MachineryEntry` record; it maps to the database column `daily_log_id`.
-  machineName  String   @map("machine_name") // Stores the machine used on site in `machineName` on the `MachineryEntry` record; it maps to the database column `machine_name`.
-  operatorName String?  @map("operator_name") // Stores the operator name value in `operatorName` on the `MachineryEntry` record; the field is optional, and it maps to the database column `operator_name`.
-  hoursUsed    Decimal  @map("hours_used") @db.Decimal(5, 2) // Stores how long the machine was used in `hoursUsed` on the `MachineryEntry` record; it maps to the database column `hours_used`.
-  fuelLitres   Decimal? @map("fuel_litres") @db.Decimal(8, 2) // Stores the amount of fuel consumed in `fuelLitres` on the `MachineryEntry` record; the field is optional, and it maps to the database column `fuel_litres`.
-  remarks      String? // Stores the remarks value in `remarks` on the `MachineryEntry` record; the field is optional.
+model MachineryEntry {
+  id           Int      @id @default(autoincrement())
+  dailyLogId   Int      @map("daily_log_id")
+  machineName  String   @map("machine_name")
+  operatorName String?  @map("operator_name")
+  hoursUsed    Decimal  @map("hours_used") @db.Decimal(5, 2)
+  fuelLitres   Decimal? @map("fuel_litres") @db.Decimal(8, 2)
+  remarks      String?
 
-  dailyLog DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `MachineryEntry` record to related `DailyLog` records; Prisma resolves this link through the related model instead of storing an array here.
+  dailyLog DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
 
-  @@index([dailyLogId]) // Adds an index so common lookups by these fields can run faster.
-  @@map("machinery_entries") // Maps this Prisma model to the existing database table `machinery_entries`.
-} // Closes the `MachineryEntry` definition.
+  @@index([dailyLogId])
+  @@map("machinery_entries")
+}
 
-model StockTransaction { // Starts the `StockTransaction` model, which describes the columns and relationships for that kind of database record.
-  id                  Int                  @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `StockTransaction` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  projectId           Int                  @map("project_id") // Stores the project this record belongs to in `projectId` on the `StockTransaction` record; it maps to the database column `project_id`.
-  materialId          Int                  @map("material_id") // Stores the material referenced by this record in `materialId` on the `StockTransaction` record; it maps to the database column `material_id`.
-  txnType             StockTxnType         @map("txn_type") // Stores whether stock is entering, leaving, or being adjusted in `txnType` on the `StockTransaction` record; it maps to the database column `txn_type`.
-  quantity            Decimal              @db.Decimal(14, 3) // Stores the amount of material involved in `quantity` on the `StockTransaction` record.
-  unitRate            Decimal?             @map("unit_rate") @db.Decimal(12, 2) // Stores the price for one unit in `unitRate` on the `StockTransaction` record; the field is optional, and it maps to the database column `unit_rate`.
-  vendorId            Int?                 @map("vendor_id") // Stores the supplier or contractor linked to this record in `vendorId` on the `StockTransaction` record; the field is optional, and it maps to the database column `vendor_id`.
-  billId              Int?                 @map("bill_id") // Stores the bill linked to this transaction or payment in `billId` on the `StockTransaction` record; the field is optional, and it maps to the database column `bill_id`.
-  challanNumber       String?              @map("challan_number") // Stores the challan number value in `challanNumber` on the `StockTransaction` record; the field is optional, and it maps to the database column `challan_number`.
-  outReason           OutReason?           @map("out_reason") // Stores the out reason value in `outReason` on the `StockTransaction` record; the field is optional, and it maps to the database column `out_reason`.
-  adjustmentDirection AdjustmentDirection? @map("adjustment_direction") // Stores the adjustment direction value in `adjustmentDirection` on the `StockTransaction` record; the field is optional, and it maps to the database column `adjustment_direction`.
-  txnDate             DateTime             @map("txn_date") @db.Date // Stores when the stock movement occurred in `txnDate` on the `StockTransaction` record; it maps to the database column `txn_date`.
-  dailyLogId          Int?                 @map("daily_log_id") // Stores the daily report associated with this entry in `dailyLogId` on the `StockTransaction` record; the field is optional, and it maps to the database column `daily_log_id`.
-  remarks             String? // Stores the remarks value in `remarks` on the `StockTransaction` record; the field is optional.
-  createdById         Int                  @map("created_by_id") // Stores the user who created this record in `createdById` on the `StockTransaction` record; it maps to the database column `created_by_id`.
-  createdAt           DateTime             @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `StockTransaction` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  isVoided            Boolean              @default(false) @map("is_voided") // Stores the is voided value in `isVoided` on the `StockTransaction` record; Prisma supplies a default when the field is omitted, and it maps to the database column `is_voided`.
-  voidedById          Int?                 @map("voided_by_id") // Stores the voided by id value in `voidedById` on the `StockTransaction` record; the field is optional, and it maps to the database column `voided_by_id`.
-  voidedAt            DateTime?            @map("voided_at") // Stores the voided at value in `voidedAt` on the `StockTransaction` record; the field is optional, and it maps to the database column `voided_at`.
-  voidReason          String?              @map("void_reason") // Stores the void reason value in `voidReason` on the `StockTransaction` record; the field is optional, and it maps to the database column `void_reason`.
+model StockTransaction {
+  id                  Int                  @id @default(autoincrement())
+  projectId           Int                  @map("project_id")
+  materialId          Int                  @map("material_id")
+  txnType             StockTxnType         @map("txn_type")
+  quantity            Decimal              @db.Decimal(14, 3)
+  unitRate            Decimal?             @map("unit_rate") @db.Decimal(12, 2)
+  vendorId            Int?                 @map("vendor_id")
+  billId              Int?                 @map("bill_id")
+  challanNumber       String?              @map("challan_number")
+  outReason           OutReason?           @map("out_reason")
+  adjustmentDirection AdjustmentDirection? @map("adjustment_direction")
+  txnDate             DateTime             @map("txn_date") @db.Date
+  dailyLogId          Int?                 @map("daily_log_id")
+  remarks             String?
+  createdById         Int                  @map("created_by_id")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  isVoided            Boolean              @default(false) @map("is_voided")
+  voidedById          Int?                 @map("voided_by_id")
+  voidedAt            DateTime?            @map("voided_at")
+  voidReason          String?              @map("void_reason")
 
-  project   Project   @relation(fields: [projectId], references: [id]) // Defines a Prisma relation that connects this `StockTransaction` record to related `Project` records; Prisma resolves this link through the related model instead of storing an array here.
-  material  Material  @relation(fields: [materialId], references: [id]) // Defines a Prisma relation that connects this `StockTransaction` record to related `Material` records; Prisma resolves this link through the related model instead of storing an array here.
-  vendor    Vendor?   @relation(fields: [vendorId], references: [id]) // Defines a Prisma relation that connects this `StockTransaction` record to related `Vendor?` records; Prisma resolves this link through the related model instead of storing an array here.
-  bill      Bill?     @relation(fields: [billId], references: [id]) // Defines a Prisma relation that connects this `StockTransaction` record to related `Bill?` records; Prisma resolves this link through the related model instead of storing an array here.
-  dailyLog  DailyLog? @relation(fields: [dailyLogId], references: [id], onDelete: SetNull) // Defines a Prisma relation that connects this `StockTransaction` record to related `DailyLog?` records; Prisma resolves this link through the related model instead of storing an array here.
-  createdBy User      @relation("StockTxnCreatedBy", fields: [createdById], references: [id]) // Defines a Prisma relation that connects this `StockTransaction` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
-  voidedBy  User?     @relation("StockTxnVoidedBy", fields: [voidedById], references: [id]) // Defines a Prisma relation that connects this `StockTransaction` record to related `User?` records; Prisma resolves this link through the related model instead of storing an array here.
+  project   Project   @relation(fields: [projectId], references: [id])
+  material  Material  @relation(fields: [materialId], references: [id])
+  vendor    Vendor?   @relation(fields: [vendorId], references: [id])
+  bill      Bill?     @relation(fields: [billId], references: [id])
+  dailyLog  DailyLog? @relation(fields: [dailyLogId], references: [id], onDelete: SetNull)
+  createdBy User      @relation("StockTxnCreatedBy", fields: [createdById], references: [id])
+  voidedBy  User?     @relation("StockTxnVoidedBy", fields: [voidedById], references: [id])
 
-  @@index([projectId, materialId, txnDate]) // Stores the @@index([project id, value in `@@index([projectId,` on the `StockTransaction` record.
-  @@index([vendorId]) // Adds an index so common lookups by these fields can run faster.
-  @@index([billId]) // Adds an index so common lookups by these fields can run faster.
-  @@map("stock_transactions") // Maps this Prisma model to the existing database table `stock_transactions`.
-} // Closes the `StockTransaction` definition.
+  @@index([projectId, materialId, txnDate])
+  @@index([vendorId])
+  @@index([billId])
+  @@map("stock_transactions")
+}
 
-model Bill { // Starts the `Bill` model, which describes the columns and relationships for that kind of database record.
-  id              Int          @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Bill` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  projectId       Int          @map("project_id") // Stores the project this record belongs to in `projectId` on the `Bill` record; it maps to the database column `project_id`.
-  vendorId        Int          @map("vendor_id") // Stores the supplier or contractor linked to this record in `vendorId` on the `Bill` record; it maps to the database column `vendor_id`.
-  billNumber      String       @map("bill_number") // Stores the vendor's invoice reference in `billNumber` on the `Bill` record; it maps to the database column `bill_number`.
-  billDate        DateTime     @map("bill_date") @db.Date // Stores the date on the vendor's bill in `billDate` on the `Bill` record; it maps to the database column `bill_date`.
-  dueDate         DateTime?    @map("due_date") @db.Date // Stores when payment is due in `dueDate` on the `Bill` record; the field is optional, and it maps to the database column `due_date`.
-  category        BillCategory // Stores the business category of this record in `category` on the `Bill` record.
-  description     String? // Stores the description value in `description` on the `Bill` record; the field is optional.
-  baseAmount      Decimal      @map("base_amount") @db.Decimal(14, 2) // Stores the bill amount before tax in `baseAmount` on the `Bill` record; it maps to the database column `base_amount`.
-  gstPercent      Decimal      @default(0) @map("gst_percent") @db.Decimal(5, 2) // Stores the tax rate applied to the bill in `gstPercent` on the `Bill` record; Prisma supplies a default when the field is omitted, and it maps to the database column `gst_percent`.
-  gstAmount       Decimal      @map("gst_amount") @db.Decimal(14, 2) // Stores the calculated tax amount in `gstAmount` on the `Bill` record; it maps to the database column `gst_amount`.
-  totalAmount     Decimal      @map("total_amount") @db.Decimal(14, 2) // Stores the full amount including tax in `totalAmount` on the `Bill` record; it maps to the database column `total_amount`.
-  status          BillStatus   @default(PENDING) // Stores the current workflow state in `status` on the `Bill` record; Prisma supplies a default when the field is omitted.
-  submittedById   Int          @map("submitted_by_id") // Stores the user who submitted the bill in `submittedById` on the `Bill` record; it maps to the database column `submitted_by_id`.
-  approvedById    Int?         @map("approved_by_id") // Stores the user who approved the bill in `approvedById` on the `Bill` record; the field is optional, and it maps to the database column `approved_by_id`.
-  approvedAt      DateTime?    @map("approved_at") // Stores the approved at value in `approvedAt` on the `Bill` record; the field is optional, and it maps to the database column `approved_at`.
-  rejectionReason String?      @map("rejection_reason") // Stores the rejection reason value in `rejectionReason` on the `Bill` record; the field is optional, and it maps to the database column `rejection_reason`.
-  createdAt       DateTime     @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Bill` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
-  updatedAt       DateTime     @updatedAt @map("updated_at") // Stores when the record was last changed in `updatedAt` on the `Bill` record; Prisma refreshes it automatically on updates, and it maps to the database column `updated_at`.
+model Bill {
+  id              Int          @id @default(autoincrement())
+  projectId       Int          @map("project_id")
+  vendorId        Int          @map("vendor_id")
+  billNumber      String       @map("bill_number")
+  billDate        DateTime     @map("bill_date") @db.Date
+  dueDate         DateTime?    @map("due_date") @db.Date
+  category        BillCategory
+  description     String?
+  baseAmount      Decimal      @map("base_amount") @db.Decimal(14, 2)
+  gstPercent      Decimal      @default(0) @map("gst_percent") @db.Decimal(5, 2)
+  gstAmount       Decimal      @map("gst_amount") @db.Decimal(14, 2)
+  totalAmount     Decimal      @map("total_amount") @db.Decimal(14, 2)
+  status          BillStatus   @default(PENDING)
+  submittedById   Int          @map("submitted_by_id")
+  approvedById    Int?         @map("approved_by_id")
+  approvedAt      DateTime?    @map("approved_at")
+  rejectionReason String?      @map("rejection_reason")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
 
-  project     Project            @relation(fields: [projectId], references: [id]) // Defines a Prisma relation that connects this `Bill` record to related `Project` records; Prisma resolves this link through the related model instead of storing an array here.
-  vendor      Vendor             @relation(fields: [vendorId], references: [id]) // Defines a Prisma relation that connects this `Bill` record to related `Vendor` records; Prisma resolves this link through the related model instead of storing an array here.
-  submittedBy User               @relation("BillSubmittedBy", fields: [submittedById], references: [id]) // Defines a Prisma relation that connects this `Bill` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
-  approvedBy  User?              @relation("BillApprovedBy", fields: [approvedById], references: [id]) // Defines a Prisma relation that connects this `Bill` record to related `User?` records; Prisma resolves this link through the related model instead of storing an array here.
-  payments    Payment[] // Defines a Prisma relation that connects this `Bill` record to related `Payment` records; Prisma resolves this link through the related model instead of storing an array here.
-  deliveries  StockTransaction[] // Defines a Prisma relation that connects this `Bill` record to related `StockTransaction` records; Prisma resolves this link through the related model instead of storing an array here.
-  attachments Attachment[] // Defines a Prisma relation that connects this `Bill` record to related `Attachment` records; Prisma resolves this link through the related model instead of storing an array here.
+  project     Project            @relation(fields: [projectId], references: [id])
+  vendor      Vendor             @relation(fields: [vendorId], references: [id])
+  submittedBy User               @relation("BillSubmittedBy", fields: [submittedById], references: [id])
+  approvedBy  User?              @relation("BillApprovedBy", fields: [approvedById], references: [id])
+  payments    Payment[]
+  deliveries  StockTransaction[]
+  attachments Attachment[]
 
-  @@unique([vendorId, billNumber]) // Stores the @@unique([vendor id, value in `@@unique([vendorId,` on the `Bill` record; duplicate values are rejected.
-  @@index([projectId, status]) // Stores the @@index([project id, value in `@@index([projectId,` on the `Bill` record.
-  @@index([status, dueDate]) // Stores the @@index([status, value in `@@index([status,` on the `Bill` record.
-  @@map("bills") // Maps this Prisma model to the existing database table `bills`.
-} // Closes the `Bill` definition.
+  @@unique([vendorId, billNumber])
+  @@index([projectId, status])
+  @@index([status, dueDate])
+  @@map("bills")
+}
 
-model Payment { // Starts the `Payment` model, which describes the columns and relationships for that kind of database record.
-  id              Int         @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Payment` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  billId          Int         @map("bill_id") // Stores the bill linked to this transaction or payment in `billId` on the `Payment` record; it maps to the database column `bill_id`.
-  amount          Decimal     @db.Decimal(14, 2) // Stores the amount value in `amount` on the `Payment` record.
-  paymentDate     DateTime    @map("payment_date") @db.Date // Stores the payment date value in `paymentDate` on the `Payment` record; it maps to the database column `payment_date`.
-  mode            PaymentMode // Stores the mode value in `mode` on the `Payment` record.
-  referenceNumber String?     @map("reference_number") // Stores the reference number value in `referenceNumber` on the `Payment` record; the field is optional, and it maps to the database column `reference_number`.
-  remarks         String? // Stores the remarks value in `remarks` on the `Payment` record; the field is optional.
-  recordedById    Int         @map("recorded_by_id") // Stores the recorded by id value in `recordedById` on the `Payment` record; it maps to the database column `recorded_by_id`.
-  createdAt       DateTime    @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Payment` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
+model Payment {
+  id              Int         @id @default(autoincrement())
+  billId          Int         @map("bill_id")
+  amount          Decimal     @db.Decimal(14, 2)
+  paymentDate     DateTime    @map("payment_date") @db.Date
+  mode            PaymentMode
+  referenceNumber String?     @map("reference_number")
+  remarks         String?
+  recordedById    Int         @map("recorded_by_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
 
-  bill       Bill @relation(fields: [billId], references: [id]) // Defines a Prisma relation that connects this `Payment` record to related `Bill` records; Prisma resolves this link through the related model instead of storing an array here.
-  recordedBy User @relation(fields: [recordedById], references: [id]) // Defines a Prisma relation that connects this `Payment` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
+  bill       Bill @relation(fields: [billId], references: [id])
+  recordedBy User @relation(fields: [recordedById], references: [id])
 
-  @@index([billId]) // Adds an index so common lookups by these fields can run faster.
-  @@map("payments") // Maps this Prisma model to the existing database table `payments`.
-} // Closes the `Payment` definition.
+  @@index([billId])
+  @@map("payments")
+}
 
-model AuditLog { // Starts the `AuditLog` model, which describes the columns and relationships for that kind of database record.
-  id         Int         @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `AuditLog` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  userId     Int?        @map("user_id") // Stores the user id value in `userId` on the `AuditLog` record; the field is optional, and it maps to the database column `user_id`.
-  action     AuditAction // Stores the activity performed on the record in `action` on the `AuditLog` record.
-  entityType String      @map("entity_type") // Stores the kind of record that changed in `entityType` on the `AuditLog` record; it maps to the database column `entity_type`.
-  entityId   Int?        @map("entity_id") // Stores the identifier of the record that changed in `entityId` on the `AuditLog` record; the field is optional, and it maps to the database column `entity_id`.
-  oldValues  Json?       @map("old_values") // Stores the record values before the change in `oldValues` on the `AuditLog` record; the field is optional, and it maps to the database column `old_values`.
-  newValues  Json?       @map("new_values") // Stores the record values after the change in `newValues` on the `AuditLog` record; the field is optional, and it maps to the database column `new_values`.
-  ipAddress  String?     @map("ip_address") // Stores the ip address value in `ipAddress` on the `AuditLog` record; the field is optional, and it maps to the database column `ip_address`.
-  createdAt  DateTime    @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `AuditLog` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  userId     Int?        @map("user_id")
+  action     AuditAction
+  entityType String      @map("entity_type")
+  entityId   Int?        @map("entity_id")
+  oldValues  Json?       @map("old_values")
+  newValues  Json?       @map("new_values")
+  ipAddress  String?     @map("ip_address")
+  createdAt  DateTime    @default(now()) @map("created_at")
 
-  user User? @relation(fields: [userId], references: [id]) // Defines a Prisma relation that connects this `AuditLog` record to related `User?` records; Prisma resolves this link through the related model instead of storing an array here.
+  user User? @relation(fields: [userId], references: [id])
 
-  @@index([entityType, entityId]) // Stores the @@index([entity type, value in `@@index([entityType,` on the `AuditLog` record.
-  @@index([userId, createdAt]) // Stores the @@index([user id, value in `@@index([userId,` on the `AuditLog` record.
-  @@index([createdAt]) // Adds an index so common lookups by these fields can run faster.
-  @@map("audit_logs") // Maps this Prisma model to the existing database table `audit_logs`.
-} // Closes the `AuditLog` definition.
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
 
-model Notification { // Starts the `Notification` model, which describes the columns and relationships for that kind of database record.
-  id        Int              @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Notification` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  userId    Int              @map("user_id") // Stores the user id value in `userId` on the `Notification` record; it maps to the database column `user_id`.
-  type      NotificationType // Stores the type value in `type` on the `Notification` record.
-  title     String // Stores the title value in `title` on the `Notification` record.
-  message   String // Stores the text shown in the notification in `message` on the `Notification` record.
-  projectId Int?             @map("project_id") // Stores the project this record belongs to in `projectId` on the `Notification` record; the field is optional, and it maps to the database column `project_id`.
-  link      String? // Stores the link value in `link` on the `Notification` record; the field is optional.
-  isRead    Boolean          @default(false) @map("is_read") // Stores the is read value in `isRead` on the `Notification` record; Prisma supplies a default when the field is omitted, and it maps to the database column `is_read`.
-  dedupeKey String?          @unique @map("dedupe_key") // Stores the dedupe key value in `dedupeKey` on the `Notification` record; the field is optional, and duplicate values are rejected, and it maps to the database column `dedupe_key`.
-  createdAt DateTime         @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Notification` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              @map("user_id")
+  type      NotificationType
+  title     String
+  message   String
+  projectId Int?             @map("project_id")
+  link      String?
+  isRead    Boolean          @default(false) @map("is_read")
+  dedupeKey String?          @unique @map("dedupe_key")
+  createdAt DateTime         @default(now()) @map("created_at")
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `Notification` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
-  project Project? @relation(fields: [projectId], references: [id]) // Defines a Prisma relation that connects this `Notification` record to related `Project?` records; Prisma resolves this link through the related model instead of storing an array here.
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id])
 
-  @@index([userId, isRead, createdAt]) // Stores the @@index([user id, value in `@@index([userId,` on the `Notification` record.
-  @@map("notifications") // Maps this Prisma model to the existing database table `notifications`.
-} // Closes the `Notification` definition.
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
 
-model Attachment { // Starts the `Attachment` model, which describes the columns and relationships for that kind of database record.
-  id           Int      @id @default(autoincrement()) // Stores the unique identifier for this record in `id` on the `Attachment` record; it uniquely identifies the row, and Prisma supplies a default when the field is omitted.
-  dailyLogId   Int?     @map("daily_log_id") // Stores the daily report associated with this entry in `dailyLogId` on the `Attachment` record; the field is optional, and it maps to the database column `daily_log_id`.
-  billId       Int?     @map("bill_id") // Stores the bill linked to this transaction or payment in `billId` on the `Attachment` record; the field is optional, and it maps to the database column `bill_id`.
-  fileName     String   @map("file_name") // Stores the file name value in `fileName` on the `Attachment` record; it maps to the database column `file_name`.
-  storedPath   String   @map("stored_path") // Stores the stored path value in `storedPath` on the `Attachment` record; it maps to the database column `stored_path`.
-  mimeType     String   @map("mime_type") // Stores the mime type value in `mimeType` on the `Attachment` record; it maps to the database column `mime_type`.
-  sizeBytes    Int      @map("size_bytes") // Stores the size bytes value in `sizeBytes` on the `Attachment` record; it maps to the database column `size_bytes`.
-  uploadedById Int      @map("uploaded_by_id") // Stores the uploaded by id value in `uploadedById` on the `Attachment` record; it maps to the database column `uploaded_by_id`.
-  createdAt    DateTime @default(now()) @map("created_at") // Stores when the record was created in `createdAt` on the `Attachment` record; Prisma supplies a default when the field is omitted, and it maps to the database column `created_at`.
+model Attachment {
+  id           Int      @id @default(autoincrement())
+  dailyLogId   Int?     @map("daily_log_id")
+  billId       Int?     @map("bill_id")
+  fileName     String   @map("file_name")
+  storedPath   String   @map("stored_path")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  uploadedById Int      @map("uploaded_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  dailyLog   DailyLog? @relation(fields: [dailyLogId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `Attachment` record to related `DailyLog?` records; Prisma resolves this link through the related model instead of storing an array here.
-  bill       Bill?     @relation(fields: [billId], references: [id], onDelete: Cascade) // Defines a Prisma relation that connects this `Attachment` record to related `Bill?` records; Prisma resolves this link through the related model instead of storing an array here.
-  uploadedBy User      @relation(fields: [uploadedById], references: [id]) // Defines a Prisma relation that connects this `Attachment` record to related `User` records; Prisma resolves this link through the related model instead of storing an array here.
+  dailyLog   DailyLog? @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  bill       Bill?     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  uploadedBy User      @relation(fields: [uploadedById], references: [id])
 
-  @@index([dailyLogId]) // Adds an index so common lookups by these fields can run faster.
-  @@index([billId]) // Adds an index so common lookups by these fields can run faster.
-  @@map("attachments") // Maps this Prisma model to the existing database table `attachments`.
-} // Closes the `Attachment` definition.
-// File purpose: Defines the authoritative Prisma models, enums, and database relations.
+  @@index([dailyLogId])
+  @@index([billId])
+  @@map("attachments")
+}
