@@ -17,6 +17,8 @@ import { inventoryRoutes } from './modules/inventory/inventory.routes.js'
 import { vendorsRoutes } from './modules/vendors/vendors.routes.js'
 import { billingRoutes } from './modules/billing/billing.routes.js'
 import { materialPlansRoutes } from './modules/material-plans/material-plans.routes.js'
+import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js'
+import { auditRoutes } from './modules/audit/audit.routes.js'
 
 export function createApp() {
   const app = express()
@@ -37,6 +39,8 @@ export function createApp() {
   app.use('/api/v1', vendorsRoutes)
   app.use('/api/v1', billingRoutes)
   app.use('/api/v1', materialPlansRoutes)
+  app.use('/api/v1', dashboardRoutes)
+  app.use('/api/v1', auditRoutes)
   app.use('/api/v1', dailyLogsRoutes)
   app.use(notFoundHandler)
   app.use(errorHandler)

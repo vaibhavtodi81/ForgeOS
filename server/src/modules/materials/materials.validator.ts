@@ -16,7 +16,10 @@ export const updateMaterialSchema = z.object(materialFields).partial().refine(
 export const materialListQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
   category: materialFields.category.optional(),
-  isActive: z.coerce.boolean().optional(),
+  isActive: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
+})
+export const materialStatusSchema = z.object({
+  isActive: z.boolean(),
 })
 
 export type CreateMaterialInput = z.infer<typeof createMaterialSchema>

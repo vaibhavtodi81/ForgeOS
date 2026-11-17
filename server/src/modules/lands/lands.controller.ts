@@ -14,10 +14,10 @@ export const detail: RequestHandler = async (req, res) => sendSuccess(res, 200, 
 export const create: RequestHandler = async (req, res) => sendSuccess(res, 201, await service.createLand(actor(req), req.body), 'Land created successfully')
 export const update: RequestHandler = async (req, res) => {
   await service.getLand(actor(req), Number(req.params.id))
-  sendSuccess(res, 200, await service.updateLand(Number(req.params.id), req.body), 'Land updated successfully')
+  sendSuccess(res, 200, await service.updateLand(actor(req), Number(req.params.id), req.body), 'Land updated successfully')
 }
 export const remove: RequestHandler = async (req, res) => {
   await service.getLand(actor(req), Number(req.params.id))
-  await service.deleteLand(Number(req.params.id))
+  await service.deleteLand(actor(req), Number(req.params.id))
   sendSuccess(res, 200, null, 'Land deleted successfully')
 }

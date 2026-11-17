@@ -7,6 +7,7 @@ import {
   materialIdParamsSchema,
   materialListQuerySchema,
   updateMaterialSchema,
+  materialStatusSchema,
 } from './materials.validator.js'
 
 export const materialsRoutes = Router()
@@ -15,3 +16,4 @@ materialsRoutes.get('/materials', validateRequest('query', materialListQuerySche
 materialsRoutes.get('/materials/:id', validateRequest('params', materialIdParamsSchema), controller.detail)
 materialsRoutes.post('/materials', requireRole('ADMIN'), validateRequest('body', createMaterialSchema), controller.create)
 materialsRoutes.patch('/materials/:id', requireRole('ADMIN'), validateRequest('params', materialIdParamsSchema), validateRequest('body', updateMaterialSchema), controller.update)
+materialsRoutes.patch('/materials/:id/status', requireRole('ADMIN'), validateRequest('params', materialIdParamsSchema), validateRequest('body', materialStatusSchema), controller.updateStatus)
