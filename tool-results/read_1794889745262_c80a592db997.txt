@@ -1,0 +1,404 @@
+     1→// Continues the component or data expression so its related values and behavior stay grouped together.
+     2→import {
+     3→  // Continues the component or data expression so its related values and behavior stay grouped together.
+     4→  ArrowUpRight,
+     5→  // Continues the component or data expression so its related values and behavior stay grouped together.
+     6→  BarChart3,
+     7→  // Continues the component or data expression so its related values and behavior stay grouped together.
+     8→  Clock3,
+     9→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    10→  FolderKanban,
+    11→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    12→  LayoutGrid,
+    13→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    14→  List,
+    15→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    16→  MapPin,
+    17→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    18→  Plus,
+    19→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    20→  Search,
+    21→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    22→  UsersRound,
+    23→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    24→  WalletCards,
+    25→// Continues the component or data expression so its related values and behavior stay grouped together.
+    26→} from 'lucide-react'
+    27→// Imports useMemo, useState from react so this module can reuse that component, helper, or library.
+    28→import { useMemo, useState } from 'react'
+    29→// Imports AppShell from ../components/AppShell so this module can reuse that component, helper, or library.
+    30→import { AppShell } from '../components/AppShell'
+    31→// Imports DashboardCard, ProgressBar, SectionTitle, StatCard, StatusPill from ../components/dashboard-ui so this module can reuse that component, helper, or library.
+    32→import { DashboardCard, ProgressBar, SectionTitle, StatCard, StatusPill } from '../components/dashboard-ui'
+    33→// Imports latestProjectActivity from ../data/dashboardApi so this module can reuse that component, helper, or library.
+    34→import { latestProjectActivity } from '../data/dashboardApi'
+    35→// Imports useDashboardData from ../hooks/useDashboardData so this module can reuse that component, helper, or library.
+    36→import { useDashboardData } from '../hooks/useDashboardData'
+    37→// Imports useProjects from ../../projects/useProjects so this module can reuse that component, helper, or library.
+    38→import { useProjects } from '../../projects/useProjects'
+    39→// Imports type  Project from ../../projects/projects-context so this module can reuse that component, helper, or library.
+    40→import type { Project } from '../../projects/projects-context'
+    41→
+    42→// Continues the component or data expression so its related values and behavior stay grouped together.
+    43→type ProjectStatus = Project['status'] | 'All'
+    44→
+    45→// Stores the value in statusLabels so later lines can reuse this data or behavior for the current feature.
+    46→const statusLabels: Record<Project['status'], string> = {
+    47→  // Sets the PLANNING field so the surrounding object or component receives this setting.
+    48→  PLANNING: 'Planning',
+    49→  // Sets the ACTIVE field so the surrounding object or component receives this setting.
+    50→  ACTIVE: 'Active',
+    51→  // Sets the ON_HOLD field so the surrounding object or component receives this setting.
+    52→  ON_HOLD: 'On hold',
+    53→  // Sets the COMPLETED field so the surrounding object or component receives this setting.
+    54→  COMPLETED: 'Completed',
+    55→// Closes the current block or object so the grouped statements or settings end here.
+    56→}
+    57→
+    58→// Stores the value in statusTones so later lines can reuse this data or behavior for the current feature.
+    59→const statusTones: Record<Project['status'], 'amber' | 'green' | 'red' | 'violet'> = {
+    60→  // Sets the PLANNING field so the surrounding object or component receives this setting.
+    61→  PLANNING: 'violet',
+    62→  // Sets the ACTIVE field so the surrounding object or component receives this setting.
+    63→  ACTIVE: 'green',
+    64→  // Sets the ON_HOLD field so the surrounding object or component receives this setting.
+    65→  ON_HOLD: 'amber',
+    66→  // Sets the COMPLETED field so the surrounding object or component receives this setting.
+    67→  COMPLETED: 'green',
+    68→// Closes the current block or object so the grouped statements or settings end here.
+    69→}
+    70→
+    71→// Defines formatDate so this module can perform its named task when needed.
+    72→function formatDate(value: string | null) {
+    73→  // Checks this condition before continuing so the code can choose the correct path for the current state.
+    74→  if (!value) return 'Not specified'
+    75→  // Returns the result so the caller or React receives the value or interface this function provides.
+    76→  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(value))
+    77→// Closes the current block or object so the grouped statements or settings end here.
+    78→}
+    79→
+    80→// Defines formatBudget so this module can perform its named task when needed.
+    81→function formatBudget(value: string | number) {
+    82→  // Returns the result so the caller or React receives the value or interface this function provides.
+    83→  return new Intl.NumberFormat('en-IN', {
+    84→    // Sets the style field so the surrounding object or component receives this setting.
+    85→    style: 'currency',
+    86→    // Sets the currency field so the surrounding object or component receives this setting.
+    87→    currency: 'INR',
+    88→    // Sets the maximumFractionDigits field so the surrounding object or component receives this setting.
+    89→    maximumFractionDigits: 0,
+    90→  // Continues the component or data expression so its related values and behavior stay grouped together.
+    91→  }).format(Number(value))
+    92→// Closes the current block or object so the grouped statements or settings end here.
+    93→}
+    94→
+    95→// Defines ProjectCard so this module can perform its named task when needed.
+    96→function ProjectCard({ project, progress, compact = false }: {
+    97→  // Sets the project field so the surrounding object or component receives this setting.
+    98→  project: Project
+    99→  // Sets the progress field so the surrounding object or component receives this setting.
+   100→  progress: number | null
+   101→  // Continues the component or data expression so its related values and behavior stay grouped together.
+   102→  compact?: boolean
+   103→// Continues the component or data expression so its related values and behavior stay grouped together.
+   104→}) {
+   105→  // Returns the result so the caller or React receives the value or interface this function provides.
+   106→  return (
+   107→    // Continues the component or data expression so its related values and behavior stay grouped together.
+   108→    <DashboardCard className={compact ? 'flex gap-4 p-4' : 'p-4'}>
+   109→      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   110→      {!compact && (
+   111→        // Continues the component or data expression so its related values and behavior stay grouped together.
+   112→        <div className="relative mb-4 h-32 overflow-hidden rounded-xl border border-white/10 bg-[#151a1d]">
+   113→          {/* Starts the <div> element to organize this part of the interface. */}
+   114→          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.25) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.25) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+   115→          {/* Starts the <div> element to organize this part of the interface. */}
+   116→          <div className="absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/70 to-transparent p-4">
+   117→            {/* Starts the <span> element to organize this part of the interface. */}
+   118→            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/60">{project.code}</span>
+   119→            {/* Starts the <FolderKanban> element to organize this part of the interface. */}
+   120→            <FolderKanban size={17} className="text-[var(--dashboard-amber)]" />
+   121→          {/* Closes the <div> element so later content is no longer part of this region. */}
+   122→          </div>
+   123→        {/* Closes the <div> element so later content is no longer part of this region. */}
+   124→        </div>
+   125→      // Continues the component or data expression so its related values and behavior stay grouped together.
+   126→      )}
+   127→      {/* Starts the <div> element to organize this part of the interface. */}
+   128→      <div className={compact ? 'min-w-0 flex-1' : ''}>
+   129→        {/* Starts the <div> element to organize this part of the interface. */}
+   130→        <div className="flex items-start justify-between gap-3">
+   131→          {/* Starts the <div> element to organize this part of the interface. */}
+   132→          <div className="min-w-0">
+   133→            {/* Starts the <h3> element to organize this part of the interface. */}
+   134→            <h3 className="truncate text-sm font-semibold text-[var(--dashboard-ink)]">{project.name}</h3>
+   135→            {/* Starts the <p> element to organize this part of the interface. */}
+   136→            <p className="mt-1 flex items-center gap-1 text-xs text-[var(--dashboard-muted)]"><MapPin size={12} />{project.location}</p>
+   137→          {/* Closes the <div> element so later content is no longer part of this region. */}
+   138→          </div>
+   139→          {/* Starts the <StatusPill> element to organize this part of the interface. */}
+   140→          <StatusPill tone={statusTones[project.status]}>{statusLabels[project.status]}</StatusPill>
+   141→        {/* Closes the <div> element so later content is no longer part of this region. */}
+   142→        </div>
+   143→        {/* Starts the <div> element to organize this part of the interface. */}
+   144→        <div className="mt-4 flex items-end justify-between gap-3">
+   145→          {/* Starts the <div> element to organize this part of the interface. */}
+   146→          <div>
+   147→            {/* Starts the <p> element to organize this part of the interface. */}
+   148→            <p className="text-2xl font-semibold tracking-[-0.04em] text-[var(--dashboard-ink)]">{progress === null ? '—' : `${progress}%`}</p>
+   149→            {/* Starts the <p> element to organize this part of the interface. */}
+   150→            <p className="text-[10px] text-[var(--dashboard-muted)]">{progress === null ? 'No progress log recorded' : 'Latest reported progress'}</p>
+   151→          {/* Closes the <div> element so later content is no longer part of this region. */}
+   152→          </div>
+   153→          {/* Starts the <button> element to provide an action the user can activate. */}
+   154→          <button type="button" onClick={() => { window.location.href = `/app/projects/${project.id}` }} className="text-xs font-semibold text-[var(--dashboard-amber)]">
+   155→            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   156→            View project <ArrowUpRight size={13} className="inline" />
+   157→          {/* Closes the <button> element so later content is no longer part of this region. */}
+   158→          </button>
+   159→        {/* Closes the <div> element so later content is no longer part of this region. */}
+   160→        </div>
+   161→        {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   162→        {progress !== null && <div className="mt-2"><ProgressBar value={progress} /></div>}
+   163→        {/* Starts the <div> element to organize this part of the interface. */}
+   164→        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-xs">
+   165→          {/* Starts the <div> element to organize this part of the interface. */}
+   166→          <div><p className="text-[var(--dashboard-subtle)]">Project manager</p><p className="mt-1 font-medium text-[var(--dashboard-ink)]">{project.assignedPm?.name ?? 'Unassigned'}</p></div>
+   167→          {/* Starts the <div> element to organize this part of the interface. */}
+   168→          <div><p className="text-[var(--dashboard-subtle)]">Expected completion</p><p className="mt-1 font-medium text-[var(--dashboard-ink)]">{formatDate(project.expectedEndDate)}</p></div>
+   169→        {/* Closes the <div> element so later content is no longer part of this region. */}
+   170→        </div>
+   171→      {/* Closes the <div> element so later content is no longer part of this region. */}
+   172→      </div>
+   173→    {/* Closes the <DashboardCard> element so later content is no longer part of this region. */}
+   174→    </DashboardCard>
+   175→  // Closes this function call or grouped expression so the surrounding code can continue.
+   176→  )
+   177→// Closes the current block or object so the grouped statements or settings end here.
+   178→}
+   179→
+   180→// Defines AdminDashboardPage so this module can perform its named task when needed.
+   181→export function AdminDashboardPage() {
+   182→  // Calls this helper or component so the feature can perform the operation or render the control represented here.
+   183→  const [query, setQuery] = useState('')
+   184→  // Calls this helper or component so the feature can perform the operation or render the control represented here.
+   185→  const [filter, setFilter] = useState<ProjectStatus>('All')
+   186→  // Calls this helper or component so the feature can perform the operation or render the control represented here.
+   187→  const [listView, setListView] = useState(false)
+   188→  // Calls this helper or component so the feature can perform the operation or render the control represented here.
+   189→  const { projects, isLoading: projectsLoading, error: projectsError, retry: retryProjects } = useProjects()
+   190→  // Calls this helper or component so the feature can perform the operation or render the control represented here.
+   191→  const { projects: dashboardProjects, isLoading, error, retry } = useDashboardData(projects)
+   192→  // Caches filteredProjects so its calculation is repeated only when its inputs change.
+   193→  // Caches filteredProjects so its calculation is repeated only when its inputs change.
+   194→  const filteredProjects = useMemo(() => dashboardProjects.filter(({ project }) => {
+   195→    // Stores the value in matchesQuery so later lines can reuse this data or behavior for the current feature.
+   196→    const matchesQuery = `${project.name} ${project.location} ${project.code} ${project.assignedPm?.name ?? ''}`.toLowerCase().includes(query.toLowerCase())
+   197→    // Returns the result so the caller or React receives the value or interface this function provides.
+   198→    return matchesQuery && (filter === 'All' || project.status === filter)
+   199→  // Continues the component or data expression so its related values and behavior stay grouped together.
+   200→  }), [dashboardProjects, filter, query])
+   201→  // Caches activity so its calculation is repeated only when its inputs change.
+   202→  // Caches activity so its calculation is repeated only when its inputs change.
+   203→  const activity = useMemo(() => latestProjectActivity(dashboardProjects).slice(0, 8), [dashboardProjects])
+   204→  // Caches progressUpdates so its calculation is repeated only when its inputs change.
+   205→  // Caches progressUpdates so its calculation is repeated only when its inputs change.
+   206→  const progressUpdates = useMemo(() => dashboardProjects
+   207→    // Transforms each collection item so the corresponding values or interface elements can be produced.
+   208→    .flatMap(({ project, progressHistory }) => progressHistory.map((entry) => ({ project, entry })))
+   209→    // Continues the component or data expression so its related values and behavior stay grouped together.
+   210→    .sort((left, right) => new Date(right.entry.logDate).getTime() - new Date(left.entry.logDate).getTime())
+   211→    // Continues the component or data expression so its related values and behavior stay grouped together.
+   212→    .slice(0, 8), [dashboardProjects])
+   213→
+   214→  // Stores the value in loading so later lines can reuse this data or behavior for the current feature.
+   215→  const loading = projectsLoading || isLoading
+   216→  // Stores the value in loadError so later lines can reuse this data or behavior for the current feature.
+   217→  const loadError = projectsError ?? error
+   218→  // Stores the value in retryLoad so later lines can reuse this data or behavior for the current feature.
+   219→  const retryLoad = projectsError ? retryProjects : retry
+   220→  // Stores the value in projectsCount so later lines can reuse this data or behavior for the current feature.
+   221→  const projectsCount = projects.length
+   222→  // Stores the value in activeCount so later lines can reuse this data or behavior for the current feature.
+   223→  const activeCount = projects.filter((project) => project.status === 'ACTIVE').length
+   224→  // Stores the value in completedCount so later lines can reuse this data or behavior for the current feature.
+   225→  const completedCount = projects.filter((project) => project.status === 'COMPLETED').length
+   226→  // Stores the value in onHoldCount so later lines can reuse this data or behavior for the current feature.
+   227→  const onHoldCount = projects.filter((project) => project.status === 'ON_HOLD').length
+   228→  // Stores the value in projectsWithProgress so later lines can reuse this data or behavior for the current feature.
+   229→  const projectsWithProgress = dashboardProjects.filter(({ summary }) => summary.totalDailyLogs > 0)
+   230→  // Stores the value in averageProgress so later lines can reuse this data or behavior for the current feature.
+   231→  const averageProgress = projectsWithProgress.length
+   232→    // Continues the component or data expression so its related values and behavior stay grouped together.
+   233→    ? Math.round(projectsWithProgress.reduce((sum, item) => sum + Number(item.summary.latestProgressPercent), 0) / projectsWithProgress.length)
+   234→    // Continues the component or data expression so its related values and behavior stay grouped together.
+   235→    : null
+   236→  // Stores the value in activeBudget so later lines can reuse this data or behavior for the current feature.
+   237→  const activeBudget = projects.filter((project) => project.status === 'ACTIVE')
+   238→    // Continues the component or data expression so its related values and behavior stay grouped together.
+   239→    .reduce((sum, project) => sum + Number(project.totalBudget), 0)
+   240→
+   241→  // Returns the result so the caller or React receives the value or interface this function provides.
+   242→  return (
+   243→    // Continues the component or data expression so its related values and behavior stay grouped together.
+   244→    <AppShell currentPath="/app/admin/dashboard">
+   245→      {/* Starts the <div> element to organize this part of the interface. */}
+   246→      <div className="mx-auto max-w-[1680px] space-y-7 p-5 sm:p-7 lg:p-8">
+   247→        {/* Starts the <section> element to group related content into a meaningful region. */}
+   248→        <section className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+   249→          {/* Starts the <div> element to organize this part of the interface. */}
+   250→          <div>
+   251→            {/* Starts the <p> element to organize this part of the interface. */}
+   252→            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-amber)]">Portfolio overview</p>
+   253→            {/* Starts the <h1> element to organize this part of the interface. */}
+   254→            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[var(--dashboard-ink)] sm:text-5xl">Your Portfolio, <span className="text-white/45">Under Control.</span></h1>
+   255→            {/* Starts the <p> element to organize this part of the interface. */}
+   256→            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--dashboard-muted)]">Projects and recorded site updates available to your account.</p>
+   257→          {/* Closes the <div> element so later content is no longer part of this region. */}
+   258→          </div>
+   259→          {/* Starts the <div> element to organize this part of the interface. */}
+   260→          <div className="flex flex-wrap gap-3">
+   261→            {/* Starts the <button> element to provide an action the user can activate. */}
+   262→            <button type="button" onClick={() => { window.location.href = '/app/projects' }} className="dashboard-button dashboard-button-ghost"><Plus size={16} /> Create project</button>
+   263→            {/* Starts the <button> element to provide an action the user can activate. */}
+   264→            <button type="button" onClick={() => { window.location.href = '/app/reports' }} className="dashboard-button dashboard-button-primary"><BarChart3 size={16} /> Open reports</button>
+   265→          {/* Closes the <div> element so later content is no longer part of this region. */}
+   266→          </div>
+   267→        {/* Closes the <section> element so later content is no longer part of this region. */}
+   268→        </section>
+   269→
+   270→        {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   271→        {loadError ? (
+   272→          // Continues the component or data expression so its related values and behavior stay grouped together.
+   273→          <DashboardCard className="p-6" >
+   274→            {/* Starts the <p> element to organize this part of the interface. */}
+   275→            <p role="alert" className="text-sm text-rose-300">{loadError}</p>
+   276→            {/* Starts the <button> element to provide an action the user can activate. */}
+   277→            <button type="button" onClick={retryLoad} className="mt-3 text-sm font-semibold text-[var(--dashboard-amber)]">Retry</button>
+   278→          {/* Closes the <DashboardCard> element so later content is no longer part of this region. */}
+   279→          </DashboardCard>
+   280→        // Continues the component or data expression so its related values and behavior stay grouped together.
+   281→        ) : loading ? (
+   282→          // Continues the component or data expression so its related values and behavior stay grouped together.
+   283→          <DashboardCard className="p-6" aria-live="polite"><p className="text-sm text-[var(--dashboard-muted)]">Loading portfolio data…</p></DashboardCard>
+   284→        // Continues the component or data expression so its related values and behavior stay grouped together.
+   285→        ) : projectsCount === 0 ? (
+   286→          // Continues the component or data expression so its related values and behavior stay grouped together.
+   287→          <DashboardCard className="p-10 text-center"><h2 className="text-lg font-semibold text-[var(--dashboard-ink)]">No accessible projects</h2><p className="mt-2 text-sm text-[var(--dashboard-muted)]">Projects permitted for your account will appear here.</p></DashboardCard>
+   288→        // Continues the component or data expression so its related values and behavior stay grouped together.
+   289→        ) : (
+   290→          // Continues the component or data expression so its related values and behavior stay grouped together.
+   291→          <>
+   292→            {/* Starts the <section> element to group related content into a meaningful region. */}
+   293→            <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr_0.8fr]">
+   294→              {/* Starts the <DashboardCard> element to organize this part of the interface. */}
+   295→              <DashboardCard tone="featured" className="p-5 sm:p-6">
+   296→                {/* Starts the <div> element to organize this part of the interface. */}
+   297→                <div className="flex items-start justify-between">
+   298→                  {/* Starts the <div> element to organize this part of the interface. */}
+   299→                  <div><p className="dashboard-eyebrow">Average latest reported progress</p><p className="mt-3 text-5xl font-semibold tracking-[-0.06em] text-[var(--dashboard-ink)]">{averageProgress === null ? '—' : `${averageProgress}%`}</p><p className="mt-2 text-xs text-[var(--dashboard-muted)]">{projectsWithProgress.length} of {projectsCount} projects have progress logs</p></div>
+   300→                  {/* Starts the <span> element to organize this part of the interface. */}
+   301→                  <span className="dashboard-icon dashboard-icon-amber"><BarChart3 size={19} /></span>
+   302→                {/* Closes the <div> element so later content is no longer part of this region. */}
+   303→                </div>
+   304→                {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   305→                {averageProgress !== null && <div className="mt-6"><ProgressBar value={averageProgress} /><div className="mt-2 text-[10px] text-[var(--dashboard-muted)]">Unweighted mean of each project’s latest daily-log progress</div></div>}
+   306→              {/* Closes the <DashboardCard> element so later content is no longer part of this region. */}
+   307→              </DashboardCard>
+   308→              {/* Starts the <DashboardCard> element to organize this part of the interface. */}
+   309→              <DashboardCard className="p-5 sm:p-6"><p className="dashboard-eyebrow">Active project budget</p><p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[var(--dashboard-ink)]">{formatBudget(activeBudget)}</p><div className="mt-5 flex items-center gap-2 text-xs text-[var(--dashboard-muted)]"><WalletCards size={14} className="text-[var(--dashboard-amber)]" /> {activeCount} active {activeCount === 1 ? 'project' : 'projects'}</div></DashboardCard>
+   310→              {/* Starts the <DashboardCard> element to organize this part of the interface. */}
+   311→              <DashboardCard className="p-5 sm:p-6"><p className="dashboard-eyebrow">Projects on hold</p><p className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-[var(--dashboard-ink)]">{onHoldCount}</p><p className="mt-2 text-xs text-[var(--dashboard-muted)]">Based on backend project status</p></DashboardCard>
+   312→            {/* Closes the <section> element so later content is no longer part of this region. */}
+   313→            </section>
+   314→
+   315→            {/* Starts the <section> element to group related content into a meaningful region. */}
+   316→            <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+   317→              {/* Starts the <StatCard> element to organize this part of the interface. */}
+   318→              <StatCard label="Total projects" value={String(projectsCount)} note="Accessible project records" icon={FolderKanban} />
+   319→              {/* Starts the <StatCard> element to organize this part of the interface. */}
+   320→              <StatCard label="Active" value={String(activeCount)} note="Backend status: active" icon={UsersRound} accent="green" />
+   321→              {/* Starts the <StatCard> element to organize this part of the interface. */}
+   322→              <StatCard label="Completed" value={String(completedCount)} note="Backend status: completed" icon={BarChart3} accent="violet" />
+   323→              {/* Starts the <StatCard> element to organize this part of the interface. */}
+   324→              <StatCard label="Progress logs" value={String(dashboardProjects.reduce((sum, item) => sum + item.summary.totalDailyLogs, 0))} note="Across accessible projects" icon={Clock3} accent="amber" />
+   325→            {/* Closes the <section> element so later content is no longer part of this region. */}
+   326→            </section>
+   327→
+   328→            {/* Starts the <section> element to group related content into a meaningful region. */}
+   329→            <section>
+   330→              {/* Starts the <div> element to organize this part of the interface. */}
+   331→              <div className="mb-4 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+   332→                {/* Starts the <div> element to organize this part of the interface. */}
+   333→                <div><p className="dashboard-eyebrow">Portfolio workspace</p><h2 className="mt-1 text-xl font-semibold text-[var(--dashboard-ink)]">Projects in motion</h2></div>
+   334→                {/* Starts the <div> element to organize this part of the interface. */}
+   335→                <div className="flex flex-wrap items-center gap-2">
+   336→                  {/* Starts the <label> element to name a form control for users and assistive technology. */}
+   337→                  <label className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--dashboard-subtle)]" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search projects..." className="dashboard-input pl-9" /></label>
+   338→                  {/* Starts the <select> element to collect or display a value. */}
+   339→                  <select value={filter} onChange={(event) => setFilter(event.target.value as ProjectStatus)} className="dashboard-input">
+   340→                    {/* Starts the <option> element to organize this part of the interface. */}
+   341→                    <option value="All">All statuses</option>
+   342→                    {/* Starts the <option> element to organize this part of the interface. */}
+   343→                    <option value="PLANNING">Planning</option>
+   344→                    {/* Starts the <option> element to organize this part of the interface. */}
+   345→                    <option value="ACTIVE">Active</option>
+   346→                    {/* Starts the <option> element to organize this part of the interface. */}
+   347→                    <option value="ON_HOLD">On hold</option>
+   348→                    {/* Starts the <option> element to organize this part of the interface. */}
+   349→                    <option value="COMPLETED">Completed</option>
+   350→                  {/* Closes the <select> element so later content is no longer part of this region. */}
+   351→                  </select>
+   352→                  {/* Starts the <button> element to provide an action the user can activate. */}
+   353→                  <button type="button" aria-label="Grid view" onClick={() => setListView(false)} className={`dashboard-view-button ${!listView ? 'dashboard-view-active' : ''}`}><LayoutGrid size={16} /></button>
+   354→                  {/* Starts the <button> element to provide an action the user can activate. */}
+   355→                  <button type="button" aria-label="List view" onClick={() => setListView(true)} className={`dashboard-view-button ${listView ? 'dashboard-view-active' : ''}`}><List size={16} /></button>
+   356→                {/* Closes the <div> element so later content is no longer part of this region. */}
+   357→                </div>
+   358→              {/* Closes the <div> element so later content is no longer part of this region. */}
+   359→              </div>
+   360→              {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   361→              {filteredProjects.length
+   362→                // Transforms each collection item so the corresponding values or interface elements can be produced.
+   363→                ? <div className={listView ? 'grid gap-3' : 'grid gap-4 md:grid-cols-2 xl:grid-cols-3'}>{filteredProjects.map(({ project, summary }) => <ProjectCard key={project.id} project={project} progress={summary.totalDailyLogs ? Number(summary.latestProgressPercent) : null} compact={listView} />)}</div>
+   364→                // Continues the component or data expression so its related values and behavior stay grouped together.
+   365→                : <DashboardCard className="p-10 text-center"><p className="text-sm text-[var(--dashboard-ink)]">{projectsCount ? 'No projects match your filters.' : 'No projects are available.'}</p><button type="button" onClick={() => { setQuery(''); setFilter('All') }} className="mt-3 text-xs text-[var(--dashboard-amber)]">Clear filters</button></DashboardCard>}
+   366→            {/* Closes the <section> element so later content is no longer part of this region. */}
+   367→            </section>
+   368→
+   369→            {/* Starts the <section> element to group related content into a meaningful region. */}
+   370→            <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+   371→              {/* Starts the <DashboardCard> element to organize this part of the interface. */}
+   372→              <DashboardCard className="p-5 sm:p-6">
+   373→                {/* Starts the <SectionTitle> element to organize this part of the interface. */}
+   374→                <SectionTitle title="Recent progress updates" description="Daily-log history returned by the project progress API." />
+   375→                {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   376→                {progressUpdates.length ? <div className="mt-4 divide-y divide-white/[0.08]">{progressUpdates.map(({ project, entry }) => <div key={`${project.id}-${entry.id}`} className="py-3 first:pt-0 last:pb-0"><div className="flex items-center justify-between gap-3"><p className="truncate text-sm font-medium text-[var(--dashboard-ink)]">{project.name}</p><StatusPill tone="green">{Number(entry.progressPercent)}%</StatusPill></div><p className="mt-1 text-xs text-[var(--dashboard-muted)]">{entry.workSummary || 'No work summary recorded.'}</p><p className="mt-1 text-[10px] text-[var(--dashboard-subtle)]">{formatDate(entry.logDate)} · {project.code}</p></div>)}</div> : <p className="mt-4 text-sm text-[var(--dashboard-muted)]">No project progress logs have been recorded.</p>}
+   377→              {/* Closes the <DashboardCard> element so later content is no longer part of this region. */}
+   378→              </DashboardCard>
+   379→              {/* Starts the <DashboardCard> element to organize this part of the interface. */}
+   380→              <DashboardCard className="p-5 sm:p-6">
+   381→                {/* Starts the <SectionTitle> element to organize this part of the interface. */}
+   382→                <SectionTitle title="Recent activity" description="Audit activity returned for accessible projects." action={<Clock3 size={17} className="text-[var(--dashboard-amber)]" />} />
+   383→                {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   384→                {activity.length ? <div className="mt-4 divide-y divide-white/[0.08]">{activity.map((item) => <div className="py-3 first:pt-0 last:pb-0" key={`${item.project.id}-${item.id}`}><p className="text-sm font-medium text-[var(--dashboard-ink)]">{item.action} · {item.entityType}</p><p className="mt-1 text-xs text-[var(--dashboard-muted)]">{item.project.name} · {item.userName ?? 'User not available'}</p><p className="mt-1 text-[10px] text-[var(--dashboard-subtle)]">{formatDate(item.createdAt)}</p></div>)}</div> : <p className="mt-4 text-sm text-[var(--dashboard-muted)]">No project activity has been recorded.</p>}
+   385→              {/* Closes the <DashboardCard> element so later content is no longer part of this region. */}
+   386→              </DashboardCard>
+   387→            {/* Closes the <section> element so later content is no longer part of this region. */}
+   388→            </section>
+   389→          {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+   390→          </>
+   391→        )}
+   392→
+   393→        {/* Starts the <section> element to group related content into a meaningful region. */}
+   394→        <section><div className="mb-4"><p className="dashboard-eyebrow">Command shortcuts</p><h2 className="mt-1 text-xl font-semibold text-[var(--dashboard-ink)]">Move work forward</h2></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[['Create project', Plus, '/app/projects'], ['Manage users', UsersRound, '/app/users'], ['View all projects', FolderKanban, '/app/projects'], ['Open reports', BarChart3, '/app/reports']].map(([label, Icon, path]) => <button type="button" key={label as string} onClick={() => { window.location.href = path as string }} className="dashboard-card group p-4 text-left transition hover:-translate-y-0.5 hover:border-[#F2A65A]/40"><div className="flex items-center justify-between"><span className="dashboard-icon dashboard-icon-amber"><Icon size={17} /></span><ArrowUpRight size={15} className="text-[var(--dashboard-subtle)] transition group-hover:text-[var(--dashboard-amber)]" /></div><p className="mt-4 text-sm font-medium text-[var(--dashboard-ink)]">{label as string}</p></button>)}</div></section>
+   395→      {/* Closes the <div> element so later content is no longer part of this region. */}
+   396→      </div>
+   397→    {/* Closes the <AppShell> element so later content is no longer part of this region. */}
+   398→    </AppShell>
+   399→  // Closes this function call or grouped expression so the surrounding code can continue.
+   400→  )
+   401→// Closes the current block or object so the grouped statements or settings end here.
+   402→}
+   403→// File purpose: Renders the app shell screen and coordinates its page-level interactions.
+   404→

@@ -1,0 +1,306 @@
+########## wastage/pages/WastageAnalysisPage.tsx ##########
+import { useEffect, useMemo, useState } from 'react'
+import { TrendingUp, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react'
+import { AppShell } from '../../app-shell/components/AppShell'
+import { useProjects } from '../../projects/useProjects'
+import { fetchWastage, type WastageItem } from '../../stock/data/inventoryApi'
+import { formatQty } from '../../stock/data/formatting'
+const statusStyles = {
+  OK: 'bg-[#E8EFE5] text-[#617858]',
+  OVERRUN: 'bg-[#F8ECEA] text-[#9B625A]',
+  NO_BASELINE: 'bg-[#F5EDE1] text-[#9A7950]',
+}
+export function WastageAnalysisPage() {
+  const { projects, selectedProject, selectedProjectId, selectProject, isLoading: projectsLoading, error: projectsError, retry: retryProjects } = useProjects()
+  const [rows, setRows] = useState<WastageItem[]>([])
+  const [progress, setProgress] = useState<number | null>(null)
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retry, setRetry] = useState(0)
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setRows([])
+      setProgress(null)
+      return
+    }
+    const controller = new AbortController()
+    setLoading(true)
+    fetchWastage(selectedProjectId, controller.signal).then((report) => {
+      if (!controller.signal.aborted) {
+        setRows(report.items)
+        setProgress(report.progressPercent)
+        setError(null)
+      }
+    }).catch((cause: unknown) => {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Unable to load wastage report.')
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false)
+    })
+    return () => controller.abort()
+  }, [selectedProjectId, retry])
+  const filtered = useMemo(() => rows.filter((row) => statusFilter === 'All' || row.status === statusFilter), [rows, statusFilter])
+  const overrunCount = rows.filter((row) => row.status === 'OVERRUN').length
+  const totalEstimatedLoss = rows.reduce((sum, row) => sum + row.estimatedLoss, 0)
+  const worst = rows.reduce<WastageItem | null>((current, row) => current == null || row.overrunPercent > current.overrunPercent ? row : current, null)
+  const stats = [
+    { label: 'Overrun Materials', value: overrunCount, icon: AlertTriangle },
+    { label: 'Estimated Loss', value: totalEstimatedLoss ? `₹${totalEstimatedLoss.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '₹0', icon: TrendingUp },
+    { label: 'Materials Tracked', value: rows.length, icon: TrendingUp },
+    { label: 'Worst Overrun', value: worst ? `${Math.round(worst.overrunPercent)}%` : '—', icon: CheckCircle2 },
+  ]
+  return <AppShell currentPath="/app/wastage">
+    {/* Starts the <div> element to organize this part of the interface. */}
+    <div className="mx-auto max-w-[1600px] space-y-7 p-5 sm:p-7 lg:p-8">
+      {/* Starts the <header> element to organize this part of the interface. */}
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><p className="text-sm text-[#8E827A]">Workspace / Stock / Wastage</p><h1 className="mt-1 text-2xl font-semibold text-[#323232] sm:text-3xl">Wastage Analysis</h1><p className="mt-2 text-sm text-[#8E827A]">Backend-calculated consumption and wastage for the selected project.</p></div><div className="flex gap-3"><select aria-label="Select project" value={selectedProjectId} onChange={(event) => selectProject(event.target.value)} disabled={projectsLoading || !projects.length} className="rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 text-sm">{projects.map((project) => <option key={project.id} value={String(project.id)}>{project.code} — {project.name}</option>)}</select><button type="button" onClick={() => setRetry((value) => value + 1)} className="rounded-xl border border-[#C8BCB4] px-4 py-3 text-sm"><RefreshCw className="mr-1 inline h-4 w-4" />Refresh</button></div></header>
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {projectsError && <Banner message={projectsError} retry={retryProjects} />}{error && <Banner message={error} retry={() => setRetry((value) => value + 1)} />}
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {selectedProject && <p className="text-sm text-[#8E827A]">{selectedProject.code} · {selectedProject.name}{progress !== null ? ` · Latest logged progress ${progress}%` : ''}</p>}
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="rounded-2xl border border-[#C8BCB4]/70 bg-[#E8DCD4] p-5 text-sm text-[#595552]"><p className="font-semibold text-[#323232]">Report calculation</p><p className="mt-2">Expected quantity is based on planned quantity and the latest daily-log progress. The status, thresholds, recorded wastage, and estimated loss below are calculated and returned by the backend.</p></section>
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map(({ label, value, icon: Icon }) => <div key={label} className="rounded-2xl border border-[#C8BCB4]/70 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-sm text-[#8E827A]">{label}</p><h2 className="mt-3 text-2xl font-semibold text-[#323232]">{loading ? '—' : value}</h2></div><div className="rounded-xl bg-[#F7F3EE] p-3 text-[#595552]"><Icon size={21} /></div></div></div>)}</section>
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="overflow-hidden rounded-2xl border border-[#C8BCB4]/70 bg-white">
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div className="flex flex-col justify-between gap-4 border-b border-[#E8DCD4] p-5 sm:flex-row sm:items-center"><div><h2 className="font-semibold text-[#323232]">Per-Material Wastage</h2><p className="mt-1 text-xs text-[#8E827A]">Report values are returned by the selected project wastage endpoint.</p></div><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-xl border border-[#C8BCB4] bg-white px-3 py-2 text-sm"><option>All</option><option value="OVERRUN">OVERRUN</option><option value="OK">OK</option><option value="NO_BASELINE">NO_BASELINE</option></select></div>
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left"><thead className="bg-[#F7F3EE] text-xs text-[#8E827A]"><tr><th className="px-5 py-4 font-medium">Material</th><th className="px-5 py-4 font-medium">Progress</th><th className="px-5 py-4 font-medium">Planned</th><th className="px-5 py-4 font-medium">Expected</th><th className="px-5 py-4 font-medium">Consumed</th><th className="px-5 py-4 font-medium">Overrun</th><th className="px-5 py-4 font-medium">Recorded Wastage</th><th className="px-5 py-4 font-medium">Estimated Loss</th><th className="px-5 py-4 font-medium">Threshold</th><th className="px-5 py-4 font-medium">Status</th></tr></thead><tbody className="divide-y divide-[#E8DCD4]">
+          {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+          {filtered.map((row) => <tr key={row.materialId} className="hover:bg-[#F7F3EE]/60"><td className="px-5 py-4"><p className="text-sm font-medium text-[#323232]">{row.materialName}</p><p className="mt-1 text-xs text-[#8E827A]">per {row.unit}</p></td><td className="px-5 py-4 text-sm">{progress ?? '—'}%</td><td className="px-5 py-4 text-sm">{formatQty(row.plannedQuantity)}</td><td className="px-5 py-4 text-sm">{formatQty(row.expectedQuantity)}</td><td className="px-5 py-4 text-sm font-medium">{formatQty(row.consumedQuantity)}</td><td className="px-5 py-4 text-sm">{row.overrunQuantity > 0 ? `${formatQty(row.overrunQuantity)} (${Math.round(row.overrunPercent)}%)` : '—'}</td><td className="px-5 py-4 text-sm">{formatQty(row.recordedWastageQuantity)} {row.unit}</td><td className="px-5 py-4 text-sm">{row.estimatedLoss > 0 ? `₹${row.estimatedLoss.toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}</td><td className="px-5 py-4 text-sm">{row.thresholdPercent}%</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[row.status]}`}>{row.status}</span></td></tr>)}
+          {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+          {loading && <tr><td colSpan={10} className="px-5 py-12 text-center text-sm text-[#8E827A]">Loading wastage report…</td></tr>}
+          {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+          {!loading && !error && filtered.length === 0 && <tr><td colSpan={10} className="px-5 py-12 text-center text-sm text-[#8E827A]">No wastage data returned for this project and status filter.</td></tr>}
+        {/* Closes the <tbody> element so later content is no longer part of this region. */}
+        </tbody></table></div>
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>
+    {/* Closes the <div> element so later content is no longer part of this region. */}
+    </div>
+  {/* Closes the <AppShell> element so later content is no longer part of this region. */}
+  </AppShell>
+}
+function Banner({ message, retry }: { message: string; retry: () => void }) {
+  return <div role="alert" className="flex items-center justify-between gap-3 rounded-xl bg-[#F8ECEA] px-4 py-3 text-sm text-[#9B625A]"><span>{message}</span><button type="button" onClick={retry} className="font-semibold underline">Retry</button></div>
+}
+########## materials/pages/MaterialPlanningPage.tsx ##########
+import { useEffect, useMemo, useState } from 'react'
+import { ClipboardCheck, Search, RefreshCw, PackageSearch } from 'lucide-react'
+import { AppShell } from '../../app-shell/components/AppShell'
+import { useProjects } from '../../projects/useProjects'
+import { fetchProjectInventory, type InventoryRow } from '../../stock/data/inventoryApi'
+import { formatQty } from '../../stock/data/formatting'
+export function MaterialPlanningPage() {
+  const { projects, selectedProject, selectedProjectId, selectProject, isLoading: projectsLoading, error: projectsError, retry: retryProjects } = useProjects()
+  const [inventory, setInventory] = useState<InventoryRow[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retry, setRetry] = useState(0)
+  const [search, setSearch] = useState('')
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setInventory([])
+      return
+    }
+    const controller = new AbortController()
+    setLoading(true)
+    fetchProjectInventory(selectedProjectId, controller.signal).then((rows) => {
+      if (!controller.signal.aborted) {
+        setInventory(rows)
+        setError(null)
+      }
+    }).catch((cause: unknown) => {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Unable to load project material plans.')
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false)
+    })
+    return () => controller.abort()
+  }, [selectedProjectId, retry])
+  const filtered = useMemo(() => inventory.filter((row) => row.materialName.toLowerCase().includes(search.toLowerCase())), [inventory, search])
+  const lowStock = inventory.filter((row) => row.isLowStock).length
+  return <AppShell currentPath="/app/material-planning">
+    {/* Starts the <div> element to organize this part of the interface. */}
+    <div className="mx-auto max-w-[1600px] space-y-7 p-5 sm:p-7 lg:p-8">
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div><p className="text-sm text-[#8E827A]">Workspace / Materials / Planning</p><h1 className="mt-1 text-2xl font-semibold text-[#323232] sm:text-3xl">Project Material Planning</h1><p className="mt-2 text-sm text-[#8E827A]">Project plans and current stock quantities returned by the backend.</p></div>
+        {/* Starts the <select> element to collect or display a value. */}
+        <select aria-label="Select project" value={selectedProjectId} onChange={(event) => selectProject(event.target.value)} disabled={projectsLoading || projects.length === 0} className="rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 text-sm text-[#595552]">
+          {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+          {projects.length === 0 && <option value="">No accessible projects</option>}
+          {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+          {projects.map((project) => <option key={project.id} value={String(project.id)}>{project.code} — {project.name}</option>)}
+        {/* Closes the <select> element so later content is no longer part of this region. */}
+        </select>
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {projectsError && <ErrorBanner message={projectsError} retry={retryProjects} />}
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {error && <ErrorBanner message={error} retry={() => setRetry((value) => value + 1)} />}
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {selectedProject && <section className="rounded-2xl border border-[#C8BCB4]/70 bg-[#E8DCD4] p-5">
+        {/* Starts the <h2> element to organize this part of the interface. */}
+        <h2 className="font-semibold text-[#323232]">{selectedProject.code} · {selectedProject.name}</h2>
+        {/* Starts the <p> element to organize this part of the interface. */}
+        <p className="mt-1 text-xs text-[#595552]">{selectedProject.location} · {selectedProject.status.replace('_', ' ')}</p>
+        {/* Starts the <p> element to organize this part of the interface. */}
+        <p className="mt-3 text-sm text-[#595552]">Material-plan quantities are displayed from the project inventory API. This backend currently exposes no plan create/update/delete endpoint.</p>
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>}
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="grid gap-4 sm:grid-cols-2">
+        {/* Starts the <Stat> element to organize this part of the interface. */}
+        <Stat label="Materials Planned" value={loading ? '—' : inventory.length} icon={<ClipboardCheck size={20} />} />
+        {/* Starts the <Stat> element to organize this part of the interface. */}
+        <Stat label="Low Stock Items" value={loading ? '—' : lowStock} icon={<PackageSearch size={20} />} />
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="overflow-hidden rounded-2xl border border-[#C8BCB4]/70 bg-white">
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div className="flex flex-col justify-between gap-4 border-b border-[#E8DCD4] p-5 sm:flex-row sm:items-center">
+          {/* Starts the <div> element to organize this part of the interface. */}
+          <div><h2 className="font-semibold text-[#323232]">Planned Materials & Inventory</h2><p className="mt-1 text-xs text-[#8E827A]">{filtered.length} materials in this project plan</p></div>
+          {/* Starts the <div> element to organize this part of the interface. */}
+          <div className="flex items-center gap-2 rounded-xl border border-[#C8BCB4] px-3 py-2"><Search size={17} className="text-[#8E827A]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search material..." className="w-full bg-transparent text-sm outline-none sm:w-52" /></div>
+        {/* Closes the <div> element so later content is no longer part of this region. */}
+        </div>
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left">
+          {/* Starts the <thead> element to organize this part of the interface. */}
+          <thead className="bg-[#F7F3EE] text-xs text-[#8E827A]"><tr><th className="px-5 py-4 font-medium">Material</th><th className="px-5 py-4 font-medium">Planned</th><th className="px-5 py-4 font-medium">Opening Stock</th><th className="px-5 py-4 font-medium">Received</th><th className="px-5 py-4 font-medium">Consumed</th><th className="px-5 py-4 font-medium">Available</th><th className="px-5 py-4 font-medium">Low-stock threshold</th><th className="px-5 py-4 font-medium">Status</th></tr></thead>
+          {/* Starts the <tbody> element to organize this part of the interface. */}
+          <tbody className="divide-y divide-[#E8DCD4]">
+            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+            {filtered.map((row) => <tr key={row.materialId} className="hover:bg-[#F7F3EE]/60"><td className="px-5 py-4"><p className="text-sm font-medium text-[#323232]">{row.materialName}</p><p className="mt-1 text-xs text-[#8E827A]">{row.category.replaceAll('_', ' ')}</p></td><td className="px-5 py-4 text-sm">{formatQty(row.plannedQuantity)} {row.unit}</td><td className="px-5 py-4 text-sm">{formatQty(row.openingStock)} {row.unit}</td><td className="px-5 py-4 text-sm text-[#617858]">+{formatQty(row.totalIn)} {row.unit}</td><td className="px-5 py-4 text-sm text-[#9A7950]">−{formatQty(row.totalOut)} {row.unit}</td><td className="px-5 py-4 text-sm font-semibold">{formatQty(row.availableStock)} {row.unit}</td><td className="px-5 py-4 text-sm">{row.lowStockThreshold == null ? '—' : `${formatQty(row.lowStockThreshold)} ${row.unit}`}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${row.isLowStock ? 'bg-[#F8ECEA] text-[#9B625A]' : 'bg-[#E8EFE5] text-[#617858]'}`}>{row.isLowStock ? 'Low stock' : 'Healthy'}</span></td></tr>)}
+            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+            {loading && <tr><td colSpan={8} className="px-5 py-12 text-center text-sm text-[#8E827A]">Loading project inventory…</td></tr>}
+            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+            {!loading && !error && filtered.length === 0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-sm text-[#8E827A]">No planned materials returned for this project.</td></tr>}
+          {/* Closes the <tbody> element so later content is no longer part of this region. */}
+          </tbody>
+        {/* Closes the <table> element so later content is no longer part of this region. */}
+        </table></div>
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>
+    {/* Closes the <div> element so later content is no longer part of this region. */}
+    </div>
+  {/* Closes the <AppShell> element so later content is no longer part of this region. */}
+  </AppShell>
+}
+function Stat({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
+  return <div className="flex items-center justify-between rounded-2xl border border-[#C8BCB4]/70 bg-white p-5"><div><p className="text-sm text-[#8E827A]">{label}</p><p className="mt-2 text-2xl font-semibold text-[#323232]">{value}</p></div><div className="rounded-xl bg-[#F7F3EE] p-3 text-[#595552]">{icon}</div></div>
+}
+function ErrorBanner({ message, retry }: { message: string; retry: () => void }) {
+  return <div role="alert" className="flex items-center justify-between gap-3 rounded-xl bg-[#F8ECEA] px-4 py-3 text-sm text-[#9B625A]"><span>{message}</span><button type="button" onClick={retry} className="inline-flex items-center gap-1 font-semibold underline"><RefreshCw size={14} />Retry</button></div>
+}
+########## stock/pages/StockDashboardPage.tsx ##########
+import { useEffect, useMemo, useState } from 'react'
+import { PackageSearch, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react'
+import { AppShell } from '../../app-shell/components/AppShell'
+import { useProjects } from '../../projects/useProjects'
+import { fetchInventorySummary, fetchProjectInventory, type InventoryRow, type InventorySummaryRow } from '../data/inventoryApi'
+import { formatQty } from '../data/formatting'
+export function StockDashboardPage() {
+  const { projects, selectedProject, selectedProjectId, selectProject, isLoading: projectsLoading, error: projectsError, retry: retryProjects } = useProjects()
+  const [inventory, setInventory] = useState<InventoryRow[]>([])
+  const [summary, setSummary] = useState<InventorySummaryRow[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retry, setRetry] = useState(0)
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setInventory([])
+      setSummary([])
+      return
+    }
+    const controller = new AbortController()
+    setLoading(true)
+    Promise.all([
+      fetchProjectInventory(selectedProjectId, controller.signal),
+      fetchInventorySummary(selectedProjectId, controller.signal),
+    ]).then(([rows, summaryRows]) => {
+      if (!controller.signal.aborted) {
+        setInventory(rows)
+        setSummary(summaryRows)
+        setError(null)
+      }
+    }).catch((cause: unknown) => {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Unable to load project inventory.')
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false)
+    })
+    return () => controller.abort()
+  }, [selectedProjectId, retry])
+  const summaryByMaterial = useMemo(() => new Map(summary.map((row) => [row.materialId, row])), [summary])
+  const lowStock = inventory.filter((row) => row.isLowStock)
+  const stats = [
+    { label: 'Materials Tracked', value: inventory.length, icon: PackageSearch },
+    { label: 'Low Stock Alerts', value: lowStock.length, icon: AlertTriangle },
+    { label: 'Healthy Items', value: inventory.length - lowStock.length, icon: CheckCircle2 },
+  ]
+  return <AppShell currentPath="/app/stock">
+    {/* Starts the <div> element to organize this part of the interface. */}
+    <div className="mx-auto max-w-[1600px] space-y-7 p-5 sm:p-7 lg:p-8">
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div><p className="text-sm text-[#8E827A]">Workspace / Stock / Available</p><h1 className="mt-1 text-2xl font-semibold text-[#323232] sm:text-3xl">Available Stock</h1><p className="mt-2 text-sm text-[#8E827A]">Current project inventory and transaction-based balances.</p></div>
+        {/* Starts the <select> element to collect or display a value. */}
+        <select aria-label="Select project" value={selectedProjectId} onChange={(event) => selectProject(event.target.value)} disabled={projectsLoading || projects.length === 0} className="rounded-xl border border-[#C8BCB4] bg-white px-4 py-3 text-sm text-[#595552]">{projects.length === 0 && <option value="">No accessible projects</option>}{projects.map((project) => <option key={project.id} value={String(project.id)}>{project.code} — {project.name}</option>)}</select>
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {projectsError && <ErrorBanner message={projectsError} retry={retryProjects} />}
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {error && <ErrorBanner message={error} retry={() => setRetry((value) => value + 1)} />}
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {selectedProject && <p className="text-sm text-[#8E827A]">{selectedProject.code} · {selectedProject.name}</p>}
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+        {stats.map(({ label, value, icon: Icon }) => <div key={label} className="rounded-2xl border border-[#C8BCB4]/70 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-sm text-[#8E827A]">{label}</p><h2 className="mt-3 text-2xl font-semibold text-[#323232]">{loading ? '—' : value}</h2></div><div className={`rounded-xl p-3 ${label === 'Low Stock Alerts' && lowStock.length > 0 ? 'bg-[#F8ECEA] text-[#9B625A]' : 'bg-[#F7F3EE] text-[#595552]'}`}><Icon size={21} /></div></div></div>)}
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>
+      {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+      {lowStock.length > 0 && <section className="rounded-2xl border border-[#EAD5D0] bg-[#F8ECEA] p-5"><p className="flex items-center gap-2 text-sm font-semibold text-[#9B625A]"><AlertTriangle size={16} />{lowStock.length} item(s) are at or below the backend low-stock threshold.</p><p className="mt-2 text-sm text-[#9B625A]/80">{lowStock.map((row) => `${row.materialName} (${formatQty(row.availableStock)} ${row.unit})`).join(' · ')}</p></section>}
+      {/* Starts the <section> element to group related content into a meaningful region. */}
+      <section className="overflow-hidden rounded-2xl border border-[#C8BCB4]/70 bg-white">
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div className="border-b border-[#E8DCD4] p-5"><h2 className="font-semibold text-[#323232]">Balances by Material</h2><p className="mt-1 text-xs text-[#8E827A]">Values are returned by the project inventory and summary APIs.</p></div>
+        {/* Starts the <div> element to organize this part of the interface. */}
+        <div className="overflow-x-auto"><table className="w-full min-w-[980px] text-left">
+          {/* Starts the <thead> element to organize this part of the interface. */}
+          <thead className="bg-[#F7F3EE] text-xs text-[#8E827A]"><tr><th className="px-5 py-4 font-medium">Material</th><th className="px-5 py-4 font-medium">Opening</th><th className="px-5 py-4 font-medium">Received</th><th className="px-5 py-4 font-medium">Consumed</th><th className="px-5 py-4 font-medium">Adjustments</th><th className="px-5 py-4 font-medium">Available</th><th className="px-5 py-4 font-medium">Planned</th><th className="px-5 py-4 font-medium">Threshold</th><th className="px-5 py-4 font-medium">Status</th></tr></thead>
+          {/* Starts the <tbody> element to organize this part of the interface. */}
+          <tbody className="divide-y divide-[#E8DCD4]">
+            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+            {inventory.map((row) => {
+              const details = summaryByMaterial.get(row.materialId)
+              const plannedPercent = row.plannedQuantity > 0 ? Math.min(100, row.availableStock / row.plannedQuantity * 100) : null
+              return <tr key={row.materialId} className="hover:bg-[#F7F3EE]/60"><td className="px-5 py-4"><p className="text-sm font-medium text-[#323232]">{row.materialName}</p><p className="mt-1 text-xs text-[#8E827A]">{row.category.replaceAll('_', ' ')} · {row.unit}</p></td><td className="px-5 py-4 text-sm">{formatQty(row.openingStock)}</td><td className="px-5 py-4 text-sm text-[#617858]">+{formatQty(details?.totalReceived ?? row.totalIn)}</td><td className="px-5 py-4 text-sm text-[#9A7950]">−{formatQty(details?.totalConsumed ?? row.totalOut)}</td><td className="px-5 py-4 text-sm">+{formatQty(row.adjustmentIn)} / −{formatQty(row.adjustmentOut)}</td><td className="px-5 py-4 text-sm font-semibold">{formatQty(row.availableStock)} {row.unit}</td><td className="px-5 py-4 text-sm">{formatQty(row.plannedQuantity)} {row.unit}{plannedPercent != null && <span className="mt-1 block text-xs text-[#8E827A]">{Math.round(plannedPercent)}% in stock vs plan</span>}</td><td className="px-5 py-4 text-sm">{row.lowStockThreshold == null ? '—' : `${formatQty(row.lowStockThreshold)} ${row.unit}`}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${row.isLowStock ? 'bg-[#F8ECEA] text-[#9B625A]' : 'bg-[#E8EFE5] text-[#617858]'}`}>{row.isLowStock ? 'Low stock' : 'Healthy'}</span></td></tr>
+            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+            })}
+            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+            {loading && <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-[#8E827A]">Loading inventory…</td></tr>}
+            {/* Adds this JSX content to the surrounding interface so related information or controls appear in the right place. */}
+            {!loading && !error && inventory.length === 0 && <tr><td colSpan={9} className="px-5 py-12 text-center text-sm text-[#8E827A]">No project inventory records are configured.</td></tr>}
+          {/* Closes the <tbody> element so later content is no longer part of this region. */}
+          </tbody>
+        {/* Closes the <table> element so later content is no longer part of this region. */}
+        </table></div>
+      {/* Closes the <section> element so later content is no longer part of this region. */}
+      </section>
+    {/* Closes the <div> element so later content is no longer part of this region. */}
+    </div>
+  {/* Closes the <AppShell> element so later content is no longer part of this region. */}
+  </AppShell>
+}
+function ErrorBanner({ message, retry }: { message: string; retry: () => void }) {
+  return <div role="alert" className="flex items-center justify-between gap-3 rounded-xl bg-[#F8ECEA] px-4 py-3 text-sm text-[#9B625A]"><span>{message}</span><button type="button" onClick={retry} className="inline-flex items-center gap-1 font-semibold underline"><RefreshCw size={14} />Retry</button></div>
+}

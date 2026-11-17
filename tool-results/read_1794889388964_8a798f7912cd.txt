@@ -1,0 +1,266 @@
+     1→import { Prisma, type BillCategory, type BillStatus, type PaymentMode, type Role } from '@prisma/client' // Uses Prisma's generated types and client to work safely with database records.
+     2→import { prisma } from '../../utils/prisma.js' // Uses the shared Prisma client to run queries through the server's database connection.
+     3→import { AppError } from '../../utils/errors.js' // Uses the shared API error type so failures have a consistent message and HTTP status.
+     4→import { projectAccess, type ProjectActor } from '../projects/projects.service.js' // Imports { projectAccess, type ProjectActor } from '../projects/projects.service.js' so this module can reuse that functionality.
+     5→import type { BillListQuery, CreateBillInput, DateQuery, PaymentInput, UpdateBillInput } from './billing.validator.js' // Imports type { BillListQuery, CreateBillInput, DateQuery, PaymentInput, UpdateBillInput } from './billing.validator.js' so this module can reuse that functionality.
+     6→
+     7→type Actor = ProjectActor // Defines the `Actor` type so TypeScript can describe the data or behavior used here.
+     8→const day = (value: string) => new Date(`${value}T00:00:00.000Z`) // Converts the supplied date into a JavaScript date value and stores it in `day` for consistent comparisons.
+     9→const today = () => new Date(new Date().toISOString().slice(0, 10)) // Converts the supplied date into a JavaScript date value and stores it in `today` for consistent comparisons.
+    10→const n = (value: Prisma.Decimal | number | null | undefined) => Number(value ?? 0) // Stores this intermediate `n` value so later lines can use it.
+    11→// Round computed bill amounts to cents before storing or returning them.
+    12→const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100 // Stores this intermediate `money` value so later lines can use it.
+    13→
+    14→function jsonSnapshot(value: { // Defines `jsonSnapshot` to json snapshot, keeping this behavior reusable.
+    15→  id: number // Sets `id` to the unique database identifier.
+    16→  projectId: number // Sets `projectId` to the project this record belongs to.
+    17→  vendorId: number // Sets `vendorId` to the supplier or contractor linked to this record.
+    18→  billNumber: string // Sets `billNumber` to the vendor's invoice reference.
+    19→  billDate: Date // Sets `billDate` to the date on the vendor's bill.
+    20→  dueDate: Date | null // Sets `dueDate` to when payment is due.
+    21→  category: string // Sets `category` to the business category used to classify this record.
+    22→  description: string | null // Sets `description` to optional details for readers.
+    23→  baseAmount: Prisma.Decimal // Sets `baseAmount` to the bill amount before tax.
+    24→  gstPercent: Prisma.Decimal // Sets `gstPercent` to the tax rate applied to the bill.
+    25→  gstAmount: Prisma.Decimal // Sets `gstAmount` to the calculated tax amount.
+    26→  totalAmount: Prisma.Decimal // Sets `totalAmount` to the full amount including tax.
+    27→  status: string // Sets `status` to the record's current workflow state.
+    28→  submittedById: number // Sets `submittedById` to the user who submitted the bill.
+    29→  approvedById: number | null // Sets `approvedById` to the user who approved the bill.
+    30→  approvedAt: Date | null // Sets `approvedAt` to the approved at value.
+    31→  rejectionReason: string | null // Sets `rejectionReason` to the rejection reason value.
+    32→}): Prisma.InputJsonValue { // Opens the object or callback body that groups the settings for this operation.
+    33→  return { // Returns the assembled result object so the caller receives the fields it needs.
+    34→    id: value.id, projectId: value.projectId, vendorId: value.vendorId, billNumber: value.billNumber, // Separates this argument or property from the next item in the surrounding call or object.
+    35→    billDate: value.billDate.toISOString().slice(0, 10), dueDate: value.dueDate?.toISOString().slice(0, 10) ?? null, // Separates this argument or property from the next item in the surrounding call or object.
+    36→    category: value.category, description: value.description, baseAmount: value.baseAmount.toString(), // Separates this argument or property from the next item in the surrounding call or object.
+    37→    gstPercent: value.gstPercent.toString(), gstAmount: value.gstAmount.toString(), totalAmount: value.totalAmount.toString(), // Separates this argument or property from the next item in the surrounding call or object.
+    38→    status: value.status, submittedById: value.submittedById, approvedById: value.approvedById, // Separates this argument or property from the next item in the surrounding call or object.
+    39→    approvedAt: value.approvedAt?.toISOString() ?? null, rejectionReason: value.rejectionReason, // Separates this argument or property from the next item in the surrounding call or object.
+    40→  } // Closes the current block and marks where its grouped work ends.
+    41→} // Closes the current block and marks where its grouped work ends.
+    42→
+    43→async function assertProject(actor: Actor, projectId: number, allowCompleted = false) { // Defines `assertProject` to assert project, keeping this behavior reusable.
+    44→  const project = await prisma.project.findFirst({ where: { id: projectId, ...projectAccess(actor) }, select: { id: true, status: true } }) // Looks up one matching database record and stores it in `project` so its existence or values can be checked.
+    45→  if (!project) throw new AppError('NOT_FOUND', 'Project not found.', 404) // Handles a missing database record before later code tries to use it.
+    46→  if (!allowCompleted && project.status === 'COMPLETED') throw new AppError('BUSINESS_RULE_VIOLATION', 'Completed projects cannot receive new bills.', 422) // Checks whether the value is missing; the block handles that case before continuing.
+    47→  return project // Returns `project` to the caller so the next layer can use the result.
+    48→} // Closes the current block and marks where its grouped work ends.
+    49→
+    50→async function getBill(actor: Actor, id: number) { // Defines `getBill` to retrieve bill, keeping this behavior reusable.
+    51→  const bill = await prisma.bill.findUnique({ // Looks up one matching database record and stores it in `bill` so its existence or values can be checked.
+    52→    where: { id }, // Separates this argument or property from the next item in the surrounding call or object.
+    53→    include: { // Sets `include` to loads related records needed alongside the main result.
+    54→      vendor: true, // Separates this argument or property from the next item in the surrounding call or object.
+    55→      project: { select: { id: true, code: true, name: true, assignedPmId: true } }, // Separates this argument or property from the next item in the surrounding call or object.
+    56→      submittedBy: { select: { id: true, name: true, email: true } }, // Separates this argument or property from the next item in the surrounding call or object.
+    57→      approvedBy: { select: { id: true, name: true, email: true } }, // Separates this argument or property from the next item in the surrounding call or object.
+    58→      payments: { include: { recordedBy: { select: { id: true, name: true } } }, orderBy: { paymentDate: 'asc' } }, // Separates this argument or property from the next item in the surrounding call or object.
+    59→    }, // Closes the current call, object, or collection so the surrounding expression can continue.
+    60→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+    61→  if (!bill || (actor.role === 'PM' && bill.project.assignedPmId !== actor.id)) throw new AppError('NOT_FOUND', 'Bill not found.', 404) // Checks the caller's role before allowing this role-restricted operation.
+    62→  const paidAmount = bill.payments.reduce((sum, payment) => sum + n(payment.amount), 0) // Totals the matching values and stores the result in `paidAmount`.
+    63→  return { ...bill, paidAmount: money(paidAmount), outstandingAmount: money(n(bill.totalAmount) - paidAmount) } // Returns the requested data together with pagination or summary metadata for the client.
+    64→} // Closes the current block and marks where its grouped work ends.
+    65→
+    66→function outputBill<T extends { totalAmount: Prisma.Decimal; payments?: Array<{ amount: Prisma.Decimal }> }>(bill: T) { // Defines `outputBill` to output bill, keeping this behavior reusable.
+    67→  const paidAmount = bill.payments?.reduce((sum, payment) => sum + n(payment.amount), 0) ?? 0 // Totals the matching values and stores the result in `paidAmount`.
+    68→  return { ...bill, paidAmount: money(paidAmount), outstandingAmount: money(n(bill.totalAmount) - paidAmount) } // Returns the requested data together with pagination or summary metadata for the client.
+    69→} // Closes the current block and marks where its grouped work ends.
+    70→
+    71→export async function createBill(actor: Actor, input: CreateBillInput) { // Defines `createBill` to create bill, keeping this behavior reusable.
+    72→  await assertProject(actor, input.projectId) // Waits for this asynchronous operation to finish before using its result.
+    73→  const vendor = await prisma.vendor.findUnique({ where: { id: input.vendorId }, select: { id: true, isActive: true } }) // Looks up one matching database record and stores it in `vendor` so its existence or values can be checked.
+    74→  if (!vendor || !vendor.isActive) throw new AppError('NOT_FOUND', 'Active vendor not found.', 404) // Rejects an inactive account so deactivated users cannot continue using the API.
+    75→  const billDate = day(input.billDate) // Stores this intermediate `bill date` value so later lines can use it.
+    76→  const dueDate = input.dueDate ? day(input.dueDate) : null // Stores this intermediate `due date` value so later lines can use it.
+    77→  const gstAmount = money(input.baseAmount * input.gstPercent / 100) // Stores this intermediate `gst amount` value so later lines can use it.
+    78→  const totalAmount = money(input.baseAmount + gstAmount) // Stores this intermediate `total amount` value so later lines can use it.
+    79→  return prisma.$transaction(async (tx) => { // Returns the database result to the route handler so it can form the API response.
+    80→    // Save the bill and its audit record together so a partial write cannot go unnoticed.
+    81→    const bill = await tx.bill.create({ // Stores this intermediate `bill` value so later lines can use it.
+    82→      data: { // Sets `data` to the values to write to the database.
+    83→        projectId: input.projectId, vendorId: input.vendorId, billNumber: input.billNumber, // Separates this argument or property from the next item in the surrounding call or object.
+    84→        billDate, dueDate, category: input.category as BillCategory, description: input.description ?? null, // Separates this argument or property from the next item in the surrounding call or object.
+    85→        baseAmount: input.baseAmount, gstPercent: input.gstPercent, gstAmount, totalAmount, submittedById: actor.id, // Separates this argument or property from the next item in the surrounding call or object.
+    86→      }, // Closes the current call, object, or collection so the surrounding expression can continue.
+    87→      include: { payments: true }, // Separates this argument or property from the next item in the surrounding call or object.
+    88→    }) // Closes the current call, object, or collection so the surrounding expression can continue.
+    89→    await tx.auditLog.create({ data: { userId: actor.id, action: 'CREATE', entityType: 'Bill', entityId: bill.id, newValues: jsonSnapshot(bill) } }) // Waits for this asynchronous operation to finish before using its result.
+    90→    return outputBill(bill) // Returns `outputBill(bill)` to the caller so the next layer can use the result.
+    91→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+    92→} // Closes the current block and marks where its grouped work ends.
+    93→
+    94→export async function listBills(actor: Actor, query: BillListQuery) { // Defines `listBills` to retrieve a list of bills, keeping this behavior reusable.
+    95→  const statuses = query.status?.split(',').filter(Boolean) as BillStatus[] | undefined // Stores this intermediate `statuses` value so later lines can use it.
+    96→  const where: Prisma.BillWhereInput = { // Stores this intermediate `prisma.bill where input` value so later lines can use it.
+    97→    ...(query.projectId ? { projectId: query.projectId } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+    98→    ...(query.vendorId ? { vendorId: query.vendorId } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+    99→    ...(statuses?.length ? { status: { in: statuses } } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   100→    ...(query.category ? { category: query.category } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   101→    ...(query.from || query.to ? { billDate: { ...(query.from ? { gte: day(query.from) } : {}), ...(query.to ? { lte: day(query.to) } : {}) } } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   102→    ...(query.search ? { OR: [ // Provides `...(query.search ? { OR: [` as part of list bills.
+   103→      { billNumber: { contains: query.search, mode: 'insensitive' } }, // Separates this argument or property from the next item in the surrounding call or object.
+   104→      { vendor: { name: { contains: query.search, mode: 'insensitive' } } }, // Separates this argument or property from the next item in the surrounding call or object.
+   105→    ] } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   106→    ...(actor.role === 'PM' ? { project: { assignedPmId: actor.id } } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   107→  } // Closes the current block and marks where its grouped work ends.
+   108→  if (query.overdue) { // Checks whether the supplied values meet this condition; the block handles that case before continuing.
+   109→    where.dueDate = { lt: today() } // Provides `where.dueDate = { lt: today() }` as part of list bills.
+   110→    where.status = { in: ['APPROVED', 'PARTIALLY_PAID'] } // Provides `where.status = { in: ['APPROVED', 'PARTIALLY_PAID'] }` as part of list bills.
+   111→  } // Closes the current block and marks where its grouped work ends.
+   112→  const [bills, total] = await prisma.$transaction([ // Fetches the page and its matching-record count in one transaction so the response metadata stays consistent; stores both results in `bills,total`.
+   113→    prisma.bill.findMany({ // Opens the object or callback body that groups the settings for this operation.
+   114→      where, orderBy: [{ billDate: 'desc' }, { id: 'desc' }], // Separates this argument or property from the next item in the surrounding call or object.
+   115→      skip: (query.page - 1) * query.pageSize, take: query.pageSize, // Separates this argument or property from the next item in the surrounding call or object.
+   116→      include: { vendor: true, project: { select: { id: true, code: true, name: true } }, payments: true }, // Separates this argument or property from the next item in the surrounding call or object.
+   117→    }), // Separates this argument or property from the next item in the surrounding call or object.
+   118→    prisma.bill.count({ where }), // Separates this argument or property from the next item in the surrounding call or object.
+   119→  ]) // Closes the current call, object, or collection so the surrounding expression can continue.
+   120→  const rows = bills.map(outputBill) // Transforms the matching items into `rows`, the shape needed by the caller.
+   121→  const totals = rows.reduce((acc, bill) => ({ // Totals the matching values and stores the result in `totals`.
+   122→    totalAmount: acc.totalAmount + n(bill.totalAmount), // Separates this argument or property from the next item in the surrounding call or object.
+   123→    paidAmount: acc.paidAmount + bill.paidAmount, // Separates this argument or property from the next item in the surrounding call or object.
+   124→    outstandingAmount: acc.outstandingAmount + bill.outstandingAmount, // Separates this argument or property from the next item in the surrounding call or object.
+   125→  }), { totalAmount: 0, paidAmount: 0, outstandingAmount: 0 }) // Provides `}), { totalAmount: 0, paidAmount: 0, outstandingAmount: 0 })` as part of list bills.
+   126→  return { bills: rows, meta: { page: query.page, pageSize: query.pageSize, total, totalPages: Math.ceil(total / query.pageSize), totals: { totalAmount: money(totals.totalAmount), paidAmount: money(totals.paidAmount), outstandingAmount: money(totals.outstandingAmount) } } } // Returns the requested data together with pagination or summary metadata for the client.
+   127→} // Closes the current block and marks where its grouped work ends.
+   128→
+   129→export async function detail(actor: Actor, id: number) { // Defines `detail` to detail, keeping this behavior reusable.
+   130→  return getBill(actor, id) // Returns `getBill(actor, id)` to the caller so the next layer can use the result.
+   131→} // Closes the current block and marks where its grouped work ends.
+   132→
+   133→export async function updateBill(actor: Actor, id: number, input: UpdateBillInput) { // Defines `updateBill` to update bill, keeping this behavior reusable.
+   134→  const existing = await getBill(actor, id) // Stores this intermediate `existing` value so later lines can use it.
+   135→  if (!['PENDING', 'REJECTED'].includes(existing.status)) throw new AppError('BUSINESS_RULE_VIOLATION', 'Only pending or rejected bills can be edited.', 422) // Checks whether the value is missing; the block handles that case before continuing.
+   136→  if (actor.role === 'PM' && existing.submittedById !== actor.id) throw new AppError('NOT_FOUND', 'Bill not found.', 404) // Checks the caller's role before allowing this role-restricted operation.
+   137→  if (input.vendorId !== undefined) { // Checks whether the caller supplied this optional value before validating or applying it.
+   138→    const vendor = await prisma.vendor.findUnique({ where: { id: input.vendorId }, select: { id: true, isActive: true } }) // Looks up one matching database record and stores it in `vendor` so its existence or values can be checked.
+   139→    if (!vendor || !vendor.isActive) throw new AppError('NOT_FOUND', 'Active vendor not found.', 404) // Rejects an inactive account so deactivated users cannot continue using the API.
+   140→  } // Closes the current block and marks where its grouped work ends.
+   141→  const baseAmount = input.baseAmount ?? n(existing.baseAmount) // Stores this intermediate `base amount` value so later lines can use it.
+   142→  const gstPercent = input.gstPercent ?? n(existing.gstPercent) // Stores this intermediate `gst percent` value so later lines can use it.
+   143→  const billDate = input.billDate === undefined ? existing.billDate : day(input.billDate) // Stores this intermediate `bill date` value so later lines can use it.
+   144→  const dueDate = input.dueDate === undefined ? existing.dueDate : input.dueDate ? day(input.dueDate) : null // Stores this intermediate `due date` value so later lines can use it.
+   145→  if (dueDate && dueDate < billDate) { // Checks whether the supplied values meet this condition; the block handles that case before continuing.
+   146→    throw new AppError('VALIDATION_ERROR', 'Due date must be on or after bill date.', 400) // Stops this request with `VALIDATION_ERROR` and HTTP 400 so the client receives a clear failure.
+   147→  } // Closes the current block and marks where its grouped work ends.
+   148→  const data = { // Stores this intermediate `data` value so later lines can use it.
+   149→    ...(input.vendorId === undefined ? {} : { vendorId: input.vendorId }), // Separates this argument or property from the next item in the surrounding call or object.
+   150→    ...(input.billNumber === undefined ? {} : { billNumber: input.billNumber }), // Separates this argument or property from the next item in the surrounding call or object.
+   151→    ...(input.billDate === undefined ? {} : { billDate }), // Separates this argument or property from the next item in the surrounding call or object.
+   152→    ...(input.dueDate === undefined ? {} : { dueDate }), // Separates this argument or property from the next item in the surrounding call or object.
+   153→    ...(input.category === undefined ? {} : { category: input.category as BillCategory }), // Separates this argument or property from the next item in the surrounding call or object.
+   154→    ...(input.description === undefined ? {} : { description: input.description }), // Separates this argument or property from the next item in the surrounding call or object.
+   155→    ...(input.baseAmount === undefined ? {} : { baseAmount }), // Separates this argument or property from the next item in the surrounding call or object.
+   156→    ...(input.gstPercent === undefined ? {} : { gstPercent }), // Separates this argument or property from the next item in the surrounding call or object.
+   157→    gstAmount: money(baseAmount * gstPercent / 100), // Separates this argument or property from the next item in the surrounding call or object.
+   158→    totalAmount: money(baseAmount + money(baseAmount * gstPercent / 100)), // Separates this argument or property from the next item in the surrounding call or object.
+   159→    ...(existing.status === 'REJECTED' ? { status: 'PENDING' as const, rejectionReason: null } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   160→  } // Closes the current block and marks where its grouped work ends.
+   161→  const updated = await prisma.$transaction(async (tx) => { // Opens the function, callback, or control-flow block that groups the related statements.
+   162→    const bill = await tx.bill.update({ where: { id }, data, include: { payments: true } }) // Stores this intermediate `bill` value so later lines can use it.
+   163→    await tx.auditLog.create({ data: { userId: actor.id, action: 'UPDATE', entityType: 'Bill', entityId: id, oldValues: jsonSnapshot(existing), newValues: jsonSnapshot(bill) } }) // Waits for this asynchronous operation to finish before using its result.
+   164→    return bill // Returns `bill` to the caller so the next layer can use the result.
+   165→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+   166→  return outputBill(updated) // Returns `outputBill(updated)` to the caller so the next layer can use the result.
+   167→} // Closes the current block and marks where its grouped work ends.
+   168→
+   169→export async function deleteBill(actor: Actor, id: number) { // Defines `deleteBill` to delete bill, keeping this behavior reusable.
+   170→  const existing = await getBill(actor, id) // Stores this intermediate `existing` value so later lines can use it.
+   171→  if (existing.status !== 'PENDING' || existing.payments.length > 0) throw new AppError('BUSINESS_RULE_VIOLATION', 'Only pending bills without payments can be deleted.', 422) // Checks whether the collection contains any items that need special handling.
+   172→  if (actor.role === 'PM' && existing.submittedById !== actor.id) throw new AppError('NOT_FOUND', 'Bill not found.', 404) // Checks the caller's role before allowing this role-restricted operation.
+   173→  await prisma.$transaction(async (tx) => { // Opens the function, callback, or control-flow block that groups the related statements.
+   174→    await tx.bill.delete({ where: { id } }) // Waits for this asynchronous operation to finish before using its result.
+   175→    await tx.auditLog.create({ data: { userId: actor.id, action: 'DELETE', entityType: 'Bill', entityId: id, oldValues: jsonSnapshot(existing) } }) // Waits for this asynchronous operation to finish before using its result.
+   176→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+   177→} // Closes the current block and marks where its grouped work ends.
+   178→
+   179→export async function approveBill(actor: Actor, id: number) { // Defines `approveBill` to approve bill, keeping this behavior reusable.
+   180→  if (actor.role !== 'ADMIN') throw new AppError('FORBIDDEN', 'Only administrators can approve bills.', 403) // Checks the caller's role before allowing this role-restricted operation.
+   181→  const existing = await getBill(actor, id) // Stores this intermediate `existing` value so later lines can use it.
+   182→  if (existing.status !== 'PENDING') throw new AppError('BUSINESS_RULE_VIOLATION', 'Only pending bills can be approved.', 422) // Checks whether the value is missing; the block handles that case before continuing.
+   183→  return prisma.$transaction(async (tx) => { // Returns the database result to the route handler so it can form the API response.
+   184→    const bill = await tx.bill.update({ where: { id }, data: { status: 'APPROVED', approvedById: actor.id, approvedAt: new Date() }, include: { payments: true } }) // Converts the supplied date into a JavaScript date value and stores it in `bill` for consistent comparisons.
+   185→    await tx.auditLog.create({ data: { userId: actor.id, action: 'APPROVE', entityType: 'Bill', entityId: id, oldValues: jsonSnapshot(existing), newValues: jsonSnapshot(bill) } }) // Waits for this asynchronous operation to finish before using its result.
+   186→    return outputBill(bill) // Returns `outputBill(bill)` to the caller so the next layer can use the result.
+   187→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+   188→} // Closes the current block and marks where its grouped work ends.
+   189→
+   190→export async function rejectBill(actor: Actor, id: number, reason: string) { // Defines `rejectBill` to reject bill, keeping this behavior reusable.
+   191→  if (actor.role !== 'ADMIN') throw new AppError('FORBIDDEN', 'Only administrators can reject bills.', 403) // Checks the caller's role before allowing this role-restricted operation.
+   192→  const existing = await getBill(actor, id) // Stores this intermediate `existing` value so later lines can use it.
+   193→  if (existing.status !== 'PENDING') throw new AppError('BUSINESS_RULE_VIOLATION', 'Only pending bills can be rejected.', 422) // Checks whether the value is missing; the block handles that case before continuing.
+   194→  return prisma.$transaction(async (tx) => { // Returns the database result to the route handler so it can form the API response.
+   195→    const bill = await tx.bill.update({ where: { id }, data: { status: 'REJECTED', rejectionReason: reason }, include: { payments: true } }) // Stores this intermediate `bill` value so later lines can use it.
+   196→    await tx.auditLog.create({ data: { userId: actor.id, action: 'REJECT', entityType: 'Bill', entityId: id, oldValues: jsonSnapshot(existing), newValues: jsonSnapshot(bill) } }) // Waits for this asynchronous operation to finish before using its result.
+   197→    return outputBill(bill) // Returns `outputBill(bill)` to the caller so the next layer can use the result.
+   198→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+   199→} // Closes the current block and marks where its grouped work ends.
+   200→
+   201→export async function listPayments(actor: Actor, id: number, query: DateQuery) { // Defines `listPayments` to retrieve a list of payments, keeping this behavior reusable.
+   202→  const bill = await getBill(actor, id) // Stores this intermediate `bill` value so later lines can use it.
+   203→  return bill.payments.filter((payment) => (!query.from || payment.paymentDate >= day(query.from)) && (!query.to || payment.paymentDate <= day(query.to))) // Returns `bill.payments.filter((payment) => (!query.from || payment.paymentDate >= day(query.from)) && (!query.to || payment.paymentDate <= day(query.to)))` to the caller so the next layer can use the result.
+   204→} // Closes the current block and marks where its grouped work ends.
+   205→
+   206→export async function createPayment(actor: Actor, id: number, input: PaymentInput) { // Defines `createPayment` to create payment, keeping this behavior reusable.
+   207→  if (actor.role !== 'ADMIN') throw new AppError('FORBIDDEN', 'Only administrators can record payments.', 403) // Checks the caller's role before allowing this role-restricted operation.
+   208→  const existing = await getBill(actor, id)
+   209→  return prisma.$transaction(async (tx) => { // Returns the database result to the route handler so it can form the API response.
+   210→    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${id}::int)` // Waits for this asynchronous operation to finish before using its result.
+   211→    const current = await tx.bill.findUnique({ where: { id }, include: { payments: true } }) // Stores this intermediate `current` value so later lines can use it.
+   212→    if (!current || !['APPROVED', 'PARTIALLY_PAID'].includes(current.status)) { // Checks whether the value is missing; the block handles that case before continuing.
+   213→      throw new AppError('BUSINESS_RULE_VIOLATION', 'This bill is not payable.', 422) // Stops this request with `BUSINESS_RULE_VIOLATION` and HTTP 422 so the client receives a clear failure.
+   214→    } // Closes the current block and marks where its grouped work ends.
+   215→    const currentPaid = current.payments.reduce((sum, payment) => sum + n(payment.amount), 0) // Totals the matching values and stores the result in `currentPaid`.
+   216→    const outstanding = money(n(current.totalAmount) - currentPaid) // Stores this intermediate `outstanding` value so later lines can use it.
+   217→    const paymentDate = day(input.paymentDate) // Stores this intermediate `payment date` value so later lines can use it.
+   218→    if (paymentDate > today() || paymentDate < current.billDate) { // Checks whether the supplied values meet this condition; the block handles that case before continuing.
+   219→      throw new AppError('VALIDATION_ERROR', 'Payment date must be between bill date and today.', 422) // Stops this request with `VALIDATION_ERROR` and HTTP 422 so the client receives a clear failure.
+   220→    } // Closes the current block and marks where its grouped work ends.
+   221→    if (input.amount > outstanding) { // Checks whether the supplied values meet this condition; the block handles that case before continuing.
+   222→      throw new AppError('BUSINESS_RULE_VIOLATION', 'Payment exceeds the outstanding balance.', 422, { outstanding, requested: input.amount }) // Stops this operation with the error `BUSINESS_RULE_VIOLATION`, so the API reports the failure clearly.
+   223→    } // Closes the current block and marks where its grouped work ends.
+   224→    const payment = await tx.payment.create({ data: { billId: id, amount: input.amount, paymentDate, mode: input.mode as PaymentMode, referenceNumber: input.referenceNumber ?? null, remarks: input.remarks ?? null, recordedById: actor.id } }) // Stores this intermediate `payment` value so later lines can use it.
+   225→    const paid = currentPaid + input.amount // Stores this intermediate `paid` value so later lines can use it.
+   226→    const status = money(paid) === money(n(current.totalAmount)) ? 'PAID' : 'PARTIALLY_PAID' // Stores this intermediate `status` value so later lines can use it.
+   227→    const bill = await tx.bill.update({ where: { id }, data: { status }, include: { payments: true } }) // Stores this intermediate `bill` value so later lines can use it.
+   228→    await tx.auditLog.create({ data: { userId: actor.id, action: 'CREATE', entityType: 'Payment', entityId: payment.id, newValues: { billId: id, amount: input.amount, paymentDate: input.paymentDate, mode: input.mode, status } } }) // Waits for this asynchronous operation to finish before using its result.
+   229→    return { payment, bill: outputBill(bill) } // Returns the assembled result object so the caller receives the fields it needs.
+   230→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+   231→} // Closes the current block and marks where its grouped work ends.
+   232→
+   233→export async function projectExpenses(actor: Actor, projectId: number, query: DateQuery) { // Defines `projectExpenses` to work with expenses, keeping this behavior reusable.
+   234→  await assertProject(actor, projectId, true) // Waits for this asynchronous operation to finish before using its result.
+   235→  const bills = await prisma.bill.findMany({ where: { projectId, ...(query.from || query.to ? { billDate: { ...(query.from ? { gte: day(query.from) } : {}), ...(query.to ? { lte: day(query.to) } : {}) } } : {}) }, include: { payments: true, vendor: true }, orderBy: { billDate: 'desc' } }) // Fetches matching database records and stores them in `bills` for the response or next calculation.
+   236→  return bills.map(outputBill) // Returns `bills.map(outputBill)` to the caller so the next layer can use the result.
+   237→} // Closes the current block and marks where its grouped work ends.
+   238→
+   239→export async function vendorOutstanding(actor: Actor, query: DateQuery) { // Defines `vendorOutstanding` to vendor outstanding, keeping this behavior reusable.
+   240→  const where: Prisma.BillWhereInput = { // Stores this intermediate `prisma.bill where input` value so later lines can use it.
+   241→    ...(query.from || query.to ? { billDate: { ...(query.from ? { gte: day(query.from) } : {}), ...(query.to ? { lte: day(query.to) } : {}) } } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   242→    ...(actor.role === 'PM' ? { project: { assignedPmId: actor.id } } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   243→  } // Closes the current block and marks where its grouped work ends.
+   244→  const bills = await prisma.bill.findMany({ where, include: { vendor: true, payments: true } }) // Fetches matching database records and stores them in `bills` for the response or next calculation.
+   245→  const grouped = new Map<number, { vendorId: number; vendorName: string; totalAmount: number; paidAmount: number; outstandingAmount: number }>() // Creates a lookup map named `grouped` so values can be grouped by key while records are processed.
+   246→  for (const bill of bills) { // Repeats the block for each `bill` in `bills` so every item is processed.
+   247→    const row = grouped.get(bill.vendorId) ?? { vendorId: bill.vendorId, vendorName: bill.vendor.name, totalAmount: 0, paidAmount: 0, outstandingAmount: 0 } // Stores this intermediate `row` value so later lines can use it.
+   248→    const item = outputBill(bill) // Stores this intermediate `item` value so later lines can use it.
+   249→    row.totalAmount += n(item.totalAmount); row.paidAmount += item.paidAmount; row.outstandingAmount += item.outstandingAmount // Adds `n(item.totalAmount); row.paidAmount += item.paidAmount; row.outstandingAmount += item.outstandingAmount` to the running `row.totalAmount` total.
+   250→    grouped.set(bill.vendorId, row) // Provides `grouped.set(bill.vendorId, row)` as part of vendor outstanding.
+   251→  } // Closes the current block and marks where its grouped work ends.
+   252→  return [...grouped.values()].map((row) => ({ ...row, totalAmount: money(row.totalAmount), paidAmount: money(row.paidAmount), outstandingAmount: money(row.outstandingAmount) })) // Returns the resulting list so the caller can use the matching records.
+   253→} // Closes the current block and marks where its grouped work ends.
+   254→
+   255→export async function paymentHistory(actor: Actor, query: DateQuery) { // Defines `paymentHistory` to payment history, keeping this behavior reusable.
+   256→  return prisma.payment.findMany({ // Returns the database result to the route handler so it can form the API response.
+   257→    where: { // Sets `where` to filters the database records to the requested scope.
+   258→      ...(query.from || query.to ? { paymentDate: { ...(query.from ? { gte: day(query.from) } : {}), ...(query.to ? { lte: day(query.to) } : {}) } } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   259→      ...(actor.role === 'PM' ? { bill: { project: { assignedPmId: actor.id } } } : {}), // Separates this argument or property from the next item in the surrounding call or object.
+   260→    }, // Closes the current call, object, or collection so the surrounding expression can continue.
+   261→    include: { bill: { select: { id: true, billNumber: true, projectId: true, vendor: { select: { id: true, name: true } } } }, recordedBy: { select: { id: true, name: true } } }, // Separates this argument or property from the next item in the surrounding call or object.
+   262→    orderBy: [{ paymentDate: 'desc' }, { id: 'desc' }], // Separates this argument or property from the next item in the surrounding call or object.
+   263→  }) // Closes the current call, object, or collection so the surrounding expression can continue.
+   264→} // Closes the current block and marks where its grouped work ends.
+   265→// File purpose: Implements billing business rules and database operations.
+   266→
