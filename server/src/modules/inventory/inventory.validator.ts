@@ -34,10 +34,17 @@ export const transactionListQuerySchema = z.object({
   txnType: transactionType.optional(),
   from: dateOnly.optional(),
   to: dateOnly.optional(),
-  includeVoided: z.coerce.boolean().default(false),
+  includeVoided: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
 }).refine((value) => !value.from || !value.to || value.from <= value.to, {
   message: 'The from date must be on or before the to date.',
   path: ['to'],
+})
+export const voidTransactionSchema = z.object({
+  voidReason: z.string().trim().min(3, 'Void reason must be at least 3 characters').max(500),
+})
+export const transactionIdParamsSchema = z.object({
+  projectId: z.coerce.number().int().positive(),
+  id: z.coerce.number().int().positive(),
 })
 export const wastageQuerySchema = z.object({}).strict()
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>

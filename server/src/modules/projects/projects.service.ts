@@ -1,6 +1,7 @@
 import type { Prisma, Role } from '@prisma/client'
 import { prisma } from '../../utils/prisma.js'
 import { AppError } from '../../utils/errors.js'
+import { logAudit, snapshot } from '../../shared/audit.js'
 
 export type ProjectActor = { id: number; role: Role }
 type Actor = ProjectActor
@@ -311,16 +312,100 @@ export async function createProject(actor: Actor, input: Record<string, unknown>
 }
 
 export async function updateProject(actor: Actor, id: number, input: Record<string, unknown>) {
-  await getProject(actor, id)
+  const existing = await getProject(actor, id)
+  const oldValues = snapshot(existing)
+
   if (actor.role !== 'ADMIN') {
-    const administrativeFields = ['landId', 'assignedPmId', 'createdById', 'totalBudget', 'wastageThresholdPct', 'startDate', 'expectedEndDate', 'actualEndDate']
+    const administrativeFields = ['landId', 'assignedPmId', 'createdById', 'totalBudget', 'wastageThresholdPct', 'startDate', 'expectedEndDate', 'actualEndDate', 'status']
     if (administrativeFields.some((field) => field in input)) {
-      throw new AppError('FORBIDDEN', 'Project assignment and administrative fields can only be changed by an administrator.', 403)
+      throw new AppError('FORBIDDEN', 'Project assignment, status, and administrative fields can only be changed by an administrator. Use PATCH /projects/:id/status for status transitions.', 403)
     }
   }
-  const data = actor.role === 'ADMIN' ? input : Object.fromEntries(Object.entries(input).filter(([key]) => ['name', 'description', 'status'].includes(key)))
+  const data = actor.role === 'ADMIN' ? input : Object.fromEntries(Object.entries(input).filter(([key]) => ['name', 'description'].includes(key)))
+
+  const hadAssignedPm = existing.assignedPmId
+  const willAssignPm = input.assignedPmId !== undefined && input.assignedPmId !== null
+  const pmChanged = willAssignPm && input.assignedPmId !== hadAssignedPm
+
   if (actor.role === 'ADMIN') await validateRelations(input as { landId?: number; assignedPmId?: number | null })
-  return prisma.project.update({ where: { id }, data: data as never, include: { land: true, assignedPm: { select: { id: true, name: true, email: true } } } })
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.project.update({
+      where: { id },
+      data: data as never,
+      include: { land: true, assignedPm: { select: { id: true, name: true, email: true } } },
+    })
+
+    if (pmChanged) {
+      await logAudit(tx, {
+        userId: actor.id,
+        action: 'ASSIGN',
+        entityType: 'Project',
+        entityId: id,
+        oldValues: { assignedPmId: (oldValues as { assignedPmId?: number | null })?.assignedPmId ?? null },
+        newValues: { assignedPmId: input.assignedPmId },
+      })
+    }
+
+    await logAudit(tx, {
+      userId: actor.id,
+      action: 'UPDATE',
+      entityType: 'Project',
+      entityId: id,
+      oldValues,
+      newValues: snapshot(updated),
+    })
+
+    return updated
+  })
+}
+
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  PLANNING: ['ACTIVE'],
+  ACTIVE: ['ON_HOLD', 'COMPLETED'],
+  ON_HOLD: ['ACTIVE'],
+  COMPLETED: [],
+}
+
+export async function changeProjectStatus(actor: Actor, id: number, newStatus: string) {
+  const existing = await getProject(actor, id)
+  const oldStatus = existing.status
+  const oldValues = snapshot(existing)
+
+  if (!STATUS_TRANSITIONS[oldStatus]) {
+    throw new AppError('BUSINESS_RULE_VIOLATION', `Unknown current status: ${oldStatus}.`, 422)
+  }
+  if (!STATUS_TRANSITIONS[oldStatus].includes(newStatus)) {
+    throw new AppError(
+      'BUSINESS_RULE_VIOLATION',
+      `Invalid status transition from ${oldStatus} to ${newStatus}. Allowed: ${STATUS_TRANSITIONS[oldStatus].join(', ') || 'none (terminal status)'}.`,
+      422,
+    )
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updateData: Record<string, unknown> = { status: newStatus }
+    if (newStatus === 'COMPLETED') {
+      updateData.actualEndDate = new Date()
+    }
+
+    const updated = await tx.project.update({
+      where: { id },
+      data: updateData as never,
+      include: { land: true, assignedPm: { select: { id: true, name: true, email: true } } },
+    })
+
+    await logAudit(tx, {
+      userId: actor.id,
+      action: 'STATUS_CHANGE',
+      entityType: 'Project',
+      entityId: id,
+      oldValues: { status: oldStatus },
+      newValues: { status: newStatus, actualEndDate: updateData.actualEndDate ?? null },
+    })
+
+    return updated
+  })
 }
 
 export async function deleteProject(id: number) {

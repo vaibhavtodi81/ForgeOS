@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { requireAuth } from '../../middleware/auth.middleware.js'
 import { validateRequest } from '../../middleware/validate.middleware.js'
 import * as controller from './inventory.controller.js'
-import { createTransactionSchema, projectInventoryParamsSchema, transactionListQuerySchema, wastageQuerySchema } from './inventory.validator.js'
+import { createTransactionSchema, projectInventoryParamsSchema, transactionListQuerySchema, wastageQuerySchema, voidTransactionSchema, transactionIdParamsSchema } from './inventory.validator.js'
 
 export const inventoryRoutes = Router()
 inventoryRoutes.use(requireAuth)
@@ -11,3 +11,4 @@ inventoryRoutes.post('/projects/:projectId/inventory/transactions', validateRequ
 inventoryRoutes.get('/projects/:projectId/inventory/transactions', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', transactionListQuerySchema), controller.transactions)
 inventoryRoutes.get('/projects/:projectId/inventory/summary', validateRequest('params', projectInventoryParamsSchema), controller.summary)
 inventoryRoutes.get('/projects/:projectId/inventory/wastage', validateRequest('params', projectInventoryParamsSchema), validateRequest('query', wastageQuerySchema), controller.wastage)
+inventoryRoutes.post('/projects/:projectId/inventory/transactions/:id/void', validateRequest('params', transactionIdParamsSchema), validateRequest('body', voidTransactionSchema), controller.voidTransaction)

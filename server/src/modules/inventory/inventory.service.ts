@@ -1,7 +1,9 @@
 import { Prisma, type Role } from '@prisma/client'
 import { prisma } from '../../utils/prisma.js'
 import { AppError } from '../../utils/errors.js'
+import { env } from '../../config/env.js'
 import { projectAccess } from '../projects/projects.service.js'
+import { logAudit, snapshot } from '../../shared/audit.js'
 import type { CreateTransactionInput, TransactionListQuery } from './inventory.validator.js'
 
 type Actor = { id: number; role: Role }
@@ -137,22 +139,105 @@ export async function getSummary(actor: Actor, projectId: number) {
 
 export async function getWastage(actor: Actor, projectId: number) {
   await assertProject(actor, projectId)
-  const [plans, latestLog, transactions] = await Promise.all([
+  const [project, plans, latestLog, transactions] = await Promise.all([
+    prisma.project.findFirst({ where: { id: projectId, ...projectAccess(actor) }, select: { wastageThresholdPct: true } }),
     prisma.projectMaterialPlan.findMany({ where: { projectId }, include: { material: true } }),
     prisma.dailyLog.findFirst({ where: { projectId }, orderBy: { logDate: 'desc' }, select: { progressPercent: true } }),
     prisma.stockTransaction.findMany({ where: { projectId, isVoided: false }, select: { materialId: true, txnType: true, quantity: true, outReason: true } }),
   ])
+  if (!project) throw new AppError('NOT_FOUND', 'Project not found.', 404)
+
   const progressPercent = decimal(latestLog?.progressPercent)
+  const projectDefaultThreshold = decimal(project.wastageThresholdPct)
+
   const items = plans.map((plan) => {
     const rows = transactions.filter((row) => row.materialId === plan.materialId && row.txnType === 'OUT')
     const consumed = rows.reduce((sum, row) => sum + decimal(row.quantity), 0)
     const recordedWastage = rows.filter((row) => row.outReason === 'DAMAGED' || row.outReason === 'LOST').reduce((sum, row) => sum + decimal(row.quantity), 0)
     const expected = decimal(plan.plannedQuantity) * progressPercent / 100
     const overrun = Math.max(consumed - expected, 0)
-    const overrunPercent = expected > 0 ? overrun / expected * 100 : 0
-    const threshold = decimal(plan.wastageThresholdPct)
-    const status = progressPercent === 0 && consumed > 0 ? 'NO_BASELINE' : overrunPercent > threshold ? 'OVERRUN' : 'OK'
-    return { materialId: plan.materialId, materialName: plan.material.name, unit: plan.material.unit, plannedQuantity: decimal(plan.plannedQuantity), expectedQuantity: expected, consumedQuantity: consumed, overrunQuantity: overrun, overrunPercent, thresholdPercent: threshold, recordedWastageQuantity: recordedWastage, estimatedLoss: recordedWastage * decimal(plan.plannedUnitRate), status }
-  }).sort((a, b) => (a.status === b.status ? b.estimatedLoss - a.estimatedLoss : a.status === 'OVERRUN' ? -1 : b.status === 'OVERRUN' ? 1 : 0))
+    const overrunPercent = expected > 0 ? (overrun / expected) * 100 : null
+    const threshold = plan.wastageThresholdPct !== null ? decimal(plan.wastageThresholdPct) : projectDefaultThreshold
+    const rate = decimal(plan.plannedUnitRate)
+    const estimatedLoss = overrun * rate
+    const status = progressPercent === 0 && consumed > 0 ? 'NO_BASELINE' : overrunPercent !== null && overrunPercent > threshold ? 'OVERRUN' : 'OK'
+    return {
+      materialId: plan.materialId,
+      materialName: plan.material.name,
+      unit: plan.material.unit,
+      plannedQuantity: decimal(plan.plannedQuantity),
+      expectedQuantity: expected,
+      consumedQuantity: consumed,
+      overrunQuantity: overrun,
+      overrunPercent,
+      thresholdPercent: threshold,
+      recordedWastageQuantity: recordedWastage,
+      estimatedLoss,
+      status,
+    }
+  }).sort((a, b) => {
+    const order: Record<string, number> = { OVERRUN: 0, NO_BASELINE: 1, OK: 2 }
+    const rankA = order[a.status] ?? 3
+    const rankB = order[b.status] ?? 3
+    if (rankA !== rankB) return rankA - rankB
+    return b.estimatedLoss - a.estimatedLoss
+  })
   return { progressPercent, items }
+}
+
+export async function voidTransaction(actor: Actor, projectId: number, transactionId: number, voidReason: string) {
+  await assertProject(actor, projectId)
+
+  return prisma.$transaction(async (tx) => {
+    const txn = await tx.stockTransaction.findUnique({
+      where: { id: transactionId },
+      include: { project: { select: { id: true, assignedPmId: true, status: true } } },
+    })
+    if (!txn) throw new AppError('NOT_FOUND', 'Stock transaction not found.', 404)
+    if (txn.projectId !== projectId) throw new AppError('NOT_FOUND', 'Stock transaction not found.', 404)
+    if (txn.isVoided) throw new AppError('BUSINESS_RULE_VIOLATION', 'Transaction is already voided.', 422)
+
+    if (actor.role === 'PM') {
+      if (txn.project.assignedPmId !== actor.id) {
+        throw new AppError('FORBIDDEN', 'You can only void your own project transactions.', 403)
+      }
+      if (txn.createdById !== actor.id) {
+        throw new AppError('FORBIDDEN', 'You can only void your own transactions.', 403)
+      }
+      const elapsed = Date.now() - txn.createdAt.getTime()
+      if (elapsed > env.EDIT_WINDOW_HOURS * 60 * 60 * 1000) {
+        throw new AppError('BUSINESS_RULE_VIOLATION', `The ${env.EDIT_WINDOW_HOURS}-hour edit window has passed. Ask an admin to void this transaction.`, 422)
+      }
+    }
+
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${projectId}::int, ${txn.materialId}::int)`
+
+    if (txn.txnType === 'IN' || (txn.txnType === 'ADJUSTMENT' && txn.adjustmentDirection === 'INCREASE')) {
+      const plan = await tx.projectMaterialPlan.findUnique({ where: { projectId_materialId: { projectId, materialId: txn.materialId } } })
+      const balance = await getBalance(tx, projectId, txn.materialId, plan?.openingQuantity ?? new Prisma.Decimal(0))
+      if (balance < decimal(txn.quantity)) {
+        throw new AppError('BUSINESS_RULE_VIOLATION', 'Cannot void this IN transaction: it would make the stock balance negative.', 422, { currentBalance: balance, txnQuantity: decimal(txn.quantity) })
+      }
+    }
+
+    const updated = await tx.stockTransaction.update({
+      where: { id: transactionId },
+      data: {
+        isVoided: true,
+        voidedById: actor.id,
+        voidedAt: new Date(),
+        voidReason,
+      },
+    })
+
+    await logAudit(tx, {
+      userId: actor.id,
+      action: 'VOID',
+      entityType: 'StockTransaction',
+      entityId: transactionId,
+      oldValues: snapshot(txn),
+      newValues: snapshot(updated),
+    })
+    return updated
+  })
 }

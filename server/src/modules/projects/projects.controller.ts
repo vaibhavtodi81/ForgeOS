@@ -62,6 +62,7 @@ export const machineryUsageHistory: RequestHandler = async (req, res) => sendSuc
 )
 export const create: RequestHandler = async (req, res) => sendSuccess(res, 201, await service.createProject(actor(req), req.body), 'Project created successfully')
 export const update: RequestHandler = async (req, res) => sendSuccess(res, 200, await service.updateProject(actor(req), Number(req.params.id), req.body), 'Project updated successfully')
+export const changeStatus: RequestHandler = async (req, res) => sendSuccess(res, 200, await service.changeProjectStatus(actor(req), Number(req.params.id), req.body.status), 'Project status changed successfully')
 export const remove: RequestHandler = async (req, res) => {
   await service.getProject(actor(req), Number(req.params.id))
   await service.deleteProject(Number(req.params.id))

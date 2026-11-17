@@ -11,6 +11,7 @@ import {
   projectDateRangeQuerySchema,
   projectScopedIdParamsSchema,
   updateProjectSchema,
+  changeStatusSchema,
 } from './projects.validator.js'
 
 export const projectsRoutes = Router()
@@ -60,4 +61,5 @@ projectsRoutes.get(
 projectsRoutes.get('/projects/:id', validateRequest('params', projectIdParamsSchema), controller.detail)
 projectsRoutes.post('/projects', requireRole('ADMIN'), validateRequest('body', createProjectSchema), controller.create)
 projectsRoutes.patch('/projects/:id', validateRequest('params', projectIdParamsSchema), validateRequest('body', updateProjectSchema), controller.update)
+projectsRoutes.patch('/projects/:id/status', requireRole('ADMIN'), validateRequest('params', projectIdParamsSchema), validateRequest('body', changeStatusSchema), controller.changeStatus)
 projectsRoutes.delete('/projects/:id', requireRole('ADMIN'), validateRequest('params', projectIdParamsSchema), controller.remove)

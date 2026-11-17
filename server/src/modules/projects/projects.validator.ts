@@ -44,6 +44,9 @@ export const projectProgressHistoryQuerySchema = z.object({
 )
 export const createProjectSchema = dates
 export const updateProjectSchema = projectSchema.partial().refine((value) => !value.startDate || !value.expectedEndDate || value.expectedEndDate >= value.startDate, { message: 'Expected end date must be on or after start date.', path: ['expectedEndDate'] })
+export const changeStatusSchema = z.object({
+  status: z.enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED']),
+})
 export type ProjectProgressHistoryQuery = z.infer<typeof projectProgressHistoryQuerySchema>
 export type ProjectActivityQuery = z.infer<typeof projectActivityQuerySchema>
 export type ProjectDateRangeQuery = z.infer<typeof projectDateRangeQuerySchema>
