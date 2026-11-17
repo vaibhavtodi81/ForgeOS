@@ -5,11 +5,13 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  CORS_ORIGIN: z.string().url().default('http://localhost:5173'),
+  CORS_ORIGIN: z.string().default('http://localhost:5180'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  JWT_SECRET: z.string().min(32).default('development-only-forgeos-jwt-secret-change-me'),
-  JWT_EXPIRES_IN: z.string().default('15m'),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  JWT_EXPIRES_IN: z.string().default('8h'),
+  EDIT_WINDOW_HOURS: z.coerce.number().int().min(1).default(48),
+  BCRYPT_ROUNDS: z.coerce.number().int().min(10).default(10),
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
 })
 
-// Validate once at startup so missing or malformed settings fail before serving requests.
 export const env = envSchema.parse(process.env)

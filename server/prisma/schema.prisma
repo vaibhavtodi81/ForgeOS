@@ -110,6 +110,11 @@ enum AuditAction { // Starts the `AuditAction` enum, which restricts a field to 
   REJECT // Allows `reject` as a valid `AuditAction` choice.
   VOID // Allows `void` as a valid `AuditAction` choice.
   LOGIN // Allows `login` as a valid `AuditAction` choice.
+  ACTIVATE // Allows `activate` as a valid `AuditAction` choice.
+  DEACTIVATE // Allows `deactivate` as a valid `AuditAction` choice.
+  PASSWORD_CHANGE // Allows `password_change` as a valid `AuditAction` choice.
+  ASSIGN // Allows `assign` as a valid `AuditAction` choice.
+  STATUS_CHANGE // Allows `status_change` as a valid `AuditAction` choice.
 } // Closes the `AuditAction` definition.
 
 enum NotificationType { // Starts the `NotificationType` enum, which restricts a field to a fixed set of allowed choices.

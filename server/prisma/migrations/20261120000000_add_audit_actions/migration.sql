@@ -1,0 +1,7 @@
+-- AlterTable: add new AuditAction enum values for expanded audit coverage
+
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'ACTIVATE';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'DEACTIVATE';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'PASSWORD_CHANGE';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'ASSIGN';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'STATUS_CHANGE';
