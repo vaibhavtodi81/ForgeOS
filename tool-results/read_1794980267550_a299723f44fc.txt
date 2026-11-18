@@ -1,0 +1,713 @@
+     1→'use client'
+     2→
+     3→import { useState } from 'react'
+     4→import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+     5→import { toast } from 'sonner'
+     6→import {
+     7→  AlertTriangle,
+     8→  Ban,
+     9→  HandCoins,
+    10→  MoreHorizontal,
+    11→  Plus,
+    12→  ReceiptIndianRupee,
+    13→  Send,
+    14→  Wallet,
+    15→} from 'lucide-react'
+    16→import type {
+    17→  InvoiceListResponse,
+    18→  InvoiceRow,
+    19→  InvoiceStatus,
+    20→  MetaResponse,
+    21→  PaymentMethod,
+    22→  PaymentRow,
+    23→  SessionUser,
+    24→} from '@/lib/forgeos-types'
+    25→import {
+    26→  GST_OPTIONS,
+    27→  INVOICE_STATUSES,
+    28→  INVOICE_STATUS_LABELS,
+    29→  PAYMENT_METHODS,
+    30→  PAYMENT_METHOD_LABELS,
+    31→} from '@/lib/forgeos-types'
+    32→import { api, ApiError, withParams } from '@/lib/client-api'
+    33→import {
+    34→  formatDate,
+    35→  formatMoney,
+    36→  formatMoneyCompact,
+    37→  formatPct,
+    38→  toDateInputValue,
+    39→} from '@/lib/format'
+    40→import {
+    41→  EmptyState,
+    42→  ErrorState,
+    43→  LoadingRows,
+    44→  PageHeader,
+    45→  StatCard,
+    46→  StatusBadge,
+    47→} from '@/components/forgeos/ui-bits'
+    48→import {
+    49→  AlertDialog,
+    50→  AlertDialogAction,
+    51→  AlertDialogCancel,
+    52→  AlertDialogContent,
+    53→  AlertDialogDescription,
+    54→  AlertDialogFooter,
+    55→  AlertDialogHeader,
+    56→  AlertDialogTitle,
+    57→} from '@/components/ui/alert-dialog'
+    58→import { Button } from '@/components/ui/button'
+    59→import {
+    60→  Dialog,
+    61→  DialogContent,
+    62→  DialogDescription,
+    63→  DialogFooter,
+    64→  DialogHeader,
+    65→  DialogTitle,
+    66→} from '@/components/ui/dialog'
+    67→import {
+    68→  DropdownMenu,
+    69→  DropdownMenuContent,
+    70→  DropdownMenuItem,
+    71→  DropdownMenuTrigger,
+    72→} from '@/components/ui/dropdown-menu'
+    73→import { Input } from '@/components/ui/input'
+    74→import { Label } from '@/components/ui/label'
+    75→import {
+    76→  Select,
+    77→  SelectContent,
+    78→  SelectItem,
+    79→  SelectTrigger,
+    80→  SelectValue,
+    81→} from '@/components/ui/select'
+    82→import { Separator } from '@/components/ui/separator'
+    83→import {
+    84→  Table,
+    85→  TableBody,
+    86→  TableCell,
+    87→  TableHead,
+    88→  TableHeader,
+    89→  TableRow,
+    90→} from '@/components/ui/table'
+    91→
+    92→type StatusAction = { kind: 'send' | 'void'; invoice: InvoiceRow }
+    93→
+    94→/** Invoice due date default: 30 days from today. */
+    95→function defaultDueDate(): string {
+    96→  return toDateInputValue(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+    97→}
+    98→
+    99→export default function BillingView({ user }: { user: SessionUser }) {
+   100→  const isFinance = user.role === 'ADMIN' || user.role === 'ACCOUNTANT'
+   101→
+   102→  const [statusFilter, setStatusFilter] = useState('all')
+   103→  const [projectFilter, setProjectFilter] = useState('all')
+   104→  const [newOpen, setNewOpen] = useState(false)
+   105→  const [paymentsFor, setPaymentsFor] = useState<InvoiceRow | null>(null)
+   106→  const [statusAction, setStatusAction] = useState<StatusAction | null>(null)
+   107→
+   108→  const invoicesQuery = useQuery({
+   109→    queryKey: ['invoices', statusFilter, projectFilter],
+   110→    queryFn: () =>
+   111→      api<InvoiceListResponse>(
+   112→        withParams('/api/invoices', { status: statusFilter, projectId: projectFilter }),
+   113→      ),
+   114→  })
+   115→  const metaQuery = useQuery({
+   116→    queryKey: ['meta'],
+   117→    queryFn: () => api<MetaResponse>('/api/meta'),
+   118→  })
+   119→
+   120→  const queryClient = useQueryClient()
+   121→
+   122→  const statusMutation = useMutation({
+   123→    mutationFn: ({ id, status }: { id: string; status: InvoiceStatus }) =>
+   124→      api(`/api/invoices/${id}/status`, { method: 'PATCH', body: { status } }),
+   125→    onSuccess: (_data, vars) => {
+   126→      toast.success(vars.status === 'SENT' ? 'Invoice sent' : 'Invoice voided')
+   127→      void queryClient.invalidateQueries()
+   128→    },
+   129→    onError: (err) =>
+   130→      toast.error(err instanceof ApiError ? err.message : 'Something went wrong'),
+   131→  })
+   132→
+   133→  const invoices = invoicesQuery.data?.items ?? []
+   134→  const summary = invoicesQuery.data?.summary
+   135→  const paymentsInvoice = paymentsFor
+   136→    ? (invoices.find((inv) => inv.id === paymentsFor.id) ?? paymentsFor)
+   137→    : null
+   138→
+   139→  return (
+   140→    <div className="space-y-4 sm:space-y-6">
+   141→      <PageHeader title="Billing & Payments" description="Client invoices, GST and collections.">
+   142→        {isFinance ? (
+   143→          <Button onClick={() => setNewOpen(true)}>
+   144→            <Plus aria-hidden /> New Invoice
+   145→          </Button>
+   146→        ) : null}
+   147→      </PageHeader>
+   148→
+   149→      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+   150→        <StatCard
+   151→          label="Invoiced"
+   152→          value={summary ? formatMoneyCompact(summary.invoiced) : '—'}
+   153→          icon={ReceiptIndianRupee}
+   154→        />
+   155→        <StatCard
+   156→          label="Collected"
+   157→          value={summary ? formatMoneyCompact(summary.collected) : '—'}
+   158→          tone="success"
+   159→          icon={HandCoins}
+   160→        />
+   161→        <StatCard
+   162→          label="Receivables"
+   163→          value={summary ? formatMoneyCompact(summary.receivables) : '—'}
+   164→          tone={summary && summary.receivables > 0 ? 'danger' : 'default'}
+   165→          icon={Wallet}
+   166→        />
+   167→        <StatCard
+   168→          label="Overdue"
+   169→          value={summary ? formatMoneyCompact(summary.overdue) : '—'}
+   170→          tone={summary && summary.overdue > 0 ? 'danger' : 'default'}
+   171→          icon={AlertTriangle}
+   172→        />
+   173→      </div>
+   174→
+   175→      <div className="flex flex-col gap-2 sm:flex-row">
+   176→        <Select value={statusFilter} onValueChange={setStatusFilter}>
+   177→          <SelectTrigger className="w-full sm:w-[180px]" aria-label="Filter by status">
+   178→            <SelectValue placeholder="Status" />
+   179→          </SelectTrigger>
+   180→          <SelectContent>
+   181→            <SelectItem value="all">All statuses</SelectItem>
+   182→            {INVOICE_STATUSES.map((status) => (
+   183→              <SelectItem key={status} value={status}>
+   184→                {INVOICE_STATUS_LABELS[status]}
+   185→              </SelectItem>
+   186→            ))}
+   187→          </SelectContent>
+   188→        </Select>
+   189→        <Select value={projectFilter} onValueChange={setProjectFilter}>
+   190→          <SelectTrigger className="w-full sm:w-[240px]" aria-label="Filter by project">
+   191→            <SelectValue placeholder="Project" />
+   192→          </SelectTrigger>
+   193→          <SelectContent>
+   194→            <SelectItem value="all">All projects</SelectItem>
+   195→            {(metaQuery.data?.projects ?? []).map((project) => (
+   196→              <SelectItem key={project.id} value={project.id}>
+   197→                {project.name}
+   198→              </SelectItem>
+   199→            ))}
+   200→          </SelectContent>
+   201→        </Select>
+   202→      </div>
+   203→
+   204→      {invoicesQuery.isLoading ? (
+   205→        <LoadingRows rows={6} />
+   206→      ) : invoicesQuery.isError ? (
+   207→        <ErrorState
+   208→          message={invoicesQuery.error instanceof Error ? invoicesQuery.error.message : 'Failed to load invoices'}
+   209→          onRetry={() => void invoicesQuery.refetch()}
+   210→        />
+   211→      ) : invoices.length === 0 ? (
+   212→        <EmptyState
+   213→          title="No invoices yet"
+   214→          description={isFinance ? 'Create the first invoice for a project.' : 'Invoices will appear here once created.'}
+   215→        />
+   216→      ) : (
+   217→        <div className="overflow-x-auto rounded-md border">
+   218→          <Table>
+   219→            <TableHeader>
+   220→              <TableRow>
+   221→                <TableHead>Invoice</TableHead>
+   222→                <TableHead>Project</TableHead>
+   223→                <TableHead className="text-right">Amount</TableHead>
+   224→                <TableHead className="text-right">GST</TableHead>
+   225→                <TableHead className="text-right">Total incl. GST</TableHead>
+   226→                <TableHead className="text-right">Paid</TableHead>
+   227→                <TableHead className="text-right">Balance</TableHead>
+   228→                <TableHead>Status</TableHead>
+   229→                <TableHead>Dates</TableHead>
+   230→                <TableHead className="w-10" />
+   231→              </TableRow>
+   232→            </TableHeader>
+   233→            <TableBody>
+   234→              {invoices.map((inv) => {
+   235→                const overdue = inv.balance > 0 && new Date(inv.dueDate).getTime() < Date.now()
+   236→                return (
+   237→                  <TableRow key={inv.id}>
+   238→                    <TableCell className="font-mono text-xs">{inv.invoiceNo}</TableCell>
+   239→                    <TableCell className="max-w-[180px] truncate">{inv.projectName}</TableCell>
+   240→                    <TableCell className="text-right tabular-nums">{formatMoney(inv.amount)}</TableCell>
+   241→                    <TableCell className="text-right tabular-nums">{formatPct(inv.gstPct, 0)}</TableCell>
+   242→                    <TableCell className="text-right tabular-nums font-medium">{formatMoney(inv.totalWithGst)}</TableCell>
+   243→                    <TableCell className="text-right tabular-nums">{formatMoney(inv.paidAmount)}</TableCell>
+   244→                    <TableCell
+   245→                      className={
+   246→                        inv.balance > 0
+   247→                          ? 'text-right tabular-nums font-medium text-red-600 dark:text-red-400'
+   248→                          : 'text-right tabular-nums'
+   249→                      }
+   250→                    >
+   251→                      {formatMoney(inv.balance)}
+   252→                    </TableCell>
+   253→                    <TableCell>
+   254→                      <StatusBadge value={inv.status} label={INVOICE_STATUS_LABELS[inv.status]} />
+   255→                    </TableCell>
+   256→                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+   257→                      {formatDate(inv.issueDate)}
+   258→                      <span className="mx-1">→</span>
+   259→                      <span className={overdue ? 'font-medium text-red-600 dark:text-red-400' : undefined}>
+   260→                        {formatDate(inv.dueDate)}
+   261→                      </span>
+   262→                    </TableCell>
+   263→                    <TableCell>
+   264→                      <DropdownMenu>
+   265→                        <DropdownMenuTrigger asChild>
+   266→                          <Button
+   267→                            variant="ghost"
+   268→                            size="icon"
+   269→                            className="h-8 w-8"
+   270→                            aria-label={`Actions for invoice ${inv.invoiceNo}`}
+   271→                          >
+   272→                            <MoreHorizontal className="h-4 w-4" aria-hidden />
+   273→                          </Button>
+   274→                        </DropdownMenuTrigger>
+   275→                        <DropdownMenuContent align="end">
+   276→                          {isFinance && inv.status === 'DRAFT' ? (
+   277→                            <DropdownMenuItem onSelect={() => setStatusAction({ kind: 'send', invoice: inv })}>
+   278→                              <Send aria-hidden /> Send
+   279→                            </DropdownMenuItem>
+   280→                          ) : null}
+   281→                          {isFinance && (inv.status === 'DRAFT' || inv.status === 'SENT') ? (
+   282→                            <DropdownMenuItem
+   283→                              variant="destructive"
+   284→                              onSelect={() => setStatusAction({ kind: 'void', invoice: inv })}
+   285→                            >
+   286→                              <Ban aria-hidden /> Void
+   287→                            </DropdownMenuItem>
+   288→                          ) : null}
+   289→                          <DropdownMenuItem onSelect={() => setPaymentsFor(inv)}>
+   290→                            <Wallet aria-hidden /> Payments
+   291→                          </DropdownMenuItem>
+   292→                        </DropdownMenuContent>
+   293→                      </DropdownMenu>
+   294→                    </TableCell>
+   295→                  </TableRow>
+   296→                )
+   297→              })}
+   298→            </TableBody>
+   299→          </Table>
+   300→        </div>
+   301→      )}
+   302→
+   303→      {paymentsInvoice ? (
+   304→        <PaymentsDialog
+   305→          invoice={paymentsInvoice}
+   306→          isFinance={isFinance}
+   307→          onClose={() => setPaymentsFor(null)}
+   308→        />
+   309→      ) : null}
+   310→
+   311→      <NewInvoiceDialog
+   312→        open={newOpen}
+   313→        onOpenChange={setNewOpen}
+   314→        projects={metaQuery.data?.projects ?? []}
+   315→      />
+   316→
+   317→      <AlertDialog
+   318→        open={statusAction !== null}
+   319→        onOpenChange={(open) => {
+   320→          if (!open) setStatusAction(null)
+   321→        }}
+   322→      >
+   323→        <AlertDialogContent>
+   324→          <AlertDialogHeader>
+   325→            <AlertDialogTitle>
+   326→              {statusAction?.kind === 'send'
+   327→                ? `Send invoice ${statusAction.invoice.invoiceNo} to the client?`
+   328→                : `Void invoice ${statusAction?.invoice.invoiceNo ?? ''}?`}
+   329→            </AlertDialogTitle>
+   330→            <AlertDialogDescription>
+   331→              {statusAction?.kind === 'send'
+   332→                ? 'It becomes collectable.'
+   333→                : 'The invoice will be cancelled and excluded from receivables.'}
+   334→            </AlertDialogDescription>
+   335→          </AlertDialogHeader>
+   336→          <AlertDialogFooter>
+   337→            <AlertDialogCancel>Cancel</AlertDialogCancel>
+   338→            <AlertDialogAction
+   339→              disabled={statusMutation.isPending}
+   340→              onClick={() => {
+   341→                if (!statusAction) return
+   342→                statusMutation.mutate({
+   343→                  id: statusAction.invoice.id,
+   344→                  status: statusAction.kind === 'send' ? 'SENT' : 'VOID',
+   345→                })
+   346→                setStatusAction(null)
+   347→              }}
+   348→            >
+   349→              {statusAction?.kind === 'send' ? 'Send' : 'Void'}
+   350→            </AlertDialogAction>
+   351→          </AlertDialogFooter>
+   352→        </AlertDialogContent>
+   353→      </AlertDialog>
+   354→    </div>
+   355→  )
+   356→}
+   357→
+   358→// ---------------------------------------------------------------------------
+   359→// Payments dialog (list + record payment form)
+   360→// ---------------------------------------------------------------------------
+   361→
+   362→function PaymentsDialog({
+   363→  invoice,
+   364→  isFinance,
+   365→  onClose,
+   366→}: {
+   367→  invoice: InvoiceRow
+   368→  isFinance: boolean
+   369→  onClose: () => void
+   370→}) {
+   371→  const queryClient = useQueryClient()
+   372→
+   373→  const paymentsQuery = useQuery({
+   374→    queryKey: ['payments', invoice.id],
+   375→    queryFn: () =>
+   376→      api<{ items: PaymentRow[] }>(withParams('/api/payments', { invoiceId: invoice.id })),
+   377→  })
+   378→
+   379→  const [amount, setAmount] = useState('')
+   380→  const [method, setMethod] = useState<PaymentMethod>('BANK')
+   381→  const [reference, setReference] = useState('')
+   382→  const [paidAt, setPaidAt] = useState(toDateInputValue(new Date()))
+   383→
+   384→  const canRecord =
+   385→    isFinance && (invoice.status === 'SENT' || invoice.status === 'PARTIALLY_PAID')
+   386→
+   387→  const amountNum = parseFloat(amount)
+   388→  const amountError =
+   389→    amount.trim() === ''
+   390→      ? null
+   391→      : isNaN(amountNum) || amountNum <= 0
+   392→        ? 'Enter an amount greater than zero'
+   393→        : amountNum > invoice.balance
+   394→          ? 'Amount exceeds the balance due'
+   395→          : null
+   396→
+   397→  const recordMutation = useMutation({
+   398→    mutationFn: () =>
+   399→      api('/api/payments', {
+   400→        method: 'POST',
+   401→        body: {
+   402→          invoiceId: invoice.id,
+   403→          amount: amountNum,
+   404→          method,
+   405→          reference: reference.trim() || null,
+   406→          paidAt,
+   407→        },
+   408→      }),
+   409→    onSuccess: () => {
+   410→      toast.success('Payment recorded')
+   411→      void queryClient.invalidateQueries()
+   412→      setAmount('')
+   413→      setReference('')
+   414→    },
+   415→    onError: (err) =>
+   416→      toast.error(err instanceof ApiError ? err.message : 'Something went wrong'),
+   417→  })
+   418→
+   419→  function onSubmit(e: React.FormEvent) {
+   420→    e.preventDefault()
+   421→    if (amount.trim() === '' || amountError) return
+   422→    recordMutation.mutate()
+   423→  }
+   424→
+   425→  const payments = paymentsQuery.data?.items ?? []
+   426→
+   427→  return (
+   428→    <Dialog open onOpenChange={(open) => !open && onClose()}>
+   429→      <DialogContent className="sm:max-w-[480px]">
+   430→        <DialogHeader>
+   431→          <DialogTitle className="font-mono text-base">{invoice.invoiceNo}</DialogTitle>
+   432→          <DialogDescription>
+   433→            {invoice.projectName} · Balance due{' '}
+   434→            <span className="font-medium tabular-nums text-foreground">
+   435→              {formatMoney(invoice.balance)}
+   436→            </span>
+   437→          </DialogDescription>
+   438→        </DialogHeader>
+   439→
+   440→        <div className="space-y-3">
+   441→          <div className="max-h-64 overflow-y-auto rounded-md border">
+   442→            {paymentsQuery.isLoading ? (
+   443→              <div className="p-3">
+   444→                <LoadingRows rows={3} />
+   445→              </div>
+   446→            ) : paymentsQuery.isError ? (
+   447→              <ErrorState
+   448→                message={paymentsQuery.error instanceof Error ? paymentsQuery.error.message : 'Failed to load payments'}
+   449→                onRetry={() => void paymentsQuery.refetch()}
+   450→              />
+   451→            ) : payments.length === 0 ? (
+   452→              <EmptyState title="No payments recorded" />
+   453→            ) : (
+   454→              <ul className="divide-y">
+   455→                {payments.map((p) => (
+   456→                  <li key={p.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+   457→                    <div className="min-w-0">
+   458→                      <p className="text-sm font-medium tabular-nums">{formatMoney(p.amount)}</p>
+   459→                      <p className="text-xs text-muted-foreground">
+   460→                        {PAYMENT_METHOD_LABELS[p.method]} · {formatDate(p.paidAt)}
+   461→                      </p>
+   462→                    </div>
+   463→                    {p.reference ? (
+   464→                      <p className="max-w-[45%] truncate font-mono text-xs text-muted-foreground">
+   465→                        {p.reference}
+   466→                      </p>
+   467→                    ) : null}
+   468→                  </li>
+   469→                ))}
+   470→              </ul>
+   471→            )}
+   472→          </div>
+   473→
+   474→          {canRecord ? (
+   475→            <>
+   476→              <Separator />
+   477→              <form className="space-y-3" onSubmit={onSubmit}>
+   478→                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   479→                  <div className="space-y-1.5">
+   480→                    <Label htmlFor="payment-amount">Amount (₹)</Label>
+   481→                    <Input
+   482→                      id="payment-amount"
+   483→                      type="number"
+   484→                      min="0"
+   485→                      step="0.01"
+   486→                      inputMode="decimal"
+   487→                      value={amount}
+   488→                      onChange={(e) => setAmount(e.target.value)}
+   489→                      placeholder={String(invoice.balance)}
+   490→                    />
+   491→                    {amountError ? (
+   492→                      <p className="text-sm text-red-600 dark:text-red-400">{amountError}</p>
+   493→                    ) : null}
+   494→                  </div>
+   495→                  <div className="space-y-1.5">
+   496→                    <Label>Method</Label>
+   497→                    <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
+   498→                      <SelectTrigger className="w-full" aria-label="Payment method">
+   499→                        <SelectValue placeholder="Method" />
+   500→                      </SelectTrigger>
+   501→                      <SelectContent>
+   502→                        {PAYMENT_METHODS.map((m) => (
+   503→                          <SelectItem key={m} value={m}>
+   504→                            {PAYMENT_METHOD_LABELS[m]}
+   505→                          </SelectItem>
+   506→                        ))}
+   507→                      </SelectContent>
+   508→                    </Select>
+   509→                  </div>
+   510→                  <div className="space-y-1.5">
+   511→                    <Label htmlFor="payment-reference">Reference (optional)</Label>
+   512→                    <Input
+   513→                      id="payment-reference"
+   514→                      value={reference}
+   515→                      onChange={(e) => setReference(e.target.value)}
+   516→                      placeholder="UTR / cheque no."
+   517→                    />
+   518→                  </div>
+   519→                  <div className="space-y-1.5">
+   520→                    <Label htmlFor="payment-date">Date</Label>
+   521→                    <Input
+   522→                      id="payment-date"
+   523→                      type="date"
+   524→                      value={paidAt}
+   525→                      onChange={(e) => setPaidAt(e.target.value)}
+   526→                    />
+   527→                  </div>
+   528→                </div>
+   529→                <Button
+   530→                  type="submit"
+   531→                  className="w-full"
+   532→                  disabled={recordMutation.isPending || amount.trim() === '' || amountError !== null}
+   533→                >
+   534→                  {recordMutation.isPending ? 'Recording…' : 'Record Payment'}
+   535→                </Button>
+   536→              </form>
+   537→            </>
+   538→          ) : null}
+   539→        </div>
+   540→      </DialogContent>
+   541→    </Dialog>
+   542→  )
+   543→}
+   544→
+   545→// ---------------------------------------------------------------------------
+   546→// New invoice dialog
+   547→// ---------------------------------------------------------------------------
+   548→
+   549→function NewInvoiceDialog({
+   550→  open,
+   551→  onOpenChange,
+   552→  projects,
+   553→}: {
+   554→  open: boolean
+   555→  onOpenChange: (open: boolean) => void
+   556→  projects: MetaResponse['projects']
+   557→}) {
+   558→  const queryClient = useQueryClient()
+   559→
+   560→  const [projectId, setProjectId] = useState('')
+   561→  const [amount, setAmount] = useState('')
+   562→  const [gstPct, setGstPct] = useState('18')
+   563→  const [issueDate, setIssueDate] = useState(toDateInputValue(new Date()))
+   564→  const [dueDate, setDueDate] = useState(defaultDueDate())
+   565→  const [submitted, setSubmitted] = useState(false)
+   566→
+   567→  function resetForm() {
+   568→    setProjectId('')
+   569→    setAmount('')
+   570→    setGstPct('18')
+   571→    setIssueDate(toDateInputValue(new Date()))
+   572→    setDueDate(defaultDueDate())
+   573→    setSubmitted(false)
+   574→  }
+   575→
+   576→  function close() {
+   577→    resetForm()
+   578→    onOpenChange(false)
+   579→  }
+   580→
+   581→  const amountNum = parseFloat(amount)
+   582→  const amountError =
+   583→    amount.trim() === ''
+   584→      ? null
+   585→      : isNaN(amountNum) || amountNum <= 0
+   586→        ? 'Enter an amount greater than zero'
+   587→        : null
+   588→  const dueDateError = dueDate <= issueDate ? 'Due date must be after the issue date' : null
+   589→  const valid = projectId !== '' && amountError === null && amount.trim() !== '' && dueDateError === null
+   590→
+   591→  const createMutation = useMutation({
+   592→    mutationFn: () =>
+   593→      api<{ invoice: { id: string; invoiceNo: string } }>('/api/invoices', {
+   594→        method: 'POST',
+   595→        body: { projectId, amount: amountNum, gstPct: Number(gstPct), issueDate, dueDate },
+   596→      }),
+   597→    onSuccess: (data) => {
+   598→      toast.success(`Invoice ${data.invoice.invoiceNo} created as draft`)
+   599→      void queryClient.invalidateQueries()
+   600→      close()
+   601→    },
+   602→    onError: (err) =>
+   603→      toast.error(err instanceof ApiError ? err.message : 'Something went wrong'),
+   604→  })
+   605→
+   606→  function onSubmit(e: React.FormEvent) {
+   607→    e.preventDefault()
+   608→    setSubmitted(true)
+   609→    if (!valid) return
+   610→    createMutation.mutate()
+   611→  }
+   612→
+   613→  return (
+   614→    <Dialog
+   615→      open={open}
+   616→      onOpenChange={(next) => {
+   617→        if (!next) close()
+   618→      }}
+   619→    >
+   620→      <DialogContent className="sm:max-w-[480px]">
+   621→        <DialogHeader>
+   622→          <DialogTitle>New Invoice</DialogTitle>
+   623→          <DialogDescription>
+   624→            The invoice is created as a draft — send it to the client once you are ready to collect.
+   625→          </DialogDescription>
+   626→        </DialogHeader>
+   627→        <form className="space-y-3" onSubmit={onSubmit}>
+   628→          <div className="space-y-1.5">
+   629→            <Label>Project</Label>
+   630→            <Select value={projectId} onValueChange={setProjectId}>
+   631→              <SelectTrigger className="w-full" aria-label="Project">
+   632→                <SelectValue placeholder="Select project" />
+   633→              </SelectTrigger>
+   634→              <SelectContent>
+   635→                {projects.map((project) => (
+   636→                  <SelectItem key={project.id} value={project.id}>
+   637→                    {project.name}
+   638→                  </SelectItem>
+   639→                ))}
+   640→              </SelectContent>
+   641→            </Select>
+   642→            {submitted && projectId === '' ? (
+   643→              <p className="text-sm text-red-600 dark:text-red-400">Select a project</p>
+   644→            ) : null}
+   645→          </div>
+   646→          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   647→            <div className="space-y-1.5">
+   648→              <Label htmlFor="invoice-amount">Amount (₹)</Label>
+   649→              <Input
+   650→                id="invoice-amount"
+   651→                type="number"
+   652→                min="0"
+   653→                step="0.01"
+   654→                inputMode="decimal"
+   655→                value={amount}
+   656→                onChange={(e) => setAmount(e.target.value)}
+   657→              />
+   658→              {submitted && amountError ? (
+   659→                <p className="text-sm text-red-600 dark:text-red-400">{amountError}</p>
+   660→              ) : null}
+   661→            </div>
+   662→            <div className="space-y-1.5">
+   663→              <Label>GST</Label>
+   664→              <Select value={gstPct} onValueChange={setGstPct}>
+   665→                <SelectTrigger className="w-full" aria-label="GST percentage">
+   666→                  <SelectValue placeholder="GST" />
+   667→                </SelectTrigger>
+   668→                <SelectContent>
+   669→                  {GST_OPTIONS.map((g) => (
+   670→                    <SelectItem key={g} value={String(g)}>
+   671→                      {g}%
+   672→                    </SelectItem>
+   673→                  ))}
+   674→                </SelectContent>
+   675→              </Select>
+   676→            </div>
+   677→            <div className="space-y-1.5">
+   678→              <Label htmlFor="invoice-issue-date">Issue date</Label>
+   679→              <Input
+   680→                id="invoice-issue-date"
+   681→                type="date"
+   682→                value={issueDate}
+   683→                onChange={(e) => setIssueDate(e.target.value)}
+   684→              />
+   685→            </div>
+   686→            <div className="space-y-1.5">
+   687→              <Label htmlFor="invoice-due-date">Due date</Label>
+   688→              <Input
+   689→                id="invoice-due-date"
+   690→                type="date"
+   691→                value={dueDate}
+   692→                min={issueDate}
+   693→                onChange={(e) => setDueDate(e.target.value)}
+   694→              />
+   695→              {submitted && dueDateError ? (
+   696→                <p className="text-sm text-red-600 dark:text-red-400">{dueDateError}</p>
+   697→              ) : null}
+   698→            </div>
+   699→          </div>
+   700→          <DialogFooter>
+   701→            <Button type="button" variant="outline" onClick={close}>
+   702→              Cancel
+   703→            </Button>
+   704→            <Button type="submit" disabled={createMutation.isPending}>
+   705→              {createMutation.isPending ? 'Creating…' : 'Create Invoice'}
+   706→            </Button>
+   707→          </DialogFooter>
+   708→        </form>
+   709→      </DialogContent>
+   710→    </Dialog>
+   711→  )
+   712→}
+   713→
