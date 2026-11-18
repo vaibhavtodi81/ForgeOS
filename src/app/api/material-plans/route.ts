@@ -1,53 +1,45 @@
-import { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { ok, fail, guardAuth, pmOwns, readJson } from '@/lib/api-helpers'
+import { fail, getClientIp, guardAuth, ok, pmOwns, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
 import { PLAN_STATUSES } from '@/lib/forgeos-types'
-import type { PlanRow, PlanStatus } from '@/lib/forgeos-types'
+import type { PlanStatus } from '@/lib/forgeos-types'
 
 type PlanWithRefs = Prisma.MaterialPlanGetPayload<{
-  include: { project: true; material: true; createdBy: true }
+  include: {
+    material: { select: { name: true; unit: true; category: true } }
+    project: { select: { name: true; code: true } }
+  }
 }>
 
-function num(value: unknown): number {
-  if (typeof value === 'number') return value
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value)
-    if (!Number.isNaN(parsed)) return parsed
-  }
-  return NaN
-}
+const INCLUDE = {
+  material: { select: { name: true, unit: true, category: true } },
+  project: { select: { name: true, code: true } },
+} satisfies Prisma.MaterialPlanInclude
 
-async function consumedQty(projectId: string, materialId: string): Promise<number> {
-  const agg = await db.inventoryTransaction.aggregate({
-    where: { projectId, materialId, txnType: 'OUT', voidedAt: null },
-    _sum: { quantity: true },
-  })
-  return agg._sum.quantity ?? 0
-}
-
-function toPlanRow(plan: PlanWithRefs, consumed: number): PlanRow {
+function toPlanRow(plan: PlanWithRefs) {
   return {
     id: plan.id,
     projectId: plan.projectId,
-    projectName: plan.project.name,
     materialId: plan.materialId,
-    materialName: plan.material.name,
-    unit: plan.material.unit,
-    plannedQty: plan.plannedQty,
-    wastagePct: plan.wastagePct,
+    openingQuantity: plan.openingQuantity,
+    plannedQuantity: plan.plannedQuantity,
+    plannedUnitRate: plan.plannedUnitRate,
+    lowStockThreshold: plan.lowStockThreshold,
+    wastageThresholdPct: plan.wastageThresholdPct,
     status: plan.status as PlanStatus,
     notes: plan.notes,
-    createdByName: plan.createdBy.name,
+    createdById: plan.createdById,
     createdAt: plan.createdAt.toISOString(),
-    consumedQty: consumed,
+    updatedAt: plan.updatedAt.toISOString(),
+    material: plan.material,
+    project: plan.project,
   }
 }
 
 export async function GET(req: Request) {
   const auth = await guardAuth(req)
   if (!auth.ok) return auth.response
-  const { user } = auth
 
   const url = new URL(req.url)
   const where: Prisma.MaterialPlanWhereInput = {}
@@ -57,76 +49,129 @@ export async function GET(req: Request) {
   if (materialId) where.materialId = materialId
   const status = url.searchParams.get('status')
   if (status) {
-    if (!PLAN_STATUSES.includes(status as PlanStatus)) return fail('Invalid status filter')
+    if (!PLAN_STATUSES.includes(status as PlanStatus)) {
+      return fail(`status must be one of: ${PLAN_STATUSES.join(', ')}`, 400)
+    }
     where.status = status
   }
-  if (user.role === 'PROJECT_MANAGER') where.project = { pmId: user.id }
+  if (auth.user.role === 'PM') where.project = { assignedPmId: auth.user.id }
 
   const plans = await db.materialPlan.findMany({
     where,
-    include: { project: true, material: true, createdBy: true },
-    orderBy: { createdAt: 'desc' },
+    include: INCLUDE,
+    orderBy: [{ project: { code: 'asc' } }, { material: { name: 'asc' } }],
   })
 
-  const items = await Promise.all(
-    plans.map(async (plan) => toPlanRow(plan, await consumedQty(plan.projectId, plan.materialId)))
-  )
-
-  return ok({ items })
+  return ok(plans.map(toPlanRow))
 }
 
-export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN', 'PROJECT_MANAGER'])
-  if (!auth.ok) return auth.response
-  const { user } = auth
+interface CreatePlanInput {
+  projectId: string
+  materialId: string
+  openingQuantity: number
+  plannedQuantity: number
+  plannedUnitRate: number | null
+  lowStockThreshold: number | null
+  wastageThresholdPct: number | null
+  notes: string | null
+}
 
-  const body = await readJson<Record<string, unknown>>(req)
-  if (!body) return fail('Invalid request body')
-
+function parseCreateBody(body: Record<string, unknown>): { error: string | null; input: CreatePlanInput | null } {
   const projectId = typeof body.projectId === 'string' ? body.projectId : ''
-  const project = projectId ? await db.project.findUnique({ where: { id: projectId } }) : null
-  if (!project) return fail('Project not found', 404)
-  if (!pmOwns(user, project.pmId)) return fail('You can only access your own projects', 403)
+  if (!projectId) return { error: 'projectId is required', input: null }
 
   const materialId = typeof body.materialId === 'string' ? body.materialId : ''
-  const material = materialId ? await db.material.findUnique({ where: { id: materialId } }) : null
-  if (!material || !material.isActive) return fail('Material not found or inactive')
+  if (!materialId) return { error: 'materialId is required', input: null }
 
-  const plannedQty = num(body.plannedQty)
-  if (!(plannedQty > 0)) return fail('Planned quantity must be greater than zero')
+  const openingQuantity = body.openingQuantity === undefined ? 0 : Number(body.openingQuantity)
+  if (!(openingQuantity >= 0)) return { error: 'Opening quantity must be zero or more', input: null }
 
-  const wastagePct = num(body.wastagePct)
-  if (!(wastagePct >= 0 && wastagePct <= 100)) {
-    return fail('Wastage percentage must be between 0 and 100')
+  const plannedQuantity = Number(body.plannedQuantity)
+  if (!(plannedQuantity > 0)) return { error: 'Planned quantity must be greater than zero', input: null }
+
+  let plannedUnitRate: number | null = null
+  if (body.plannedUnitRate !== undefined && body.plannedUnitRate !== null && body.plannedUnitRate !== '') {
+    const rate = Number(body.plannedUnitRate)
+    if (!(rate >= 0)) return { error: 'Planned unit rate must be zero or more', input: null }
+    plannedUnitRate = rate
+  }
+
+  let lowStockThreshold: number | null = null
+  if (body.lowStockThreshold !== undefined && body.lowStockThreshold !== null && body.lowStockThreshold !== '') {
+    const threshold = Number(body.lowStockThreshold)
+    if (!(threshold >= 0)) return { error: 'Low stock threshold must be zero or more', input: null }
+    lowStockThreshold = threshold
+  }
+
+  let wastageThresholdPct: number | null = null
+  if (body.wastageThresholdPct !== undefined && body.wastageThresholdPct !== null && body.wastageThresholdPct !== '') {
+    const pct = Number(body.wastageThresholdPct)
+    if (!(pct >= 0 && pct <= 100)) return { error: 'Wastage threshold must be between 0 and 100', input: null }
+    wastageThresholdPct = pct
   }
 
   const notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null
 
-  const existing = await db.materialPlan.findUnique({
-    where: { projectId_materialId: { projectId, materialId } },
-  })
-  if (existing) return fail('A plan for this material already exists on this project', 409)
-
-  try {
-    const plan = await db.materialPlan.create({
-      data: { projectId, materialId, plannedQty, wastagePct, notes, status: 'DRAFT', createdById: user.id },
-      include: { project: true, material: true, createdBy: true },
-    })
-
-    await writeAudit({
-      action: 'PLAN_CREATE',
-      actorId: user.id,
-      actorName: user.name,
-      entityType: 'MATERIAL_PLAN',
-      entityId: plan.id,
-      meta: { project: project.name, material: material.name, plannedQty },
-    })
-
-    return ok({ plan: toPlanRow(plan, await consumedQty(projectId, materialId)) })
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      return fail('A plan for this material already exists on this project', 409)
-    }
-    throw err
+  return {
+    error: null,
+    input: {
+      projectId,
+      materialId,
+      openingQuantity,
+      plannedQuantity,
+      plannedUnitRate,
+      lowStockThreshold,
+      wastageThresholdPct,
+      notes,
+    },
   }
+}
+
+export async function POST(req: Request) {
+  const auth = await guardAuth(req, ['PM'])
+  if (!auth.ok) return auth.response
+  const { user } = auth
+
+  const body = await readJson<Record<string, unknown>>(req)
+  if (!body) return fail('Invalid request body', 400)
+
+  const { error, input } = parseCreateBody(body)
+  if (error || !input) return fail(error ?? 'Invalid request body', 400)
+
+  const project = await db.project.findUnique({ where: { id: input.projectId } })
+  if (!project) return fail('Project not found', 404)
+  if (!pmOwns(user, project.assignedPmId)) {
+    return fail('You are not assigned to this project', 403)
+  }
+
+  const material = await db.material.findUnique({ where: { id: input.materialId } })
+  if (!material) return fail('Material not found', 404)
+  if (!material.isActive) return fail('Material is inactive', 422)
+
+  const existing = await db.materialPlan.findUnique({
+    where: { projectId_materialId: { projectId: input.projectId, materialId: input.materialId } },
+  })
+  if (existing) return fail('A plan already exists for this material in this project', 409)
+
+  const plan = await db.materialPlan.create({
+    data: { ...input, status: 'DRAFT', createdById: user.id },
+    include: INCLUDE,
+  })
+
+  await writeAudit({
+    action: 'PLAN_CREATE',
+    actorId: user.id,
+    actorName: user.name,
+    entityType: 'material-plan',
+    entityId: plan.id,
+    projectId: plan.projectId,
+    meta: {
+      project: project.name,
+      material: material.name,
+      plannedQuantity: plan.plannedQuantity,
+    },
+    ip: getClientIp(req),
+  })
+
+  return ok(toPlanRow(plan))
 }

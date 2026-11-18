@@ -1,0 +1,403 @@
+     1→import { useCallback, useEffect, useMemo, useState } from 'react'
+     2→import type { FormEvent, ReactNode } from 'react'
+     3→import { AppShell } from '../../app-shell/components/AppShell'
+     4→import { useAuth } from '../../authentication/auth/useAuth'
+     5→import { useProjects } from '../../projects/useProjects'
+     6→import { ApiError } from '../../../lib/api'
+     7→import {
+     8→  approveBill,
+     9→  assignVendor,
+    10→  createBill,
+    11→  createVendor,
+    12→  deleteBill,
+    13→  listBillPayments,
+    14→  listBills,
+    15→  listVendors,
+    16→  paymentHistory,
+    17→  projectExpenses,
+    18→  recordPayment,
+    19→  rejectBill,
+    20→  updateBill,
+    21→  vendorOutstanding,
+    22→  type Bill,
+    23→  type BillCategory,
+    24→  type BillInput,
+    25→  type Payment,
+    26→  type PaymentHistoryEntry,
+    27→  type PaymentMode,
+    28→  type Vendor,
+    29→  type VendorOutstanding,
+    30→} from '../data/vendorBillingApi'
+    31→
+    32→type View = 'bills' | 'expenses' | 'outstanding' | 'payments'
+    33→const categories: BillCategory[] = ['MATERIAL', 'LABOUR', 'MACHINERY', 'SERVICES', 'OTHER']
+    34→const modes: PaymentMode[] = ['CASH', 'BANK_TRANSFER', 'UPI', 'CHEQUE', 'OTHER']
+    35→const statuses = ['PENDING', 'APPROVED', 'REJECTED', 'PARTIALLY_PAID', 'PAID']
+    36→const today = new Date().toISOString().slice(0, 10)
+    37→
+    38→function messageOf(error: unknown) {
+    39→  return error instanceof ApiError ? error.message : error instanceof Error ? error.message : 'Something went wrong. Please try again.'
+    40→}
+    41→function amount(value: number | string | null | undefined) {
+    42→  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(value ?? 0))
+    43→}
+    44→function dateLabel(value?: string | null) {
+    45→  if (!value) return '—'
+    46→  const date = new Date(`${value.slice(0, 10)}T00:00:00`)
+    47→  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    48→}
+    49→
+    50→export function BillsPage({ openUpload = false }: { openUpload?: boolean }) {
+    51→  const { user } = useAuth()
+    52→  const { projects, selectedProject, selectedProjectId, selectProject } = useProjects()
+    53→  const isAdmin = user?.role === 'ADMIN'
+    54→  const [view, setView] = useState<View>('bills')
+    55→  const [bills, setBills] = useState<Bill[]>([])
+    56→  const [billPage, setBillPage] = useState(1)
+    57→  const [totalBillPages, setTotalBillPages] = useState(1)
+    58→  const [vendors, setVendors] = useState<Vendor[]>([])
+    59→  const [expenses, setExpenses] = useState<Bill[]>([])
+    60→  const [outstanding, setOutstanding] = useState<VendorOutstanding[]>([])
+    61→  const [history, setHistory] = useState<PaymentHistoryEntry[]>([])
+    62→  const [billPayments, setBillPayments] = useState<Payment[]>([])
+    63→  const [selectedBill, setSelectedBill] = useState<Bill | null>(null)
+    64→  const [rejecting, setRejecting] = useState(false)
+    65→  const [loading, setLoading] = useState(true)
+    66→  const [saving, setSaving] = useState(false)
+    67→  const [error, setError] = useState<string | null>(null)
+    68→  const [success, setSuccess] = useState<string | null>(null)
+    69→  const [statusFilter, setStatusFilter] = useState('')
+    70→  const [categoryFilter, setCategoryFilter] = useState('')
+    71→  const [search, setSearch] = useState('')
+    72→  const [from, setFrom] = useState('')
+    73→  const [to, setTo] = useState('')
+    74→  const [overdue, setOverdue] = useState(false)
+    75→  const [formOpen, setFormOpen] = useState(openUpload)
+    76→  const [editingId, setEditingId] = useState<string | null>(null)
+    77→  const [rejectionReason, setRejectionReason] = useState('')
+    78→  const [paymentTarget, setPaymentTarget] = useState<Bill | null>(null)
+    79→  const [paymentAmount, setPaymentAmount] = useState('')
+    80→  const [paymentDate, setPaymentDate] = useState(today)
+    81→  const [paymentMode, setPaymentMode] = useState<PaymentMode>('BANK_TRANSFER')
+    82→  const [paymentReference, setPaymentReference] = useState('')
+    83→  const [paymentRemarks, setPaymentRemarks] = useState('')
+    84→  const [vendorFormOpen, setVendorFormOpen] = useState(false)
+    85→  const [newVendorName, setNewVendorName] = useState('')
+    86→  const [form, setForm] = useState<BillInput>({
+    87→    projectId: selectedProjectId || '',
+    88→    vendorId: '',
+    89→    billNumber: '',
+    90→    billDate: today,
+    91→    dueDate: '',
+    92→    category: 'MATERIAL',
+    93→    description: '',
+    94→    baseAmount: 0,
+    95→    gstPercent: 18,
+    96→  })
+    97→
+    98→  useEffect(() => {
+    99→    if (selectedProjectId) setForm((current) => ({ ...current, projectId: selectedProjectId }))
+   100→  }, [selectedProjectId])
+   101→
+   102→  const loadVendors = useCallback(async () => {
+   103→    try {
+   104→      setVendors(await listVendors({ isActive: true }))
+   105→    } catch (loadError) {
+   106→      setError(messageOf(loadError))
+   107→    }
+   108→  }, [])
+   109→
+   110→  const load = useCallback(async () => {
+   111→    setLoading(true)
+   112→    setError(null)
+   113→    try {
+   114→      const filters = {
+   115→        projectId: selectedProjectId || undefined,
+   116→        status: statusFilter || undefined,
+   117→        category: (categoryFilter || undefined) as BillCategory | undefined,
+   118→        search: search.trim() || undefined,
+   119→        overdue: overdue || undefined,
+   120→        from: from || undefined,
+   121→        to: to || undefined,
+   122→        page: billPage,
+   123→        pageSize: 20,
+   124→      }
+   125→      const requests = await Promise.all([
+   126→        listBills(filters),
+   127→        selectedProjectId ? projectExpenses(selectedProjectId, from || undefined, to || undefined) : Promise.resolve([]),
+   128→        vendorOutstanding(from || undefined, to || undefined),
+   129→        paymentHistory(from || undefined, to || undefined),
+   130→      ])
+   131→      setBills(requests[0].bills)
+   132→      setTotalBillPages(requests[0].meta.totalPages)
+   133→      setExpenses(requests[1])
+   134→      setOutstanding(requests[2])
+   135→      setHistory(requests[3])
+   136→    } catch (loadError) {
+   137→      setError(messageOf(loadError))
+   138→    } finally {
+   139→      setLoading(false)
+   140→    }
+   141→  }, [selectedProjectId, statusFilter, categoryFilter, search, overdue, from, to, billPage])
+   142→
+   143→  useEffect(() => { setBillPage(1) }, [selectedProjectId, statusFilter, categoryFilter, search, overdue, from, to])
+   144→
+   145→  useEffect(() => { void load() }, [load])
+   146→  useEffect(() => { void loadVendors() }, [loadVendors])
+   147→
+   148→  const totals = useMemo(() => bills.reduce((sum, bill) => ({
+   149→    total: sum.total + Number(bill.totalAmount),
+   150→    paid: sum.paid + Number(bill.paidAmount ?? 0),
+   151→    outstanding: sum.outstanding + Number(bill.outstandingAmount ?? 0),
+   152→  }), { total: 0, paid: 0, outstanding: 0 }), [bills])
+   153→  const expenseTotals = useMemo(() => expenses.reduce((sum, bill) => ({
+   154→    total: sum.total + Number(bill.totalAmount),
+   155→    paid: sum.paid + Number(bill.paidAmount ?? 0),
+   156→    outstanding: sum.outstanding + Number(bill.outstandingAmount ?? 0),
+   157→  }), { total: 0, paid: 0, outstanding: 0 }), [expenses])
+   158→
+   159→  const resetBillForm = () => {
+   160→    setForm({ projectId: selectedProjectId || '', vendorId: '', billNumber: '', billDate: today, dueDate: '', category: 'MATERIAL', description: '', baseAmount: 0, gstPercent: 18 })
+   161→    setEditingId(null)
+   162→    setFormOpen(false)
+   163→  }
+   164→
+   165→  const submitBill = async (event: FormEvent<HTMLFormElement>) => {
+   166→    event.preventDefault()
+   167→    setSaving(true); setError(null); setSuccess(null)
+   168→    try {
+   169→      const input: BillInput = { ...form, dueDate: form.dueDate || null, description: form.description?.trim() || null }
+   170→      if (editingId !== null) {
+   171→        await updateBill(editingId, input)
+   172→        setSuccess('Bill updated.')
+   173→      } else {
+   174→        await createBill(input)
+   175→        setSuccess('Bill submitted for review.')
+   176→      }
+   177→      resetBillForm()
+   178→      await load()
+   179→    } catch (submitError) {
+   180→      setError(messageOf(submitError))
+   181→    } finally {
+   182→      setSaving(false)
+   183→    }
+   184→  }
+   185→
+   186→  const beginEdit = (bill: Bill) => {
+   187→    setForm({
+   188→      projectId: bill.projectId,
+   189→      vendorId: bill.vendorId,
+   190→      billNumber: bill.billNumber,
+   191→      billDate: bill.billDate.slice(0, 10),
+   192→      dueDate: bill.dueDate?.slice(0, 10) ?? '',
+   193→      category: bill.category,
+   194→      description: bill.description ?? '',
+   195→      baseAmount: Number(bill.baseAmount),
+   196→      gstPercent: Number(bill.gstPercent) as BillInput['gstPercent'],
+   197→    })
+   198→    setEditingId(bill.id)
+   199→    setFormOpen(true)
+   200→  }
+   201→
+   202→  const chooseBill = async (bill: Bill) => {
+   203→    setRejecting(false)
+   204→    setSelectedBill(bill)
+   205→    setError(null)
+   206→    try {
+   207→      setBillPayments(await listBillPayments(bill.id))
+   208→    } catch (detailError) {
+   209→      setError(messageOf(detailError))
+   210→      setBillPayments([])
+   211→    }
+   212→  }
+   213→
+   214→  const action = async (run: () => Promise<unknown>, message: string) => {
+   215→    setSaving(true); setError(null); setSuccess(null)
+   216→    try {
+   217→      await run()
+   218→      setSuccess(message)
+   219→      setSelectedBill(null)
+   220→      await load()
+   221→    } catch (actionError) {
+   222→      setError(messageOf(actionError))
+   223→    } finally {
+   224→      setSaving(false)
+   225→    }
+   226→  }
+   227→
+   228→  const submitPayment = async (event: FormEvent<HTMLFormElement>) => {
+   229→    event.preventDefault()
+   230→    if (!paymentTarget) return
+   231→    await action(() => recordPayment(paymentTarget.id, {
+   232→      amount: Number(paymentAmount),
+   233→      paymentDate,
+   234→      mode: paymentMode,
+   235→      referenceNumber: paymentReference.trim() || null,
+   236→      remarks: paymentRemarks.trim() || null,
+   237→    }), 'Payment recorded.')
+   238→    setPaymentTarget(null)
+   239→    setPaymentAmount('')
+   240→    setPaymentReference('')
+   241→    setPaymentRemarks('')
+   242→  }
+   243→
+   244→  const createQuickVendor = async () => {
+   245→    if (!isAdmin && !selectedProjectId) {
+   246→      setError('Select a project before creating a vendor.')
+   247→      return
+   248→    }
+   249→    setSaving(true); setError(null)
+   250→    try {
+   251→      const vendor = await createVendor({ name: newVendorName.trim(), vendorType: 'OTHER' })
+   252→      if (!isAdmin && selectedProjectId) {
+   253→        try {
+   254→          await assignVendor(selectedProjectId, vendor.id)
+   255→        } catch (assignError) {
+   256→          setError(`Vendor created, but assignment failed: ${messageOf(assignError)}`)
+   257→          setVendors((current) => [...current, vendor])
+   258→          setForm((current) => ({ ...current, vendorId: vendor.id }))
+   259→          setNewVendorName('')
+   260→          setVendorFormOpen(false)
+   261→          return
+   262→        }
+   263→      }
+   264→      setVendors((current) => [...current, vendor])
+   265→      setForm((current) => ({ ...current, vendorId: vendor.id }))
+   266→      setNewVendorName('')
+   267→      setVendorFormOpen(false)
+   268→      setSuccess('Vendor created. It is now available for this bill.')
+   269→    } catch (createError) {
+   270→      setError(messageOf(createError))
+   271→    } finally {
+   272→      setSaving(false)
+   273→    }
+   274→  }
+   275→
+   276→  const tableBills = view === 'expenses' ? expenses : bills
+   277→
+   278→  return (
+   279→    <AppShell currentPath="/app/bills">
+   280→      <div className="min-h-screen bg-[#F7F3EE] px-4 py-8 text-[#323232] sm:px-8">
+   281→        <div className="mx-auto max-w-7xl space-y-6">
+   282→          <header className="flex flex-wrap items-end justify-between gap-4">
+   283→            <div><p className="text-sm font-medium uppercase tracking-wide text-[#8A6F52]">Finance</p><h1 className="text-3xl font-semibold">Bills & Payments</h1><p className="mt-1 text-sm text-gray-600">Track project bills, approvals, balances, and payment history.</p>{selectedProject && <p className="mt-1 text-sm text-gray-500">Selected project: {selectedProject.code} — {selectedProject.name}</p>}</div>
+   284→            <button onClick={() => { setEditingId(null); setFormOpen(true) }} className="rounded bg-[#323232] px-4 py-2 text-white">Create bill</button>
+   285→          </header>
+   286→
+   287→          {error && <div role="alert" className="flex items-center justify-between rounded border border-red-300 bg-red-50 p-3 text-red-800"><span>{error}</span><button className="underline" onClick={() => void load()}>Retry</button></div>}
+   288→          {success && <p role="status" className="rounded border border-green-300 bg-green-50 p-3 text-green-800">{success}</p>}
+   289→
+   290→          <nav className="flex flex-wrap gap-2" aria-label="Finance views">
+   291→            {([['bills', 'Bills'], ['expenses', 'Project expenses'], ['outstanding', 'Vendor outstanding'], ['payments', 'Payment history']] as const).map(([key, label]) => <button key={key} onClick={() => setView(key)} className={`rounded border px-4 py-2 ${view === key ? 'border-[#323232] bg-[#323232] text-white' : 'bg-white'}`}>{label}</button>)}
+   292→          </nav>
+   293→
+   294→          {(view === 'bills' || view === 'expenses') && (
+   295→            <>
+   296→              <div className="grid gap-3 sm:grid-cols-3">
+   297→                {view === 'expenses' && <>
+   298→                  <Metric label="Project expenses" value={amount(expenseTotals.total)} />
+   299→                  <Metric label="Paid" value={amount(expenseTotals.paid)} />
+   300→                  <Metric label="Outstanding" value={amount(expenseTotals.outstanding)} />
+   301→                </>}
+   302→                {view === 'bills' && <>
+   303→                <Metric label="Bills on this page" value={amount(totals.total)} />
+   304→                <Metric label="Paid on this page" value={amount(totals.paid)} />
+   305→                <Metric label="Outstanding on this page" value={amount(totals.outstanding)} />
+   306→                </>}
+   307→              </div>
+   308→              <section className="rounded-lg border bg-white p-5 shadow-sm">
+   309→                <div className="mb-4 flex flex-wrap items-end gap-3">
+   310→                  {view === 'bills' && <>
+   311→                    <label className="text-sm">Status<select className="mt-1 block rounded border px-3 py-2" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="">All statuses</option>{statuses.map((status) => <option key={status}>{status}</option>)}</select></label>
+   312→                    <label className="text-sm">Category<select className="mt-1 block rounded border px-3 py-2" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}><option value="">All categories</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
+   313→                    <label className="text-sm">Search<input className="mt-1 block rounded border px-3 py-2" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Bill or vendor" /></label>
+   314→                    <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={overdue} onChange={(event) => setOverdue(event.target.checked)} />Overdue only</label>
+   315→                  </>}
+   316→                  {view === 'expenses' && <label className="text-sm">Project<select className="mt-1 block rounded border px-3 py-2" value={selectedProjectId} onChange={(event) => {
+   317→                    selectProject(event.target.value)
+   318→                  }}>{projects.map((project) => <option key={project.id} value={project.id}>{project.code} — {project.name}</option>)}</select></label>}
+   319→                  <label className="text-sm">From<input type="date" className="mt-1 block rounded border px-3 py-2" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
+   320→                  <label className="text-sm">To<input type="date" className="mt-1 block rounded border px-3 py-2" value={to} onChange={(event) => setTo(event.target.value)} /></label>
+   321→                </div>
+   322→                {loading ? <p className="py-10 text-center text-gray-500">Loading finance records…</p> : tableBills.length === 0 ? <p className="py-10 text-center text-gray-500">{view === 'expenses' ? 'No expenses recorded for this project and date range.' : 'No bills match these filters.'}</p> : (
+   323→                  <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm">
+   324→                    <thead><tr className="border-b text-gray-500"><th className="py-2">Bill</th><th>Project</th><th>Vendor</th><th>Date</th><th>Total</th><th>Paid / outstanding</th><th>Status</th><th>Actions</th></tr></thead>
+   325→                    <tbody>{tableBills.map((bill) => <tr key={bill.id} className="border-b last:border-0">
+   326→                      <td className="py-3"><button className="font-medium text-blue-700 underline" onClick={() => void chooseBill(bill)}>{bill.billNumber}</button><div className="text-xs text-gray-500">{bill.category}</div></td>
+   327→                      <td>{bill.project?.code ?? bill.projectId}</td><td>{bill.vendor?.name ?? '—'}</td><td>{dateLabel(bill.billDate)}</td><td>{amount(bill.totalAmount)}</td>
+   328→                      <td>{amount(bill.paidAmount)} / {amount(bill.outstandingAmount)}</td><td>{bill.status.replaceAll('_', ' ')}</td>
+   329→                      <td className="space-x-2 whitespace-nowrap">
+   330→                        {isAdmin && bill.status === 'PENDING' && <button className="text-green-700 underline" disabled={saving} onClick={() => void action(() => approveBill(bill.id), 'Bill approved.')}>Approve</button>}
+   331→                        {isAdmin && bill.status === 'PENDING' && <button className="text-red-700 underline" disabled={saving} onClick={() => { setRejecting(true); setSelectedBill(bill) }}>Reject</button>}
+   332→                        {isAdmin && ['APPROVED', 'PARTIALLY_PAID'].includes(bill.status) && <button className="text-blue-700 underline" onClick={() => setPaymentTarget(bill)}>Record payment</button>}
+   333→                        {(isAdmin || bill.submittedById === user?.id) && ['PENDING', 'REJECTED'].includes(bill.status) && <button className="text-blue-700 underline" onClick={() => beginEdit(bill)}>Edit</button>}
+   334→                        {(isAdmin || bill.submittedById === user?.id) && bill.status === 'PENDING' && <button className="text-red-700 underline" disabled={saving} onClick={() => { if (window.confirm(`Delete bill ${bill.billNumber}?`)) void action(() => deleteBill(bill.id), 'Bill deleted.') }}>Delete</button>}
+   335→                      </td>
+   336→                    </tr>)}</tbody>
+   337→                  </table></div>
+   338→                )}
+   339→                {view === 'bills' && totalBillPages > 1 && <div className="mt-4 flex items-center justify-between text-sm"><span>Page {billPage} of {totalBillPages}</span><div className="flex gap-2"><button className="rounded border px-3 py-1 disabled:opacity-50" disabled={billPage <= 1 || loading} onClick={() => setBillPage((page) => page - 1)}>Previous</button><button className="rounded border px-3 py-1 disabled:opacity-50" disabled={billPage >= totalBillPages || loading} onClick={() => setBillPage((page) => page + 1)}>Next</button></div></div>}
+   340→              </section>
+   341→            </>
+   342→          )}
+   343→
+   344→          {view === 'outstanding' && <ReportSection title="Vendor outstanding" loading={loading} empty={!outstanding.length} emptyText="No outstanding balances for this date range.">
+   345→            <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b text-gray-500"><th className="py-2">Vendor</th><th>Total</th><th>Paid</th><th>Outstanding</th></tr></thead><tbody>{outstanding.map((row) => <tr key={row.vendorId} className="border-b"><td className="py-3">{row.vendorName}</td><td>{amount(row.totalAmount)}</td><td>{amount(row.paidAmount)}</td><td>{amount(row.outstandingAmount)}</td></tr>)}</tbody></table></div>
+   346→          </ReportSection>}
+   347→
+   348→          {view === 'payments' && <ReportSection title="Payment history" loading={loading} empty={!history.length} emptyText="No payments found for this date range.">
+   349→            <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead><tr className="border-b text-gray-500"><th className="py-2">Payment date</th><th>Bill</th><th>Vendor</th><th>Project</th><th>Amount</th><th>Mode</th><th>Reference</th><th>Recorded by</th></tr></thead><tbody>{history.map((payment) => <tr key={payment.id} className="border-b"><td className="py-3">{dateLabel(payment.paymentDate)}</td><td>{payment.bill.billNumber}</td><td>{payment.bill.vendor.name}</td><td>{projects.find((project) => project.id === payment.bill.projectId)?.code ?? payment.bill.projectId}</td><td>{amount(payment.amount)}</td><td>{payment.mode.replaceAll('_', ' ')}</td><td>{payment.referenceNumber || '—'}</td><td>{payment.recordedBy.name}</td></tr>)}</tbody></table></div>
+   350→          </ReportSection>}
+   351→        </div>
+   352→      </div>
+   353→
+   354→      {formOpen && <Modal title={editingId === null ? 'Create and submit bill' : 'Edit bill'} onClose={resetBillForm}>
+   355→        <form className="space-y-3" onSubmit={(event) => void submitBill(event)}>
+   356→          <label className="block text-sm">Project<select required className="mt-1 w-full rounded border px-3 py-2" value={form.projectId} disabled={editingId !== null} onChange={(event) => setForm({ ...form, projectId: event.target.value })}><option value="">Choose project</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.code} — {project.name}</option>)}</select></label>
+   357→          <div className="flex items-end gap-2"><label className="block flex-1 text-sm">Vendor<select required className="mt-1 w-full rounded border px-3 py-2" value={form.vendorId} onChange={(event) => setForm({ ...form, vendorId: event.target.value })}><option value="">Choose vendor</option>{vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}</select></label><button type="button" className="rounded border px-3 py-2 text-sm" onClick={() => setVendorFormOpen((value) => !value)}>Add</button></div>
+   358→          {vendorFormOpen && <div className="flex gap-2"><input required className="min-w-0 flex-1 rounded border px-3 py-2" placeholder="Vendor name" value={newVendorName} onChange={(event) => setNewVendorName(event.target.value)} /><button type="button" className="rounded border px-3 py-2" disabled={saving || !newVendorName.trim()} onClick={() => void createQuickVendor()}>Create</button></div>}
+   359→          <label className="block text-sm">Invoice number<input required maxLength={100} className="mt-1 w-full rounded border px-3 py-2" value={form.billNumber} onChange={(event) => setForm({ ...form, billNumber: event.target.value })} /></label>
+   360→          <div className="grid grid-cols-2 gap-3"><label className="block text-sm">Invoice date<input type="date" required className="mt-1 w-full rounded border px-3 py-2" value={form.billDate} onChange={(event) => setForm({ ...form, billDate: event.target.value })} /></label><label className="block text-sm">Due date<input type="date" min={form.billDate} className="mt-1 w-full rounded border px-3 py-2" value={form.dueDate ?? ''} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} /></label></div>
+   361→          <div className="grid grid-cols-2 gap-3"><label className="block text-sm">Category<select className="mt-1 w-full rounded border px-3 py-2" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as BillCategory })}>{categories.map((category) => <option key={category}>{category}</option>)}</select></label><label className="block text-sm">GST<select className="mt-1 w-full rounded border px-3 py-2" value={form.gstPercent} onChange={(event) => setForm({ ...form, gstPercent: Number(event.target.value) as BillInput['gstPercent'] })}>{[0, 5, 12, 18, 28].map((rate) => <option key={rate} value={rate}>{rate}%</option>)}</select></label></div>
+   362→          <label className="block text-sm">Base amount<input type="number" min="0.01" step="0.01" required className="mt-1 w-full rounded border px-3 py-2" value={form.baseAmount || ''} onChange={(event) => setForm({ ...form, baseAmount: Number(event.target.value) })} /></label>
+   363→          <label className="block text-sm">Description<textarea maxLength={5000} rows={2} className="mt-1 w-full rounded border px-3 py-2" value={form.description ?? ''} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
+   364→          <p className="text-sm text-gray-600">GST amount: {amount(Number(form.baseAmount || 0) * form.gstPercent / 100)} · Total: {amount(Number(form.baseAmount || 0) * (1 + form.gstPercent / 100))}</p>
+   365→          <div className="flex gap-2"><button disabled={saving || !projects.length} className="rounded bg-[#323232] px-4 py-2 text-white disabled:opacity-50">{saving ? 'Saving…' : editingId === null ? 'Submit bill' : 'Save changes'}</button><button type="button" className="rounded border px-4 py-2" onClick={resetBillForm}>Cancel</button></div>
+   366→        </form>
+   367→      </Modal>}
+   368→
+   369→      {selectedBill && <Modal title={rejecting ? `Reject ${selectedBill.billNumber}` : `Bill ${selectedBill.billNumber}`} onClose={() => { setSelectedBill(null); setRejecting(false); setRejectionReason('') }}>
+   370→        {rejecting && isAdmin ? <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void action(() => rejectBill(selectedBill.id, rejectionReason), 'Bill rejected.'); setRejectionReason('') }}><label className="block text-sm">Reason (5–1000 characters)<textarea minLength={5} maxLength={1000} required rows={4} className="mt-1 w-full rounded border px-3 py-2" value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} /></label><button disabled={saving} className="rounded bg-red-700 px-4 py-2 text-white">Reject bill</button></form> : <div className="space-y-3 text-sm">
+   371→          <p><strong>Vendor:</strong> {selectedBill.vendor.name}</p><p><strong>Project:</strong> {selectedBill.project?.name ?? selectedBill.projectId}</p><p><strong>Status:</strong> {selectedBill.status.replaceAll('_', ' ')}</p><p><strong>Invoice date:</strong> {dateLabel(selectedBill.billDate)} · <strong>Due:</strong> {dateLabel(selectedBill.dueDate)}</p><p><strong>Amount:</strong> {amount(selectedBill.totalAmount)} · <strong>Paid:</strong> {amount(selectedBill.paidAmount)} · <strong>Outstanding:</strong> {amount(selectedBill.outstandingAmount)}</p>
+   372→          {selectedBill.rejectionReason && <p className="rounded bg-red-50 p-2 text-red-800">Rejection: {selectedBill.rejectionReason}</p>}
+   373→          <h3 className="font-semibold">Payments</h3>{billPayments.length ? <ul className="divide-y">{billPayments.map((payment) => <li key={payment.id} className="py-2">{dateLabel(payment.paymentDate)} · {amount(payment.amount)} · {payment.mode.replaceAll('_', ' ')} {payment.referenceNumber ? `· ${payment.referenceNumber}` : ''}</li>)}</ul> : <p className="text-gray-500">No payments recorded.</p>}
+   374→        </div>}
+   375→      </Modal>}
+   376→
+   377→      {paymentTarget && <Modal title={`Record payment · ${paymentTarget.billNumber}`} onClose={() => setPaymentTarget(null)}>
+   378→        <form className="space-y-3" onSubmit={(event) => void submitPayment(event)}>
+   379→          <p className="text-sm text-gray-600">Outstanding balance: {amount(paymentTarget.outstandingAmount)}</p>
+   380→          <label className="block text-sm">Amount<input required type="number" min="0.01" max={paymentTarget.outstandingAmount} step="0.01" className="mt-1 w-full rounded border px-3 py-2" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} /></label>
+   381→          <label className="block text-sm">Payment date<input required type="date" min={paymentTarget.billDate.slice(0, 10)} max={today} className="mt-1 w-full rounded border px-3 py-2" value={paymentDate} onChange={(event) => setPaymentDate(event.target.value)} /></label>
+   382→          <label className="block text-sm">Mode<select className="mt-1 w-full rounded border px-3 py-2" value={paymentMode} onChange={(event) => setPaymentMode(event.target.value as PaymentMode)}>{modes.map((mode) => <option key={mode}>{mode}</option>)}</select></label>
+   383→          <label className="block text-sm">Reference number<input maxLength={255} className="mt-1 w-full rounded border px-3 py-2" value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} /></label>
+   384→          <label className="block text-sm">Remarks<textarea maxLength={1000} rows={2} className="mt-1 w-full rounded border px-3 py-2" value={paymentRemarks} onChange={(event) => setPaymentRemarks(event.target.value)} /></label>
+   385→          <button disabled={saving} className="rounded bg-[#323232] px-4 py-2 text-white">Record payment</button>
+   386→        </form>
+   387→      </Modal>}
+   388→    </AppShell>
+   389→  )
+   390→}
+   391→
+   392→function Metric({ label, value }: { label: string; value: string }) {
+   393→  return <div className="rounded-lg border bg-white p-4 shadow-sm"><p className="text-sm text-gray-500">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></div>
+   394→}
+   395→
+   396→function ReportSection({ title, loading, empty, emptyText, children }: { title: string; loading: boolean; empty: boolean; emptyText: string; children: ReactNode }) {
+   397→  return <section className="rounded-lg border bg-white p-5 shadow-sm"><h2 className="mb-4 text-xl font-semibold">{title}</h2>{loading ? <p className="py-10 text-center text-gray-500">Loading report…</p> : empty ? <p className="py-10 text-center text-gray-500">{emptyText}</p> : children}</section>
+   398→}
+   399→
+   400→function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+   401→  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section role="dialog" aria-modal="true" aria-label={title} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl"><div className="mb-4 flex items-center justify-between gap-4"><h2 className="text-xl font-semibold">{title}</h2><button aria-label="Close dialog" className="rounded border px-3 py-1" onClick={onClose}>Close</button></div>{children}</section></div>
+   402→}
+   403→

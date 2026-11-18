@@ -9,10 +9,10 @@ function monthKey(d: Date): string {
 }
 
 export async function GET(req: Request) {
-  const auth = await guardAuth(req, ['PROJECT_MANAGER'])
+  const auth = await guardAuth(req, ['PM'])
   if (!auth.ok) return auth.response
 
-  const projects = await db.project.findMany({ where: { pmId: auth.user.id } })
+  const projects = await db.project.findMany({ where: { assignedPmId: auth.user.id } })
   const projectIds = projects.map((p) => p.id)
 
   const now = new Date()
@@ -33,21 +33,39 @@ export async function GET(req: Request) {
     }),
     db.materialPlan.findMany({
       where: { projectId: { in: projectIds } },
-      select: { projectId: true, materialId: true, plannedQty: true, wastagePct: true, status: true },
+      select: {
+        projectId: true,
+        materialId: true,
+        plannedQuantity: true,
+        wastageThresholdPct: true,
+        status: true,
+      },
     }),
     db.dailyLog.findMany({
       where: { projectId: { in: projectIds } },
       orderBy: [{ logDate: 'desc' }, { createdAt: 'desc' }],
-      take: 6,
-      include: { project: { select: { name: true } } },
+      select: {
+        id: true,
+        projectId: true,
+        logDate: true,
+        progressPercent: true,
+        workSummary: true,
+      },
     }),
   ])
 
   const spendByProject = new Map<string, number>()
   for (const t of inTxns) {
-    spendByProject.set(t.projectId, (spendByProject.get(t.projectId) ?? 0) + t.quantity * t.unitRate)
+    spendByProject.set(t.projectId, (spendByProject.get(t.projectId) ?? 0) + t.quantity * (t.unitRate ?? 0))
   }
-  const totalSpend = inTxns.reduce((sum, t) => sum + t.quantity * t.unitRate, 0)
+  const totalSpend = inTxns.reduce((sum, t) => sum + t.quantity * (t.unitRate ?? 0), 0)
+
+  const latestByProject = new Map<string, { progressPercent: number; logDate: Date; count: number }>()
+  for (const log of logs) {
+    const current = latestByProject.get(log.projectId)
+    if (current) current.count += 1
+    else latestByProject.set(log.projectId, { progressPercent: log.progressPercent, logDate: log.logDate, count: 1 })
+  }
 
   const consumedByKey = new Map<string, number>()
   for (const t of outTxns) {
@@ -57,10 +75,11 @@ export async function GET(req: Request) {
 
   const wastageByProjectId = new Map<string, (number | null)[]>()
   for (const plan of plans) {
+    const progress = latestByProject.get(plan.projectId)?.progressPercent ?? 0
     const consumedQty = consumedByKey.get(`${plan.projectId}:${plan.materialId}`) ?? 0
-    const estimated = plan.plannedQty / (1 + plan.wastagePct / 100)
-    // Wastage is only meaningful once consumption has begun
-    const wastagePct = estimated > 0 && consumedQty > 0 ? ((consumedQty - estimated) / estimated) * 100 : null
+    const expected = plan.plannedQuantity * (progress / 100)
+    const overrun = Math.max(consumedQty - expected, 0)
+    const wastagePct = expected > 0 ? (overrun / expected) * 100 : null
     const list = wastageByProjectId.get(plan.projectId)
     if (list) list.push(wastagePct)
     else wastageByProjectId.set(plan.projectId, [wastagePct])
@@ -69,20 +88,23 @@ export async function GET(req: Request) {
   const allWastage = [...wastageByProjectId.values()].flat().filter((v): v is number => v !== null)
   const avgWastagePct = allWastage.length > 0 ? allWastage.reduce((a, b) => a + b, 0) / allWastage.length : null
 
-  const projectRows = projects
+  const projectRows: PmDashboardResponse['projects'] = projects
     .map((p) => {
       const spend = spendByProject.get(p.id) ?? 0
       const pctValues = (wastageByProjectId.get(p.id) ?? []).filter((v): v is number => v !== null)
+      const latest = latestByProject.get(p.id)
       return {
         id: p.id,
         name: p.name,
         code: p.code,
         status: p.status as ProjectStatus,
-        budget: p.budget,
+        totalBudget: p.totalBudget,
         spend,
-        plannedEndDate: p.plannedEndDate ? p.plannedEndDate.toISOString() : null,
+        expectedEndDate: p.expectedEndDate ? p.expectedEndDate.toISOString() : null,
         wastagePct: pctValues.length > 0 ? pctValues.reduce((a, b) => a + b, 0) / pctValues.length : null,
-        progressPct: p.budget > 0 ? Math.min(100, (spend / p.budget) * 100) : null,
+        latestProgressPercent: latest ? latest.progressPercent : null,
+        latestLogDate: latest ? latest.logDate.toISOString() : null,
+        totalDailyLogs: latest?.count ?? 0,
       }
     })
     .sort((a, b) => {
@@ -100,7 +122,7 @@ export async function GET(req: Request) {
   const spendByMonthKey = new Map<string, number>()
   for (const t of recentInTxns) {
     const key = monthKey(t.txnDate)
-    spendByMonthKey.set(key, (spendByMonthKey.get(key) ?? 0) + t.quantity * t.unitRate)
+    spendByMonthKey.set(key, (spendByMonthKey.get(key) ?? 0) + t.quantity * (t.unitRate ?? 0))
   }
   const spendByMonth = monthBuckets.map((b) => ({
     month: b.key,
@@ -108,26 +130,28 @@ export async function GET(req: Request) {
     spend: spendByMonthKey.get(b.key) ?? 0,
   }))
 
-  const recentLogs = logs.map((log) => ({
+  const projectNameById = new Map(projects.map((p) => [p.id, p.name]))
+  const recentLogs = logs.slice(0, 6).map((log) => ({
     id: log.id,
-    projectName: log.project.name,
+    projectId: log.projectId,
+    projectName: projectNameById.get(log.projectId) ?? '',
     logDate: log.logDate.toISOString(),
-    workDone: log.workDone,
-    headcount: log.headcount,
+    progressPercent: log.progressPercent,
+    workSummary: log.workSummary,
   }))
 
   const upcomingEndDates = projects
     .flatMap((p) =>
-      p.status === 'ACTIVE' && p.plannedEndDate
-        ? [{ id: p.id, name: p.name, plannedEndDate: p.plannedEndDate, status: p.status as ProjectStatus }]
+      p.status === 'ACTIVE' && p.expectedEndDate
+        ? [{ id: p.id, name: p.name, expectedEndDate: p.expectedEndDate, status: p.status as ProjectStatus }]
         : []
     )
-    .sort((a, b) => a.plannedEndDate.getTime() - b.plannedEndDate.getTime())
+    .sort((a, b) => a.expectedEndDate.getTime() - b.expectedEndDate.getTime())
     .slice(0, 5)
     .map((p) => ({
       id: p.id,
       name: p.name,
-      plannedEndDate: p.plannedEndDate.toISOString(),
+      expectedEndDate: p.expectedEndDate.toISOString(),
       status: p.status,
     }))
 
@@ -135,7 +159,7 @@ export async function GET(req: Request) {
     kpis: {
       myProjects: projects.length,
       activeProjects: projects.filter((p) => p.status === 'ACTIVE').length,
-      totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
+      totalBudget: projects.reduce((sum, p) => sum + p.totalBudget, 0),
       totalSpend,
       draftPlans: plans.filter((p) => p.status === 'DRAFT').length,
       avgWastagePct,

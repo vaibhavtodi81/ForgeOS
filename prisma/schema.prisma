@@ -1,5 +1,5 @@
-// ForgeOS — Project & financial management for Indian builders
-// SQLite datasource. Enum-like fields are stored as strings.
+// ForgeOS — construction ERP for Indian builders (original contract)
+// SQLite datasource; enum-like fields are stored as strings.
 
 generator client {
   provider = "prisma-client-js"
@@ -15,14 +15,18 @@ model User {
   name         String
   email        String   @unique
   passwordHash String // scrypt; empty for OAuth-only accounts
-  role         String // ADMIN | PROJECT_MANAGER | ACCOUNTANT | VIEWER
+  role         String // ADMIN | PM | VIEWER
+  phone        String?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  managedProjects Project[] @relation("ProjectManager")
-  recordedTxns    InventoryTransaction[]
+  managedProjects Project[]              @relation("ProjectPM")
+  createdProjects Project[]              @relation("ProjectCreatedBy")
+  createdLands    Land[]
   dailyLogs       DailyLog[]
+  recordedTxns    InventoryTransaction[] @relation("TxnCreatedBy")
+  voidedTxns      InventoryTransaction[] @relation("TxnVoidedBy")
   plans           MaterialPlan[]
   oauthAccounts   OAuthAccount[]
 }
@@ -52,36 +56,54 @@ model OtpCode {
 }
 
 model Land {
-  id          String   @id @default(cuid())
-  name        String
-  location    String
-  areaSqft    Float?
-  khasraNumber String?
-  createdAt   DateTime @default(now())
+  id           String    @id @default(cuid())
+  name         String
+  addressLine  String?
+  city         String
+  state        String
+  pincode      String?
+  areaValue    Float
+  areaUnit     String // SQFT | SQYD | SQM | ACRE
+  surveyNumber String?
+  ownerName    String?
+  purchaseDate DateTime?
+  purchaseCost Float?
+  notes        String?
+  createdById  String
+  createdBy    User      @relation(fields: [createdById], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   projects Project[]
 }
 
 model Project {
-  id             String    @id @default(cuid())
-  code           String    @unique // FOS-001
-  name           String
-  landId         String
-  land           Land      @relation(fields: [landId], references: [id])
-  pmId           String?
-  pm             User?     @relation("ProjectManager", fields: [pmId], references: [id], onDelete: SetNull)
-  status         String    @default("PLANNING") // PLANNING | ACTIVE | ON_HOLD | COMPLETED
-  budget         Float
-  startDate      DateTime
-  plannedEndDate DateTime?
-  actualEndDate  DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  code                String    @unique // FOS-001
+  name                String
+  description         String?
+  location            String?
+  landId              String
+  land                Land      @relation(fields: [landId], references: [id])
+  status              String    @default("PLANNING") // PLANNING | ACTIVE | ON_HOLD | COMPLETED
+  startDate           DateTime
+  expectedEndDate     DateTime?
+  actualEndDate       DateTime?
+  totalBudget         Float     @default(0)
+  wastageThresholdPct Float     @default(10)
+  assignedPmId        String?
+  assignedPm          User?     @relation("ProjectPM", fields: [assignedPmId], references: [id], onDelete: SetNull)
+  createdById         String
+  createdBy           User      @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   plans        MaterialPlan[]
   transactions InventoryTransaction[]
   logs         DailyLog[]
+  milestones   Milestone[]
   invoices     Invoice[]
+  auditLogs    AuditLog[]
 }
 
 model Supplier {
@@ -96,70 +118,130 @@ model Supplier {
 }
 
 model Material {
-  id        String   @id @default(cuid())
-  name      String
-  unit      String
-  category  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String   @unique
+  unit        String
+  category    String // CEMENT | STEEL | SAND_AGGREGATE | BRICKS_BLOCKS | TIMBER | ELECTRICAL | PLUMBING | PAINT_FINISH | OTHER
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   plans        MaterialPlan[]
   transactions InventoryTransaction[]
 }
 
 model MaterialPlan {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  materialId  String
-  material    Material @relation(fields: [materialId], references: [id])
-  plannedQty  Float
-  wastagePct  Float    @default(0) // allowance baked into the plan, 0-100
-  status      String   @default("DRAFT") // DRAFT | APPROVED | ARCHIVED
-  notes       String?
-  createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(cuid())
+  projectId         String
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  materialId        String
+  material          Material @relation(fields: [materialId], references: [id])
+  openingQuantity   Float    @default(0)
+  plannedQuantity   Float
+  plannedUnitRate   Float?
+  lowStockThreshold Float?
+  wastageThresholdPct Float?
+  status            String   @default("DRAFT") // DRAFT | APPROVED | ARCHIVED
+  notes             String?
+  createdById       String
+  createdBy         User     @relation(fields: [createdById], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@unique([projectId, materialId])
 }
 
 model InventoryTransaction {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   projectId     String
-  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   materialId    String
-  material      Material @relation(fields: [materialId], references: [id])
-  supplierId    String?
-  supplier      Supplier? @relation(fields: [supplierId], references: [id])
+  material      Material  @relation(fields: [materialId], references: [id])
+  vendorId      String?
+  vendor        Supplier? @relation(fields: [vendorId], references: [id])
   txnType       String // IN | OUT | ADJUSTMENT
-  quantity      Float // IN/OUT > 0; ADJUSTMENT may be negative
-  unitRate      Float    @default(0) // INR per unit
+  quantity      Float // IN/OUT > 0; ADJUSTMENT stored signed (+inc / −dec)
+  unitRate      Float?
+  challanNumber String?
+  outReason     String? // USED | DAMAGED | LOST (for OUT)
   txnDate       DateTime
+  dailyLogId    String?
+  dailyLog      DailyLog? @relation(fields: [dailyLogId], references: [id], onDelete: SetNull)
+  remarks       String?
+  recordedById  String
+  recordedBy    User      @relation("TxnCreatedBy", fields: [recordedById], references: [id])
   voidedAt      DateTime?
   voidReason    String?
-  recordedById  String
-  recordedBy    User     @relation(fields: [recordedById], references: [id])
-  createdAt     DateTime @default(now())
+  voidedById    String?
+  voidedBy      User?     @relation("TxnVoidedBy", fields: [voidedById], references: [id])
+  createdAt     DateTime  @default(now())
 
   @@index([projectId])
   @@index([txnDate])
 }
 
 model DailyLog {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  logDate     DateTime
-  workDone    String
-  headcount   Int
-  notes       String?
-  createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logDate         DateTime
+  progressPercent Float
+  workSummary     String
+  weather         String?
+  issues          String?
+  createdById     String
+  createdBy       User     @relation(fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  labourEntries     LabourEntry[]
+  machineryEntries  MachineryEntry[]
+  transactions      InventoryTransaction[]
+
+  @@unique([projectId, logDate])
   @@index([projectId])
+}
+
+model LabourEntry {
+  id             String   @id @default(cuid())
+  dailyLogId     String
+  dailyLog       DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  trade          String
+  contractorName String?
+  headCount      Int
+  hoursWorked    Float    @default(8)
+  remarks        String?
+}
+
+model MachineryEntry {
+  id           String   @id @default(cuid())
+  dailyLogId   String
+  dailyLog     DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  machineName  String
+  operatorName String?
+  hoursUsed    Float
+  fuelLitres   Float?
+  remarks      String?
+}
+
+model Milestone {
+  id               String    @id @default(cuid())
+  projectId        String
+  project          Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?
+  sequence         Int
+  plannedStartDate DateTime?
+  plannedEndDate   DateTime?
+  actualStartDate  DateTime?
+  actualEndDate    DateTime?
+  status           String    @default("PLANNED") // PLANNED | IN_PROGRESS | COMPLETED | ON_HOLD | CANCELLED
+  progressPercent  Float     @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([projectId, sequence])
 }
 
 model Invoice {
@@ -190,16 +272,19 @@ model Payment {
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   actorId    String?
   actorName  String?
   action     String
   entityType String?
   entityId   String?
+  projectId  String?
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   meta       String? // JSON string
   ip         String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 
   @@index([createdAt])
   @@index([action])
+  @@index([projectId])
 }

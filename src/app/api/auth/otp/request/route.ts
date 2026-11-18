@@ -29,7 +29,10 @@ export async function POST(req: Request) {
   }
 
   const user = await db.user.findFirst({ where: { email, isActive: true } })
-  if (!user) return fail('No active account found for this email', 404)
+  if (!user) {
+    // Do not reveal whether the account exists; mirror the delivered=false shape.
+    return ok({ ok: true, delivered: false, expiresInSeconds: 600 })
+  }
 
   const code = randomInt(0, 1_000_000).toString().padStart(6, '0')
 

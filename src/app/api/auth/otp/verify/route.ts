@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { ok, fail, getClientIp, readJson } from '@/lib/api-helpers'
 import { verifyPassword, signSession, SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth'
 import { writeAudit } from '@/lib/audit'
-import type { LoginResponse, Role, SessionUser } from '@/lib/forgeos-types'
+import type { Role, SessionUser } from '@/lib/forgeos-types'
 
 const MAX_ATTEMPTS = 5
 
@@ -54,10 +54,19 @@ export async function POST(req: Request) {
   }
   const { token, expiresAt } = await signSession(sessionUser)
 
-  const res = ok<LoginResponse>({
+  const res = ok({
     token,
     expiresAt: expiresAt.toISOString(),
-    user: sessionUser,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role as Role,
+      phone: user.phone,
+      isActive: user.isActive,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    },
   })
   res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions())
 

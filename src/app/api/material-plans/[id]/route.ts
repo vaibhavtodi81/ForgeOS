@@ -1,168 +1,188 @@
-import { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { ok, fail, guardAuth, pmOwns, readJson } from '@/lib/api-helpers'
+import { fail, getClientIp, guardAuth, num, ok, optString, pmOwns, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
 import { ALLOWED_PLAN_TRANSITIONS, PLAN_STATUSES } from '@/lib/forgeos-types'
-import type { PlanRow, PlanStatus } from '@/lib/forgeos-types'
+import type { PlanStatus } from '@/lib/forgeos-types'
 
-type PlanWithRefs = Prisma.MaterialPlanGetPayload<{
-  include: { project: true; material: true; createdBy: true }
-}>
+const INCLUDE = {
+  material: { select: { name: true, unit: true, category: true } },
+  project: { select: { name: true, code: true } },
+} satisfies Prisma.MaterialPlanInclude
 
-function num(value: unknown): number {
-  if (typeof value === 'number') return value
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value)
-    if (!Number.isNaN(parsed)) return parsed
-  }
-  return NaN
-}
-
-async function consumedQty(projectId: string, materialId: string): Promise<number> {
-  const agg = await db.inventoryTransaction.aggregate({
-    where: { projectId, materialId, txnType: 'OUT', voidedAt: null },
-    _sum: { quantity: true },
-  })
-  return agg._sum.quantity ?? 0
-}
-
-function toPlanRow(plan: PlanWithRefs, consumed: number): PlanRow {
+function toPlanRow(plan: Prisma.MaterialPlanGetPayload<{ include: typeof INCLUDE }>) {
   return {
     id: plan.id,
     projectId: plan.projectId,
-    projectName: plan.project.name,
     materialId: plan.materialId,
-    materialName: plan.material.name,
-    unit: plan.material.unit,
-    plannedQty: plan.plannedQty,
-    wastagePct: plan.wastagePct,
+    openingQuantity: plan.openingQuantity,
+    plannedQuantity: plan.plannedQuantity,
+    plannedUnitRate: plan.plannedUnitRate,
+    lowStockThreshold: plan.lowStockThreshold,
+    wastageThresholdPct: plan.wastageThresholdPct,
     status: plan.status as PlanStatus,
     notes: plan.notes,
-    createdByName: plan.createdBy.name,
+    createdById: plan.createdById,
     createdAt: plan.createdAt.toISOString(),
-    consumedQty: consumed,
+    updatedAt: plan.updatedAt.toISOString(),
+    material: plan.material,
+    project: plan.project,
   }
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['ADMIN', 'PROJECT_MANAGER'])
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await guardAuth(req, ['PM'])
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params
 
   const body = await readJson<Record<string, unknown>>(req)
-  if (!body) return fail('Invalid request body')
+  if (!body) return fail('Invalid request body', 400)
 
-  const plan = await db.materialPlan.findUnique({
-    where: { id },
-    include: { project: true, material: true, createdBy: true },
-  })
-  if (!plan) return fail('Plan not found', 404)
-  if (!pmOwns(user, plan.project.pmId)) return fail('You can only access your own projects', 403)
+  const existing = await db.materialPlan.findUnique({ where: { id }, include: INCLUDE })
+  if (!existing) return fail('Material plan not found', 404)
+  const project = await db.project.findUnique({ where: { id: existing.projectId } })
+  if (!project) return fail('Project not found', 404)
+  if (!pmOwns(user, project.assignedPmId)) {
+    return fail('You are not assigned to this project', 403)
+  }
 
-  if (plan.status === 'ARCHIVED') return fail('Archived plans cannot be edited')
+  if (existing.status === 'ARCHIVED') {
+    return fail('Archived plans cannot be edited', 409)
+  }
 
   const data: Prisma.MaterialPlanUncheckedUpdateInput = {}
   const changes: Record<string, unknown> = {}
 
-  if (body.plannedQty !== undefined) {
-    const plannedQty = num(body.plannedQty)
-    if (!(plannedQty > 0)) return fail('Planned quantity must be greater than zero')
-    if (plannedQty !== plan.plannedQty) {
-      data.plannedQty = plannedQty
-      changes.plannedQty = plannedQty
+  if (body.openingQuantity !== undefined) {
+    const openingQuantity = num(body.openingQuantity)
+    if (!(openingQuantity >= 0)) return fail('Opening quantity must be zero or more', 400)
+    data.openingQuantity = openingQuantity
+    changes.openingQuantity = openingQuantity
+  }
+  if (body.plannedQuantity !== undefined) {
+    const plannedQuantity = num(body.plannedQuantity)
+    if (!(plannedQuantity > 0)) return fail('Planned quantity must be greater than zero', 400)
+    data.plannedQuantity = plannedQuantity
+    changes.plannedQuantity = plannedQuantity
+  }
+  if (body.plannedUnitRate !== undefined) {
+    if (body.plannedUnitRate === null || body.plannedUnitRate === '') {
+      data.plannedUnitRate = null
+      changes.plannedUnitRate = null
+    } else {
+      const rate = num(body.plannedUnitRate)
+      if (!(rate >= 0)) return fail('Planned unit rate must be zero or more', 400)
+      data.plannedUnitRate = rate
+      changes.plannedUnitRate = rate
     }
   }
-  if (body.wastagePct !== undefined) {
-    const wastagePct = num(body.wastagePct)
-    if (!(wastagePct >= 0 && wastagePct <= 100)) {
-      return fail('Wastage percentage must be between 0 and 100')
+  if (body.lowStockThreshold !== undefined) {
+    if (body.lowStockThreshold === null || body.lowStockThreshold === '') {
+      data.lowStockThreshold = null
+      changes.lowStockThreshold = null
+    } else {
+      const threshold = num(body.lowStockThreshold)
+      if (!(threshold >= 0)) return fail('Low stock threshold must be zero or more', 400)
+      data.lowStockThreshold = threshold
+      changes.lowStockThreshold = threshold
     }
-    if (wastagePct !== plan.wastagePct) {
-      data.wastagePct = wastagePct
-      changes.wastagePct = wastagePct
+  }
+  if (body.wastageThresholdPct !== undefined) {
+    if (body.wastageThresholdPct === null || body.wastageThresholdPct === '') {
+      data.wastageThresholdPct = null
+      changes.wastageThresholdPct = null
+    } else {
+      const pct = num(body.wastageThresholdPct)
+      if (!(pct >= 0 && pct <= 100)) return fail('Wastage threshold must be between 0 and 100', 400)
+      data.wastageThresholdPct = pct
+      changes.wastageThresholdPct = pct
     }
   }
   if (body.notes !== undefined) {
-    const notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null
-    if (notes !== plan.notes) {
-      data.notes = notes
-      changes.notes = notes
-    }
+    const notes = optString(body.notes)
+    data.notes = notes
+    changes.notes = notes
   }
 
   let statusChanged = false
   if (body.status !== undefined) {
     const status = body.status
     if (typeof status !== 'string' || !PLAN_STATUSES.includes(status as PlanStatus)) {
-      return fail('Invalid status')
+      return fail('Invalid status', 400)
     }
-    const allowed = ALLOWED_PLAN_TRANSITIONS[plan.status as PlanStatus]
+    const allowed = ALLOWED_PLAN_TRANSITIONS[existing.status as PlanStatus]
     if (!allowed.includes(status as PlanStatus)) {
       const targets = allowed.length > 0 ? allowed.join(', ') : 'none'
-      return fail(`Cannot move a ${plan.status} plan to ${status} (allowed: ${targets})`)
+      return fail(`Cannot move a ${existing.status} plan to ${status} (allowed: ${targets})`, 409)
     }
-    if (status !== plan.status) {
+    if (status !== existing.status) {
       data.status = status
       changes.status = status
       statusChanged = true
     }
   }
 
-  const updated = await db.materialPlan.update({
-    where: { id },
-    data,
-    include: { project: true, material: true, createdBy: true },
-  })
+  const updated = await db.materialPlan.update({ where: { id }, data, include: INCLUDE })
 
-  if (Object.keys(changes).length > 0) {
+  if (statusChanged) {
+    await writeAudit({
+      action: 'PLAN_STATUS',
+      actorId: user.id,
+      actorName: user.name,
+      entityType: 'material-plan',
+      entityId: id,
+      projectId: existing.projectId,
+      meta: { from: existing.status, to: updated.status },
+      ip: getClientIp(req),
+    })
+  }
+  if (Object.keys(changes).some((key) => key !== 'status')) {
     await writeAudit({
       action: 'PLAN_UPDATE',
       actorId: user.id,
       actorName: user.name,
-      entityType: 'MATERIAL_PLAN',
+      entityType: 'material-plan',
       entityId: id,
+      projectId: existing.projectId,
       meta: changes,
-    })
-  }
-  if (statusChanged) {
-    await writeAudit({
-      action: 'PLAN_STATUS_CHANGE',
-      actorId: user.id,
-      actorName: user.name,
-      entityType: 'MATERIAL_PLAN',
-      entityId: id,
-      meta: { from: plan.status, to: updated.status },
+      ip: getClientIp(req),
     })
   }
 
-  return ok({ plan: toPlanRow(updated, await consumedQty(updated.projectId, updated.materialId)) })
+  return ok(toPlanRow(updated))
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['ADMIN', 'PROJECT_MANAGER'])
+  const auth = await guardAuth(req, ['PM'])
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params
 
-  const plan = await db.materialPlan.findUnique({
-    where: { id },
-    include: { project: true, material: true },
-  })
-  if (!plan) return fail('Plan not found', 404)
-  if (!pmOwns(user, plan.project.pmId)) return fail('You can only access your own projects', 403)
+  const existing = await db.materialPlan.findUnique({ where: { id }, include: INCLUDE })
+  if (!existing) return fail('Material plan not found', 404)
+  const project = await db.project.findUnique({ where: { id: existing.projectId } })
+  if (!project) return fail('Project not found', 404)
+  if (!pmOwns(user, project.assignedPmId)) {
+    return fail('You are not assigned to this project', 403)
+  }
 
-  if (plan.status !== 'DRAFT') return fail('Only draft plans can be deleted', 409)
+  if (existing.status !== 'DRAFT') {
+    return fail('Only draft plans can be deleted', 409)
+  }
 
   await db.materialPlan.delete({ where: { id } })
+
   await writeAudit({
     action: 'PLAN_DELETE',
     actorId: user.id,
     actorName: user.name,
-    entityType: 'MATERIAL_PLAN',
+    entityType: 'material-plan',
     entityId: id,
-    meta: { project: plan.project.name, material: plan.material.name },
+    projectId: existing.projectId,
+    meta: { material: existing.material.name, plannedQuantity: existing.plannedQuantity },
+    ip: getClientIp(req),
   })
 
-  return ok({ ok: true })
+  return ok(null)
 }

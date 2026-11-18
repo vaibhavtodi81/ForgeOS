@@ -6,6 +6,7 @@ interface AuditEntry {
   action: string
   entityType?: string | null
   entityId?: string | null
+  projectId?: string | null
   meta?: Record<string, unknown> | null
   ip?: string | null
   createdAt?: Date
@@ -23,6 +24,7 @@ export async function writeAudit(entry: AuditEntry): Promise<void> {
         action: entry.action,
         entityType: entry.entityType ?? null,
         entityId: entry.entityId ?? null,
+        projectId: entry.projectId ?? null,
         meta: entry.meta ? JSON.stringify(entry.meta) : null,
         ip: entry.ip ?? null,
         createdAt: entry.createdAt ?? new Date(),

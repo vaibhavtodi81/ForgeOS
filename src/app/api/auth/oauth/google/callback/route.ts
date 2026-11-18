@@ -17,7 +17,14 @@ function readStateCookie(req: Request): string | null {
 }
 
 function redirectError(req: Request, code: string): NextResponse {
-  return NextResponse.redirect(new URL(`/?oauth_error=${code}`, req.url))
+  const res = NextResponse.redirect(new URL(`/?oauth_error=${code}`, req.url))
+  res.cookies.set(OAUTH_STATE_COOKIE, '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  })
+  return res
 }
 
 export async function GET(req: Request) {

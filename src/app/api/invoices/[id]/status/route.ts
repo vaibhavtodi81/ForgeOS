@@ -3,10 +3,13 @@ import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
 import { ALLOWED_INVOICE_TRANSITIONS, INVOICE_STATUSES } from '@/lib/forgeos-types'
-import type { InvoiceRow, InvoiceStatus } from '@/lib/forgeos-types'
+import type { InvoiceRow, InvoiceStatus, PaymentMethod, PaymentRow } from '@/lib/forgeos-types'
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
-  include: { project: { select: { name: true } }, payments: { select: { amount: true } } }
+  include: {
+    project: { select: { code: true, name: true } }
+    payments: true
+  }
 }>
 
 function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
@@ -16,7 +19,7 @@ function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
     id: inv.id,
     invoiceNo: inv.invoiceNo,
     projectId: inv.projectId,
-    projectName: inv.project.name,
+    project: inv.project,
     amount: inv.amount,
     gstPct: inv.gstPct,
     totalWithGst,
@@ -25,6 +28,16 @@ function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
     dueDate: inv.dueDate.toISOString(),
     paidAmount,
     balance: totalWithGst - paidAmount,
+    payments: [...inv.payments]
+      .sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime())
+      .map((p) => ({
+        id: p.id,
+        invoiceId: p.invoiceId,
+        amount: p.amount,
+        method: p.method as PaymentMethod,
+        reference: p.reference,
+        paidAt: p.paidAt.toISOString(),
+      })) as PaymentRow[],
   }
 }
 
@@ -33,7 +46,7 @@ const ALLOWED_CHANGES = (Object.keys(ALLOWED_INVOICE_TRANSITIONS) as InvoiceStat
   .join(', ')
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['ADMIN', 'ACCOUNTANT'])
+  const auth = await guardAuth(req, ['ADMIN'])
   if (!auth.ok) return auth.response
 
   const { id } = await params
@@ -42,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const invoice = await db.invoice.findUnique({
     where: { id },
-    include: { project: { select: { name: true } }, payments: { select: { amount: true } } },
+    include: { project: { select: { code: true, name: true } }, payments: true },
   })
   if (!invoice) return fail('Invoice not found', 404)
 
@@ -60,7 +73,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const updated = await db.invoice.update({
     where: { id },
     data: { status: target },
-    include: { project: { select: { name: true } }, payments: { select: { amount: true } } },
+    include: { project: { select: { code: true, name: true } }, payments: true },
   })
 
   await writeAudit({
@@ -69,6 +82,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     actorName: auth.user.name,
     entityType: 'invoice',
     entityId: updated.id,
+    projectId: updated.projectId,
     meta: { from, to: target, invoiceNo: updated.invoiceNo },
     ip: getClientIp(req),
   })
