@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// ForgeOS — Project & financial management for Indian builders
+// SQLite datasource. Enum-like fields are stored as strings.
 
 generator client {
   provider = "prisma-client-js"
@@ -14,19 +11,195 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String // scrypt; empty for OAuth-only accounts
+  role         String // ADMIN | PROJECT_MANAGER | ACCOUNTANT | VIEWER
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  managedProjects Project[] @relation("ProjectManager")
+  recordedTxns    InventoryTransaction[]
+  dailyLogs       DailyLog[]
+  plans           MaterialPlan[]
+  oauthAccounts   OAuthAccount[]
 }
 
-model Post {
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  provider          String // "google"
+  providerAccountId String
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String // scrypt of the 6-digit code
+  purpose    String    @default("LOGIN")
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+}
+
+model Land {
+  id          String   @id @default(cuid())
+  name        String
+  location    String
+  areaSqft    Float?
+  khasraNumber String?
+  createdAt   DateTime @default(now())
+
+  projects Project[]
+}
+
+model Project {
+  id             String    @id @default(cuid())
+  code           String    @unique // FOS-001
+  name           String
+  landId         String
+  land           Land      @relation(fields: [landId], references: [id])
+  pmId           String?
+  pm             User?     @relation("ProjectManager", fields: [pmId], references: [id], onDelete: SetNull)
+  status         String    @default("PLANNING") // PLANNING | ACTIVE | ON_HOLD | COMPLETED
+  budget         Float
+  startDate      DateTime
+  plannedEndDate DateTime?
+  actualEndDate  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  plans        MaterialPlan[]
+  transactions InventoryTransaction[]
+  logs         DailyLog[]
+  invoices     Invoice[]
+}
+
+model Supplier {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  createdAt DateTime @default(now())
+
+  transactions InventoryTransaction[]
+}
+
+model Material {
+  id        String   @id @default(cuid())
+  name      String
+  unit      String
+  category  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  plans        MaterialPlan[]
+  transactions InventoryTransaction[]
+}
+
+model MaterialPlan {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  materialId  String
+  material    Material @relation(fields: [materialId], references: [id])
+  plannedQty  Float
+  wastagePct  Float    @default(0) // allowance baked into the plan, 0-100
+  status      String   @default("DRAFT") // DRAFT | APPROVED | ARCHIVED
+  notes       String?
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, materialId])
+}
+
+model InventoryTransaction {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  materialId    String
+  material      Material @relation(fields: [materialId], references: [id])
+  supplierId    String?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id])
+  txnType       String // IN | OUT | ADJUSTMENT
+  quantity      Float // IN/OUT > 0; ADJUSTMENT may be negative
+  unitRate      Float    @default(0) // INR per unit
+  txnDate       DateTime
+  voidedAt      DateTime?
+  voidReason    String?
+  recordedById  String
+  recordedBy    User     @relation(fields: [recordedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([projectId])
+  @@index([txnDate])
+}
+
+model DailyLog {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logDate     DateTime
+  workDone    String
+  headcount   Int
+  notes       String?
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  invoiceNo String   @unique // INV-2026-001
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  amount    Float // pre-GST
+  gstPct    Float    @default(0)
+  status    String   @default("DRAFT") // DRAFT | SENT | PARTIALLY_PAID | PAID | VOID
+  issueDate DateTime
+  dueDate   DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  payments Payment[]
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount    Float
+  method    String // CASH | BANK | UPI | CHEQUE
+  reference String?
+  paidAt    DateTime
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorName  String?
+  action     String
+  entityType String?
+  entityId   String?
+  meta       String? // JSON string
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
 }
