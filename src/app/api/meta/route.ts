@@ -6,7 +6,7 @@ export async function GET(req: Request) {
   const auth = await guardAuth(req)
   if (!auth.ok) return auth.response
 
-  const isPm = auth.user.role === 'PROJECT_MANAGER'
+  const isPm = auth.user.role === 'PM'
   const [materials, suppliers, lands, projects, managers] = await Promise.all([
     db.material.findMany({
       where: { isActive: true },
@@ -19,15 +19,15 @@ export async function GET(req: Request) {
     }),
     db.land.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, location: true },
+      select: { id: true, name: true, city: true, state: true },
     }),
     db.project.findMany({
-      where: isPm ? { pmId: auth.user.id } : undefined,
+      where: isPm ? { assignedPmId: auth.user.id } : undefined,
       orderBy: { code: 'asc' },
-      include: { pm: { select: { name: true } } },
+      include: { assignedPm: { select: { name: true } } },
     }),
     db.user.findMany({
-      where: { role: 'PROJECT_MANAGER', isActive: true },
+      where: { role: 'PM', isActive: true },
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),
@@ -42,8 +42,8 @@ export async function GET(req: Request) {
       name: p.name,
       code: p.code,
       status: p.status as ProjectStatus,
-      pmId: p.pmId,
-      pmName: p.pm?.name ?? null,
+      pmId: p.assignedPmId,
+      pmName: p.assignedPm?.name ?? null,
     })),
     managers,
   }

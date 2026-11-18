@@ -1,221 +1,63 @@
-import { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { ok, fail, guardAuth, pmOwns, readJson, parseDate } from '@/lib/api-helpers'
+import { fail, getClientIp, guardAuth, num, ok, optString, parseDay, pmOwns, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
-import type {
-  ProjectDetail,
-  ProjectRow,
-  ProjectStatus,
-  PlanRow,
-  PlanStatus,
-  TxnRow,
-  TxnType,
-  LogRow,
-  InvoiceRow,
-  InvoiceStatus,
-} from '@/lib/forgeos-types'
 
-type ProjectWithRefs = Prisma.ProjectGetPayload<{ include: { land: true; pm: true } }>
-type PlanWithRefs = Prisma.MaterialPlanGetPayload<{
-  include: { project: true; material: true; createdBy: true }
-}>
-type TxnWithRefs = Prisma.InventoryTransactionGetPayload<{
-  include: { project: true; material: true; supplier: true; recordedBy: true }
-}>
-type LogWithRefs = Prisma.DailyLogGetPayload<{ include: { project: true; createdBy: true } }>
-type InvoiceWithPayments = Prisma.InvoiceGetPayload<{
-  include: { project: true; payments: { select: { amount: true } } }
-}>
-
-function num(value: unknown): number {
-  if (typeof value === 'number') return value
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value)
-    if (!Number.isNaN(parsed)) return parsed
+type ProjectWithRefs = Prisma.ProjectGetPayload<{
+  include: {
+    land: { select: { id: true; name: true; addressLine: true; city: true; state: true; pincode: true } }
+    assignedPm: { select: { id: true; name: true; email: true } }
+    _count: { select: { logs: true; transactions: true; plans: true; milestones: true; invoices: true } }
   }
-  return NaN
-}
+}>
 
-async function projectStats(projectId: string) {
-  const txns = await db.inventoryTransaction.findMany({
-    where: { projectId, txnType: 'IN', voidedAt: null },
-    select: { quantity: true, unitRate: true },
-  })
-  const spend = txns.reduce((sum, t) => sum + t.quantity * t.unitRate, 0)
+const INCLUDE = {
+  land: { select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true } },
+  assignedPm: { select: { id: true, name: true, email: true } },
+  _count: { select: { logs: true, transactions: true, plans: true, milestones: true, invoices: true } },
+} satisfies Prisma.ProjectInclude
 
-  const invoices = await db.invoice.findMany({
-    where: { projectId, status: { notIn: ['DRAFT', 'VOID'] } },
-    select: { id: true, amount: true, gstPct: true },
-  })
-  const invoiced = invoices.reduce((sum, i) => sum + i.amount * (1 + i.gstPct / 100), 0)
-
-  let collected = 0
-  if (invoices.length > 0) {
-    const payments = await db.payment.findMany({
-      where: { invoiceId: { in: invoices.map((i) => i.id) } },
-      select: { amount: true },
-    })
-    collected = payments.reduce((sum, p) => sum + p.amount, 0)
-  }
-
-  return { spend, invoiced, collected }
-}
-
-function toProjectRow(
-  p: ProjectWithRefs,
-  stats: { spend: number; invoiced: number; collected: number }
-): ProjectRow {
+function toProjectJson(p: ProjectWithRefs) {
   return {
     id: p.id,
     code: p.code,
     name: p.name,
-    status: p.status as ProjectStatus,
-    budget: p.budget,
-    startDate: p.startDate.toISOString(),
-    plannedEndDate: p.plannedEndDate ? p.plannedEndDate.toISOString() : null,
+    description: p.description,
+    location: p.location,
+    status: p.status,
+    startDate: p.startDate ? p.startDate.toISOString() : null,
+    expectedEndDate: p.expectedEndDate ? p.expectedEndDate.toISOString() : null,
     actualEndDate: p.actualEndDate ? p.actualEndDate.toISOString() : null,
+    totalBudget: p.totalBudget,
+    wastageThresholdPct: p.wastageThresholdPct,
     landId: p.landId,
-    landName: p.land.name,
-    pmId: p.pmId,
-    pmName: p.pm ? p.pm.name : null,
-    spend: stats.spend,
-    invoiced: stats.invoiced,
-    collected: stats.collected,
+    assignedPmId: p.assignedPmId,
+    assignedPm: p.assignedPm,
+    land: p.land,
     createdAt: p.createdAt.toISOString(),
-  }
-}
-
-async function consumedQty(projectId: string, materialId: string): Promise<number> {
-  const agg = await db.inventoryTransaction.aggregate({
-    where: { projectId, materialId, txnType: 'OUT', voidedAt: null },
-    _sum: { quantity: true },
-  })
-  return agg._sum.quantity ?? 0
-}
-
-function toPlanRow(plan: PlanWithRefs, consumed: number): PlanRow {
-  return {
-    id: plan.id,
-    projectId: plan.projectId,
-    projectName: plan.project.name,
-    materialId: plan.materialId,
-    materialName: plan.material.name,
-    unit: plan.material.unit,
-    plannedQty: plan.plannedQty,
-    wastagePct: plan.wastagePct,
-    status: plan.status as PlanStatus,
-    notes: plan.notes,
-    createdByName: plan.createdBy.name,
-    createdAt: plan.createdAt.toISOString(),
-    consumedQty: consumed,
-  }
-}
-
-function toTxnRow(t: TxnWithRefs): TxnRow {
-  return {
-    id: t.id,
-    projectId: t.projectId,
-    projectName: t.project.name,
-    materialId: t.materialId,
-    materialName: t.material.name,
-    unit: t.material.unit,
-    supplierId: t.supplierId,
-    supplierName: t.supplier ? t.supplier.name : null,
-    txnType: t.txnType as TxnType,
-    quantity: t.quantity,
-    unitRate: t.unitRate,
-    totalCost: Math.abs(t.quantity) * t.unitRate,
-    txnDate: t.txnDate.toISOString(),
-    voidedAt: t.voidedAt ? t.voidedAt.toISOString() : null,
-    voidReason: t.voidReason,
-    recordedByName: t.recordedBy.name,
-  }
-}
-
-function toLogRow(l: LogWithRefs): LogRow {
-  return {
-    id: l.id,
-    projectId: l.projectId,
-    projectName: l.project.name,
-    logDate: l.logDate.toISOString(),
-    workDone: l.workDone,
-    headcount: l.headcount,
-    notes: l.notes,
-    createdByName: l.createdBy.name,
-  }
-}
-
-function toInvoiceRow(i: InvoiceWithPayments): InvoiceRow {
-  const totalWithGst = i.amount * (1 + i.gstPct / 100)
-  const paidAmount = i.payments.reduce((sum, p) => sum + p.amount, 0)
-  return {
-    id: i.id,
-    invoiceNo: i.invoiceNo,
-    projectId: i.projectId,
-    projectName: i.project.name,
-    amount: i.amount,
-    gstPct: i.gstPct,
-    totalWithGst,
-    status: i.status as InvoiceStatus,
-    issueDate: i.issueDate.toISOString(),
-    dueDate: i.dueDate.toISOString(),
-    paidAmount,
-    balance: totalWithGst - paidAmount,
+    updatedAt: p.updatedAt.toISOString(),
+    _count: {
+      logs: p._count.logs,
+      transactions: p._count.transactions,
+      plans: p._count.plans,
+      milestones: p._count.milestones,
+      invoices: p._count.invoices,
+    },
   }
 }
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await guardAuth(req)
   if (!auth.ok) return auth.response
-  const { user } = auth
   const { id } = await params
 
-  const project = await db.project.findUnique({
-    where: { id },
-    include: { land: true, pm: true },
-  })
+  const project = await db.project.findUnique({ where: { id }, include: INCLUDE })
   if (!project) return fail('Project not found', 404)
-  if (!pmOwns(user, project.pmId)) return fail('You can only access your own projects', 403)
-
-  const [stats, plans, transactions, logs, invoices] = await Promise.all([
-    projectStats(project.id),
-    db.materialPlan.findMany({
-      where: { projectId: project.id },
-      include: { project: true, material: true, createdBy: true },
-      orderBy: { createdAt: 'desc' },
-    }),
-    db.inventoryTransaction.findMany({
-      where: { projectId: project.id },
-      include: { project: true, material: true, supplier: true, recordedBy: true },
-      orderBy: [{ txnDate: 'desc' }, { createdAt: 'desc' }],
-      take: 50,
-    }),
-    db.dailyLog.findMany({
-      where: { projectId: project.id },
-      include: { project: true, createdBy: true },
-      orderBy: [{ logDate: 'desc' }, { createdAt: 'desc' }],
-      take: 30,
-    }),
-    db.invoice.findMany({
-      where: { projectId: project.id },
-      include: { project: true, payments: { select: { amount: true } } },
-      orderBy: { issueDate: 'desc' },
-    }),
-  ])
-
-  const planRows = await Promise.all(
-    plans.map(async (plan) => toPlanRow(plan, await consumedQty(plan.projectId, plan.materialId)))
-  )
-
-  const detail: ProjectDetail = {
-    ...toProjectRow(project, stats),
-    plans: planRows,
-    transactions: transactions.map(toTxnRow),
-    logs: logs.map(toLogRow),
-    invoices: invoices.map(toInvoiceRow),
+  if (!pmOwns(auth.user, project.assignedPmId)) {
+    return fail('You are not assigned to this project', 403)
   }
 
-  return ok(detail)
+  return ok(toProjectJson(project))
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -225,7 +67,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params
 
   const body = await readJson<Record<string, unknown>>(req)
-  if (!body) return fail('Invalid request body')
+  if (!body) return fail('Invalid request body', 400)
 
   const project = await db.project.findUnique({ where: { id } })
   if (!project) return fail('Project not found', 404)
@@ -235,76 +77,102 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   if (body.name !== undefined) {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
-    if (name.length < 3) return fail('Name must be at least 3 characters')
+    if (name.length < 3) return fail('Name must be at least 3 characters', 400)
     if (name !== project.name) {
       data.name = name
       changes.name = name
     }
   }
+  if (body.description !== undefined) {
+    const description = optString(body.description)
+    if (description !== project.description) {
+      data.description = description
+      changes.description = description
+    }
+  }
+  if (body.location !== undefined) {
+    const location = optString(body.location)
+    if (location !== project.location) {
+      data.location = location
+      changes.location = location
+    }
+  }
   if (body.landId !== undefined) {
     const landId = typeof body.landId === 'string' ? body.landId : ''
     const land = landId ? await db.land.findUnique({ where: { id: landId } }) : null
-    if (!land) return fail('Land not found')
+    if (!land) return fail('Land not found', 404)
     if (landId !== project.landId) {
       data.landId = landId
       changes.landId = landId
     }
   }
-  if (body.budget !== undefined) {
-    const budget = num(body.budget)
-    if (!(budget > 0)) return fail('Budget must be greater than zero')
-    if (budget !== project.budget) {
-      data.budget = budget
-      changes.budget = budget
+  if (body.totalBudget !== undefined) {
+    const totalBudget = num(body.totalBudget)
+    if (!(totalBudget > 0)) return fail('Total budget must be greater than zero', 400)
+    if (totalBudget !== project.totalBudget) {
+      data.totalBudget = totalBudget
+      changes.totalBudget = totalBudget
+    }
+  }
+  if (body.wastageThresholdPct !== undefined) {
+    const pct = num(body.wastageThresholdPct)
+    if (!(pct >= 0 && pct <= 100)) return fail('Wastage threshold must be between 0 and 100', 400)
+    if (pct !== project.wastageThresholdPct) {
+      data.wastageThresholdPct = pct
+      changes.wastageThresholdPct = pct
     }
   }
 
-  let newStart = project.startDate
+  let newStart: Date | null = project.startDate
   if (body.startDate !== undefined) {
-    const startDate = parseDate(body.startDate)
-    if (!startDate) return fail('Invalid start date')
-    newStart = startDate
-  }
-  let newPlannedEnd = project.plannedEndDate
-  if (body.plannedEndDate !== undefined) {
-    if (body.plannedEndDate === null || body.plannedEndDate === '') {
-      newPlannedEnd = null
+    if (body.startDate === null || body.startDate === '') {
+      newStart = null
     } else {
-      const d = parseDate(body.plannedEndDate)
-      if (!d) return fail('Invalid planned end date')
-      newPlannedEnd = d
+      const d = parseDay(body.startDate)
+      if (!d) return fail('A valid start date (YYYY-MM-DD) is required', 400)
+      newStart = d
     }
   }
-  if (newPlannedEnd && newPlannedEnd.getTime() < newStart.getTime()) {
-    return fail('Planned end date must be after the start date')
+  if (!newStart) return fail('Start date cannot be removed', 400)
+
+  let newEnd: Date | null = project.expectedEndDate
+  if (body.expectedEndDate !== undefined) {
+    if (body.expectedEndDate === null || body.expectedEndDate === '') {
+      newEnd = null
+    } else {
+      const d = parseDay(body.expectedEndDate)
+      if (!d) return fail('Invalid expected end date', 400)
+      newEnd = d
+    }
+  }
+  if (newEnd && newEnd.getTime() <= newStart.getTime()) {
+    return fail('Expected end date must be after the start date', 400)
   }
   if (newStart.getTime() !== project.startDate.getTime()) {
     data.startDate = newStart
     changes.startDate = newStart.toISOString()
   }
-  if ((newPlannedEnd?.getTime() ?? null) !== (project.plannedEndDate?.getTime() ?? null)) {
-    data.plannedEndDate = newPlannedEnd
-    changes.plannedEndDate = newPlannedEnd ? newPlannedEnd.toISOString() : null
+  if ((newEnd?.getTime() ?? null) !== (project.expectedEndDate?.getTime() ?? null)) {
+    data.expectedEndDate = newEnd
+    changes.expectedEndDate = newEnd ? newEnd.toISOString() : null
   }
 
-  const updated = await db.project.update({
-    where: { id },
-    data,
-    include: { land: true, pm: true },
-  })
+  const updated = await db.project.update({ where: { id }, data, include: INCLUDE })
 
   if (Object.keys(changes).length > 0) {
     await writeAudit({
       action: 'PROJECT_UPDATE',
       actorId: user.id,
       actorName: user.name,
-      entityType: 'PROJECT',
+      entityType: 'project',
       entityId: id,
+      projectId: id,
       meta: changes,
+      ip: getClientIp(req),
     })
   }
 
-  return ok({ project: toProjectRow(updated, await projectStats(updated.id)) })
+  return ok({ project: toProjectJson(updated) })
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -313,20 +181,21 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const { user } = auth
   const { id } = await params
 
-  const project = await db.project.findUnique({ where: { id } })
+  const project = await db.project.findUnique({
+    where: { id },
+    include: { _count: { select: { plans: true, transactions: true, logs: true, milestones: true, invoices: true } } },
+  })
   if (!project) return fail('Project not found', 404)
 
-  if (project.status !== 'PLANNING') {
-    return fail('Only planning projects with no recorded activity can be deleted', 409)
-  }
-  const [planCount, txnCount, logCount, invoiceCount] = await Promise.all([
-    db.materialPlan.count({ where: { projectId: id } }),
-    db.inventoryTransaction.count({ where: { projectId: id } }),
-    db.dailyLog.count({ where: { projectId: id } }),
-    db.invoice.count({ where: { projectId: id } }),
-  ])
-  if (planCount + txnCount + logCount + invoiceCount > 0) {
-    return fail('Only planning projects with no recorded activity can be deleted', 409)
+  const counts = [
+    project._count.plans,
+    project._count.transactions,
+    project._count.logs,
+    project._count.milestones,
+    project._count.invoices,
+  ]
+  if (counts.some((c) => c > 0)) {
+    return fail('Project cannot be deleted while dependent records exist', 409)
   }
 
   await db.project.delete({ where: { id } })
@@ -334,10 +203,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     action: 'PROJECT_DELETE',
     actorId: user.id,
     actorName: user.name,
-    entityType: 'PROJECT',
+    entityType: 'project',
     entityId: id,
     meta: { name: project.name, code: project.code },
+    ip: getClientIp(req),
   })
 
-  return ok({ ok: true })
+  return ok(null)
 }

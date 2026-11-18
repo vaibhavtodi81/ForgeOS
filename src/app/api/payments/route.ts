@@ -6,7 +6,10 @@ import { PAYMENT_METHODS } from '@/lib/forgeos-types'
 import type { InvoiceRow, InvoiceStatus, PaymentMethod, PaymentRow } from '@/lib/forgeos-types'
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
-  include: { project: { select: { name: true } }, payments: { select: { amount: true } } }
+  include: {
+    project: { select: { code: true, name: true } }
+    payments: true
+  }
 }>
 
 function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
@@ -16,7 +19,7 @@ function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
     id: inv.id,
     invoiceNo: inv.invoiceNo,
     projectId: inv.projectId,
-    projectName: inv.project.name,
+    project: inv.project,
     amount: inv.amount,
     gstPct: inv.gstPct,
     totalWithGst,
@@ -25,6 +28,16 @@ function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
     dueDate: inv.dueDate.toISOString(),
     paidAmount,
     balance: totalWithGst - paidAmount,
+    payments: [...inv.payments]
+      .sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime())
+      .map((p) => ({
+        id: p.id,
+        invoiceId: p.invoiceId,
+        amount: p.amount,
+        method: p.method as PaymentMethod,
+        reference: p.reference,
+        paidAt: p.paidAt.toISOString(),
+      })),
   }
 }
 
@@ -34,11 +47,11 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url)
   const invoiceId = url.searchParams.get('invoiceId')
-  const isPm = auth.user.role === 'PROJECT_MANAGER'
+  const isPm = auth.user.role === 'PM'
 
   const where: Prisma.PaymentWhereInput = {}
   if (invoiceId) where.invoiceId = invoiceId
-  if (isPm) where.invoice = { project: { pmId: auth.user.id } }
+  if (isPm) where.invoice = { project: { assignedPmId: auth.user.id } }
 
   const payments = await db.payment.findMany({
     where,
@@ -49,7 +62,6 @@ export async function GET(req: Request) {
   const items: PaymentRow[] = payments.map((p) => ({
     id: p.id,
     invoiceId: p.invoiceId,
-    invoiceNo: p.invoice.invoiceNo,
     amount: p.amount,
     method: p.method as PaymentMethod,
     reference: p.reference,
@@ -60,7 +72,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN', 'ACCOUNTANT'])
+  const auth = await guardAuth(req, ['ADMIN'])
   if (!auth.ok) return auth.response
 
   const body = await readJson<{
@@ -88,7 +100,7 @@ export async function POST(req: Request) {
 
   const invoice = await db.invoice.findUnique({
     where: { id: invoiceId },
-    include: { project: { select: { name: true } }, payments: { select: { amount: true } } },
+    include: { project: { select: { code: true, name: true } }, payments: true },
   })
   if (!invoice) return fail('Invoice not found', 404)
 
@@ -103,16 +115,19 @@ export async function POST(req: Request) {
     return fail(`Payment exceeds the outstanding balance of ₹${Math.round(balance)}`, 409)
   }
 
-  const payment = await db.payment.create({
-    data: { invoiceId, amount, method, reference, paidAt },
-  })
-
   const newPaid = paidAmount + amount
   const newStatus = newPaid >= totalWithGst - 0.01 ? 'PAID' : 'PARTIALLY_PAID'
-  const updated = await db.invoice.update({
-    where: { id: invoiceId },
-    data: { status: newStatus },
-    include: { project: { select: { name: true } }, payments: { select: { amount: true } } },
+
+  const { payment, updated } = await db.$transaction(async (tx) => {
+    const payment = await tx.payment.create({
+      data: { invoiceId, amount, method, reference, paidAt },
+    })
+    const updated = await tx.invoice.update({
+      where: { id: invoiceId },
+      data: { status: newStatus },
+      include: { project: { select: { code: true, name: true } }, payments: true },
+    })
+    return { payment, updated }
   })
 
   await writeAudit({
@@ -121,6 +136,7 @@ export async function POST(req: Request) {
     actorName: auth.user.name,
     entityType: 'payment',
     entityId: payment.id,
+    projectId: invoice.projectId,
     meta: { invoiceNo: invoice.invoiceNo, amount, method },
     ip: getClientIp(req),
   })
@@ -128,7 +144,6 @@ export async function POST(req: Request) {
   const paymentRow: PaymentRow = {
     id: payment.id,
     invoiceId: payment.invoiceId,
-    invoiceNo: invoice.invoiceNo,
     amount: payment.amount,
     method: payment.method as PaymentMethod,
     reference: payment.reference,

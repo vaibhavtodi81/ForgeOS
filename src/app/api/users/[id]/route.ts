@@ -1,103 +1,116 @@
 import { db } from '@/lib/db'
-import { ok, fail, guardAuth, getClientIp, readJson } from '@/lib/api-helpers'
+import { fail, getClientIp, guardAuth, ok, optString, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
-import { ROLES } from '@/lib/forgeos-types'
-import type { Role, UserRow } from '@/lib/forgeos-types'
+import { INVITE_ROLES } from '@/lib/forgeos-types'
+import type { Role } from '@/lib/forgeos-types'
 
 const ACTIVE_PROJECT_STATUSES = ['ACTIVE', 'ON_HOLD']
-
-function toUserRow(
-  u: { id: string; name: string; email: string; role: string; isActive: boolean; createdAt: Date },
-  activeProjects: number
-): UserRow {
-  return {
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role as Role,
-    isActive: u.isActive,
-    createdAt: u.createdAt.toISOString(),
-    activeProjects,
-  }
-}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await guardAuth(req, ['ADMIN'])
   if (!auth.ok) return auth.response
-
+  const { user } = auth
   const { id } = await params
-  const body = await readJson<{ isActive?: unknown; role?: unknown }>(req)
+
+  const body = await readJson<Record<string, unknown>>(req)
   if (!body) return fail('Invalid request body', 400)
 
-  const hasActive = body.isActive !== undefined
   const hasRole = body.role !== undefined
-  if (!hasActive && !hasRole) return fail('Provide isActive or role to update', 400)
-  if (hasActive && typeof body.isActive !== 'boolean') {
-    return fail('isActive must be a boolean', 400)
-  }
-  if (hasRole && (typeof body.role !== 'string' || !ROLES.includes(body.role as Role))) {
-    return fail(`Role must be one of: ${ROLES.join(', ')}`, 400)
+  const hasActive = body.isActive !== undefined
+  const hasPhone = body.phone !== undefined
+  if (!hasRole && !hasActive && !hasPhone) {
+    return fail('Provide role, isActive or phone to update', 400)
   }
 
   const target = await db.user.findUnique({ where: { id } })
   if (!target) return fail('User not found', 404)
 
-  const isSelf = target.id === auth.user.id
+  const isSelf = target.id === user.id
   if (isSelf && hasActive && body.isActive === false) {
     return fail('You cannot deactivate your own account', 403)
   }
   if (isSelf && hasRole) {
-    return fail('You cannot change your own role', 403)
-  }
-
-  const deactivating = hasActive && body.isActive === false
-  if (deactivating && target.role === 'PROJECT_MANAGER') {
-    const activeProjects = await db.project.count({
-      where: { pmId: target.id, status: { in: ACTIVE_PROJECT_STATUSES } },
-    })
-    if (activeProjects > 0) {
-      return fail('This manager still has active projects. Reassign or complete them first.', 409)
+    const nextRole = body.role
+    if (typeof nextRole !== 'string' || nextRole !== 'ADMIN') {
+      return fail('You cannot remove your own administrator role', 403)
     }
   }
 
-  const updates: { isActive?: boolean; role?: Role } = {}
-  if (hasActive) updates.isActive = body.isActive as boolean
-  if (hasRole) updates.role = body.role as Role
+  if (hasRole && (typeof body.role !== 'string' || !INVITE_ROLES.includes(body.role as Role))) {
+    return fail(`Role must be one of: ${INVITE_ROLES.join(', ')}`, 400)
+  }
+  if (hasActive && typeof body.isActive !== 'boolean') {
+    return fail('isActive must be a boolean', 400)
+  }
+
+  const deactivating = hasActive && body.isActive === false
+  if (deactivating && target.role === 'PM') {
+    const activeProjects = await db.project.count({
+      where: { assignedPmId: target.id, status: { in: ACTIVE_PROJECT_STATUSES } },
+    })
+    if (activeProjects > 0) {
+      return fail(
+        `Cannot deactivate a PM with ${activeProjects} active project(s). Reassign the project(s) to another PM first.`,
+        409
+      )
+    }
+  }
+
+  const data: { role?: string; isActive?: boolean; phone?: string | null } = {}
+  if (hasRole && body.role !== target.role) data.role = body.role as string
+  if (hasActive && body.isActive !== target.isActive) data.isActive = body.isActive as boolean
+  if (hasPhone) data.phone = optString(body.phone)
 
   const updated = await db.user.update({
     where: { id },
-    data: updates,
-    include: {
-      managedProjects: {
-        where: { status: { in: ACTIVE_PROJECT_STATUSES } },
-        select: { id: true },
-      },
-    },
+    data,
+    include: { _count: { select: { managedProjects: true } } },
   })
 
   const ip = getClientIp(req)
   if (hasActive && body.isActive !== target.isActive) {
     await writeAudit({
-      action: body.isActive ? 'USER_ACTIVATE' : 'USER_DEACTIVATE',
-      actorId: auth.user.id,
-      actorName: auth.user.name,
+      action: body.isActive ? 'ACTIVATE' : 'DEACTIVATE',
+      actorId: user.id,
+      actorName: user.name,
       entityType: 'user',
-      entityId: updated.id,
+      entityId: id,
       meta: { email: updated.email },
       ip,
     })
   }
-  if (hasRole && updates.role !== target.role) {
+  if (hasRole && data.role) {
     await writeAudit({
       action: 'ROLE_CHANGE',
-      actorId: auth.user.id,
-      actorName: auth.user.name,
+      actorId: user.id,
+      actorName: user.name,
       entityType: 'user',
-      entityId: updated.id,
+      entityId: id,
       meta: { from: target.role, to: updated.role },
       ip,
     })
   }
+  if (hasPhone && data.phone !== undefined && data.phone !== target.phone) {
+    await writeAudit({
+      action: 'USER_UPDATE',
+      actorId: user.id,
+      actorName: user.name,
+      entityType: 'user',
+      entityId: id,
+      meta: { phone: updated.phone },
+      ip,
+    })
+  }
 
-  return ok({ user: toUserRow(updated, updated.managedProjects.length) })
+  return ok({
+    id: updated.id,
+    name: updated.name,
+    email: updated.email,
+    role: updated.role as Role,
+    phone: updated.phone,
+    isActive: updated.isActive,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+    managedProjects: updated._count.managedProjects,
+  })
 }

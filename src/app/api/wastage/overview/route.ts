@@ -1,69 +1,109 @@
-import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { guardAuth, ok } from '@/lib/api-helpers'
-import type { PlanStatus, WastageOverviewResponse, WastageRow } from '@/lib/forgeos-types'
+import type { WastageOverviewResponse, WastageOverviewRow, WastageStatus } from '@/lib/forgeos-types'
 
 export async function GET(req: Request) {
   const auth = await guardAuth(req)
   if (!auth.ok) return auth.response
 
-  const isPm = auth.user.role === 'PROJECT_MANAGER'
-  const planWhere: Prisma.MaterialPlanWhereInput = {}
-  if (isPm) planWhere.project = { pmId: auth.user.id }
+  const isPm = auth.user.role === 'PM'
+  const projectWhere = isPm ? { assignedPmId: auth.user.id } : undefined
 
-  const [plans, outTxns] = await Promise.all([
+  const projects = await db.project.findMany({
+    where: projectWhere,
+    select: { id: true, name: true, wastageThresholdPct: true },
+  })
+  const projectIds = projects.map((p) => p.id)
+  const projectById = new Map(projects.map((p) => [p.id, p]))
+
+  const [plans, transactions, latestLogs] = await Promise.all([
     db.materialPlan.findMany({
-      where: planWhere,
-      include: { project: { select: { name: true } }, material: { select: { name: true, unit: true } } },
+      where: { projectId: { in: projectIds } },
+      select: {
+        projectId: true,
+        materialId: true,
+        plannedQuantity: true,
+      plannedUnitRate: true,
+        wastageThresholdPct: true,
+        material: { select: { name: true, unit: true } },
+      },
     }),
     db.inventoryTransaction.findMany({
-      where: { txnType: 'OUT', voidedAt: null },
-      select: { projectId: true, materialId: true, quantity: true },
+      where: { projectId: { in: projectIds }, voidedAt: null },
+      select: { projectId: true, materialId: true, txnType: true, quantity: true, unitRate: true, outReason: true },
+    }),
+    db.dailyLog.findMany({
+      where: { projectId: { in: projectIds } },
+      orderBy: [{ logDate: 'desc' }, { createdAt: 'desc' }],
+      select: { projectId: true, progressPercent: true },
     }),
   ])
 
-  const consumedByKey = new Map<string, number>()
-  for (const t of outTxns) {
-    const key = `${t.projectId}:${t.materialId}`
-    consumedByKey.set(key, (consumedByKey.get(key) ?? 0) + t.quantity)
+  const progressByProject = new Map<string, number>()
+  for (const log of latestLogs) {
+    if (!progressByProject.has(log.projectId)) progressByProject.set(log.projectId, log.progressPercent)
   }
 
-  const items: WastageRow[] = plans
+  const items: WastageOverviewRow[] = plans
+    .filter((plan) => projectById.has(plan.projectId))
     .map((plan) => {
-      const consumedQty = consumedByKey.get(`${plan.projectId}:${plan.materialId}`) ?? 0
-      const estimated = plan.plannedQty / (1 + plan.wastagePct / 100)
-      // Wastage is only meaningful once consumption has begun
-      const wastagePct = estimated > 0 && consumedQty > 0 ? ((consumedQty - estimated) / estimated) * 100 : null
+      const project = projectById.get(plan.projectId)!
+      const rows = transactions.filter((t) => t.projectId === plan.projectId && t.materialId === plan.materialId)
+      const outRows = rows.filter((t) => t.txnType === 'OUT')
+      const consumed = outRows.reduce((sum, t) => sum + t.quantity, 0)
+      const recordedWastage = outRows
+        .filter((t) => t.outReason === 'DAMAGED' || t.outReason === 'LOST')
+        .reduce((sum, t) => sum + t.quantity, 0)
+
+      const progressPercent = progressByProject.get(plan.projectId) ?? 0
+      const expected = plan.plannedQuantity * (progressPercent / 100)
+      const overrun = Math.max(consumed - expected, 0)
+      const overrunPercent = expected > 0 ? (overrun / expected) * 100 : null
+      const threshold = plan.wastageThresholdPct ?? project.wastageThresholdPct
+      const status: WastageStatus =
+        progressPercent === 0 && consumed > 0
+          ? 'NO_BASELINE'
+          : overrunPercent !== null && overrunPercent > threshold
+            ? 'OVERRUN'
+            : 'OK'
+
       return {
         projectId: plan.projectId,
-        projectName: plan.project.name,
+        projectName: project.name,
         materialId: plan.materialId,
         materialName: plan.material.name,
         unit: plan.material.unit,
-        plannedQty: plan.plannedQty,
-        consumedQty,
-        varianceQty: consumedQty - plan.plannedQty,
-        wastagePct,
-        status: plan.status as PlanStatus,
+        progressPercent,
+        plannedQuantity: plan.plannedQuantity,
+        expectedQuantity: expected,
+        consumedQuantity: consumed,
+        overrunQuantity: overrun,
+        overrunPercent,
+        thresholdPercent: threshold,
+        recordedWastageQuantity: recordedWastage,
+        estimatedLoss: overrun * (plan.plannedUnitRate ?? 0),
+        status,
       }
     })
     .sort((a, b) => {
-      if (a.wastagePct === null || b.wastagePct === null) {
-        if (a.wastagePct === null && b.wastagePct === null) return a.projectName.localeCompare(b.projectName)
-        return a.wastagePct === null ? 1 : -1
+      if (a.overrunPercent === null || b.overrunPercent === null) {
+        if (a.overrunPercent === null && b.overrunPercent === null) {
+          return a.projectName.localeCompare(b.projectName)
+        }
+        return a.overrunPercent === null ? 1 : -1
       }
-      if (b.wastagePct !== a.wastagePct) return b.wastagePct - a.wastagePct
+      if (b.overrunPercent !== a.overrunPercent) return b.overrunPercent - a.overrunPercent
       return a.projectName.localeCompare(b.projectName)
     })
 
-  const totalPlanned = items.reduce((sum, i) => sum + i.plannedQty, 0)
-  const totalConsumed = items.reduce((sum, i) => sum + i.consumedQty, 0)
-  const pctValues = items.map((i) => i.wastagePct).filter((v): v is number => v !== null)
-  const avgWastagePct = pctValues.length > 0 ? pctValues.reduce((a, b) => a + b, 0) / pctValues.length : null
+  const totalPlanned = items.reduce((sum, i) => sum + i.plannedQuantity, 0)
+  const totalConsumed = items.reduce((sum, i) => sum + i.consumedQuantity, 0)
+  const pctValues = items.map((i) => i.overrunPercent).filter((v): v is number => v !== null)
+  const avgOverrunPct = pctValues.length > 0 ? pctValues.reduce((a, b) => a + b, 0) / pctValues.length : null
 
   const response: WastageOverviewResponse = {
     items,
-    portfolio: { totalPlanned, totalConsumed, avgWastagePct },
+    portfolio: { totalPlanned, totalConsumed, avgOverrunPct },
   }
   return ok(response)
 }

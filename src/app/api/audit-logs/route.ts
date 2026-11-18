@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { guardAuth, ok, parsePagination } from '@/lib/api-helpers'
-import type { AuditRow } from '@/lib/forgeos-types'
+import type { AuditListResponse, AuditRow } from '@/lib/forgeos-types'
 
 export async function GET(req: Request) {
   const auth = await guardAuth(req, ['ADMIN'])
@@ -12,12 +12,13 @@ export async function GET(req: Request) {
   const action = url.searchParams.get('action')
   const entityType = url.searchParams.get('entityType')
   const actorId = url.searchParams.get('actorId')
+  const projectId = url.searchParams.get('projectId')
   const search = url.searchParams.get('search')?.trim()
 
   const where: Prisma.AuditLogWhereInput = {}
   if (action) where.action = action
   if (entityType) where.entityType = entityType
-  // The audit UI filters by actor name (stats only expose names); match id or name.
+  if (projectId) where.projectId = projectId
   const andClauses: Prisma.AuditLogWhereInput[] = []
   if (actorId) {
     andClauses.push({ OR: [{ actorId }, { actorName: actorId }] })
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
   if (andClauses.length > 0) where.AND = andClauses
 
   const [logs, total] = await Promise.all([
-    db.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, skip: offset, take: limit }),
+    db.auditLog.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: offset, take: limit }),
     db.auditLog.count({ where }),
   ])
 
@@ -45,10 +46,12 @@ export async function GET(req: Request) {
     actorName: log.actorName,
     entityType: log.entityType,
     entityId: log.entityId,
+    projectId: log.projectId,
     meta: log.meta,
     ip: log.ip,
     createdAt: log.createdAt.toISOString(),
   }))
 
-  return ok({ items, total, page, limit })
+  const response: AuditListResponse = { items, total, page, limit }
+  return ok(response)
 }

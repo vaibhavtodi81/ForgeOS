@@ -1,60 +1,15 @@
-import { Prisma } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { ok, fail, guardAuth, readJson } from '@/lib/api-helpers'
+import { fail, getClientIp, guardAuth, ok, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
 import { ALLOWED_PROJECT_TRANSITIONS, PROJECT_STATUSES } from '@/lib/forgeos-types'
-import type { ProjectRow, ProjectStatus } from '@/lib/forgeos-types'
+import type { ProjectStatus } from '@/lib/forgeos-types'
 
-type ProjectWithRefs = Prisma.ProjectGetPayload<{ include: { land: true; pm: true } }>
-
-async function projectStats(projectId: string) {
-  const txns = await db.inventoryTransaction.findMany({
-    where: { projectId, txnType: 'IN', voidedAt: null },
-    select: { quantity: true, unitRate: true },
-  })
-  const spend = txns.reduce((sum, t) => sum + t.quantity * t.unitRate, 0)
-
-  const invoices = await db.invoice.findMany({
-    where: { projectId, status: { notIn: ['DRAFT', 'VOID'] } },
-    select: { id: true, amount: true, gstPct: true },
-  })
-  const invoiced = invoices.reduce((sum, i) => sum + i.amount * (1 + i.gstPct / 100), 0)
-
-  let collected = 0
-  if (invoices.length > 0) {
-    const payments = await db.payment.findMany({
-      where: { invoiceId: { in: invoices.map((i) => i.id) } },
-      select: { amount: true },
-    })
-    collected = payments.reduce((sum, p) => sum + p.amount, 0)
-  }
-
-  return { spend, invoiced, collected }
-}
-
-function toProjectRow(
-  p: ProjectWithRefs,
-  stats: { spend: number; invoiced: number; collected: number }
-): ProjectRow {
-  return {
-    id: p.id,
-    code: p.code,
-    name: p.name,
-    status: p.status as ProjectStatus,
-    budget: p.budget,
-    startDate: p.startDate.toISOString(),
-    plannedEndDate: p.plannedEndDate ? p.plannedEndDate.toISOString() : null,
-    actualEndDate: p.actualEndDate ? p.actualEndDate.toISOString() : null,
-    landId: p.landId,
-    landName: p.land.name,
-    pmId: p.pmId,
-    pmName: p.pm ? p.pm.name : null,
-    spend: stats.spend,
-    invoiced: stats.invoiced,
-    collected: stats.collected,
-    createdAt: p.createdAt.toISOString(),
-  }
-}
+const INCLUDE = {
+  land: { select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true } },
+  assignedPm: { select: { id: true, name: true, email: true } },
+  _count: { select: { logs: true, transactions: true, plans: true, milestones: true, invoices: true } },
+} satisfies Prisma.ProjectInclude
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await guardAuth(req, ['ADMIN'])
@@ -63,11 +18,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params
 
   const body = await readJson<Record<string, unknown>>(req)
-  if (!body) return fail('Invalid request body')
+  if (!body) return fail('Invalid request body', 400)
 
   const status = body.status
   if (typeof status !== 'string' || !PROJECT_STATUSES.includes(status as ProjectStatus)) {
-    return fail('Invalid status')
+    return fail('Invalid status', 400)
   }
 
   const project = await db.project.findUnique({ where: { id } })
@@ -76,27 +31,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const current = project.status as ProjectStatus
   const allowed = ALLOWED_PROJECT_TRANSITIONS[current]
   if (!allowed.includes(status as ProjectStatus)) {
-    const targets = allowed.length > 0 ? allowed.join(', ') : 'none'
-    return fail(`Cannot move a ${current} project to ${status} (allowed: ${targets})`)
+    const targets = allowed.length > 0 ? allowed.join(', ') : 'none (terminal status)'
+    return fail(`Invalid status transition from ${current} to ${status}. Allowed: ${targets}`, 422)
   }
 
   const data: Prisma.ProjectUncheckedUpdateInput = { status }
   if (status === 'COMPLETED') data.actualEndDate = new Date()
 
-  const updated = await db.project.update({
-    where: { id },
-    data,
-    include: { land: true, pm: true },
-  })
+  const updated = await db.project.update({ where: { id }, data, include: INCLUDE })
 
   await writeAudit({
-    action: 'PROJECT_STATUS_CHANGE',
+    action: 'STATUS_CHANGE',
     actorId: user.id,
     actorName: user.name,
-    entityType: 'PROJECT',
+    entityType: 'project',
     entityId: id,
-    meta: { from: current, to: status },
+    projectId: id,
+    meta: { from: current, to: status, actualEndDate: status === 'COMPLETED' ? updated.actualEndDate : null },
+    ip: getClientIp(req),
   })
 
-  return ok({ project: toProjectRow(updated, await projectStats(updated.id)) })
+  return ok({ project: { ...updated, status: updated.status as ProjectStatus } })
 }

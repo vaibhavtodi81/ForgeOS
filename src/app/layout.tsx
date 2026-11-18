@@ -1,48 +1,20 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/sonner";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: "ForgeOS — Projects & Finance for Builders",
+  title: 'ForgeOS — Construction Management',
   description:
-    "Project, inventory and financial management for Indian builders and developers. Track budgets, material plans, wastage, billing and site activity in one place.",
-  icons: {
-    icon: "/logo.svg",
-  },
-};
+    'One connected workspace to manage projects, coordinate teams and keep every construction milestone moving forward.',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
-      </body>
+    <html lang="en">
+      <body className="antialiased">{children}</body>
     </html>
-  );
+  )
 }

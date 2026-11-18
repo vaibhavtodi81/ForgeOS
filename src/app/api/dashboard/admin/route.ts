@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { guardAuth, ok } from '@/lib/api-helpers'
+import { fail, guardAuth, ok } from '@/lib/api-helpers'
 import { PROJECT_STATUSES } from '@/lib/forgeos-types'
 import type { AdminDashboardResponse, InvoiceStatus } from '@/lib/forgeos-types'
 
@@ -14,14 +14,30 @@ function truncateName(name: string): string {
 }
 
 export async function GET(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN', 'ACCOUNTANT', 'VIEWER'])
+  const auth = await guardAuth(req)
   if (!auth.ok) return auth.response
+  if (auth.user.role !== 'ADMIN' && auth.user.role !== 'VIEWER') {
+    return fail('Admin access required', 403)
+  }
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth() - 5, 1)
 
-  const [projects, inTxns, recentInTxns, outTxns, plans, invoices, auditLogs] = await Promise.all([
-    db.project.findMany({ select: { id: true, name: true, budget: true, status: true } }),
+  const [projects, inTxns, recentInTxns, outTxns, plans, invoices, auditLogs, logs] = await Promise.all([
+    db.project.findMany({
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        location: true,
+        status: true,
+        totalBudget: true,
+        expectedEndDate: true,
+        wastageThresholdPct: true,
+        assignedPm: { select: { name: true } },
+        land: { select: { city: true, state: true } },
+      },
+    }),
     db.inventoryTransaction.findMany({
       where: { txnType: 'IN', voidedAt: null },
       select: { projectId: true, quantity: true, unitRate: true },
@@ -35,20 +51,42 @@ export async function GET(req: Request) {
       select: { projectId: true, materialId: true, quantity: true },
     }),
     db.materialPlan.findMany({
-      select: { projectId: true, materialId: true, plannedQty: true, wastagePct: true },
+      select: {
+        projectId: true,
+        materialId: true,
+        plannedQuantity: true,
+        wastageThresholdPct: true,
+      },
     }),
     db.invoice.findMany({
       include: { project: { select: { name: true } }, payments: { select: { amount: true } } },
       orderBy: { createdAt: 'desc' },
     }),
     db.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 8 }),
+    db.dailyLog.findMany({
+      orderBy: [{ logDate: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        projectId: true,
+        logDate: true,
+        progressPercent: true,
+        workSummary: true,
+      },
+    }),
   ])
 
   const spendByProject = new Map<string, number>()
   for (const t of inTxns) {
-    spendByProject.set(t.projectId, (spendByProject.get(t.projectId) ?? 0) + t.quantity * t.unitRate)
+    spendByProject.set(t.projectId, (spendByProject.get(t.projectId) ?? 0) + t.quantity * (t.unitRate ?? 0))
   }
-  const totalSpend = inTxns.reduce((sum, t) => sum + t.quantity * t.unitRate, 0)
+  const totalSpend = inTxns.reduce((sum, t) => sum + t.quantity * (t.unitRate ?? 0), 0)
+
+  const latestLogByProject = new Map<string, { progressPercent: number; logDate: Date; count: number }>()
+  for (const log of logs) {
+    const current = latestLogByProject.get(log.projectId)
+    if (current) current.count += 1
+    else latestLogByProject.set(log.projectId, { progressPercent: log.progressPercent, logDate: log.logDate, count: 1 })
+  }
 
   const consumedByKey = new Map<string, number>()
   for (const t of outTxns) {
@@ -56,12 +94,17 @@ export async function GET(req: Request) {
     consumedByKey.set(key, (consumedByKey.get(key) ?? 0) + t.quantity)
   }
 
+  const projectNameById = new Map(projects.map((p) => [p.id, p.name]))
+  const thresholdByProject = new Map(projects.map((p) => [p.id, p.wastageThresholdPct]))
+
   const planWastage = plans.map((plan) => {
+    const progress = latestLogByProject.get(plan.projectId)?.progressPercent ?? 0
     const consumedQty = consumedByKey.get(`${plan.projectId}:${plan.materialId}`) ?? 0
-    const estimated = plan.plannedQty / (1 + plan.wastagePct / 100)
-    // Wastage is only meaningful once consumption has begun
-    const wastagePct = estimated > 0 && consumedQty > 0 ? ((consumedQty - estimated) / estimated) * 100 : null
-    return { projectId: plan.projectId, plannedQty: plan.plannedQty, consumedQty, wastagePct }
+    const expected = plan.plannedQuantity * (progress / 100)
+    const overrun = Math.max(consumedQty - expected, 0)
+    const threshold = plan.wastageThresholdPct ?? thresholdByProject.get(plan.projectId) ?? 10
+    const wastagePct = expected > 0 ? (overrun / expected) * 100 : null
+    return { projectId: plan.projectId, plannedQty: plan.plannedQuantity, consumedQty, wastagePct }
   })
 
   const allWastage = planWastage.map((p) => p.wastagePct).filter((v): v is number => v !== null)
@@ -74,7 +117,6 @@ export async function GET(req: Request) {
     if (list) list.push(p.wastagePct)
     else wastageValuesByProject.set(p.projectId, [p.wastagePct])
   }
-  const projectNameById = new Map(projects.map((p) => [p.id, p.name]))
   let worstProjectName: string | null = null
   let worstWastagePct: number | null = null
   for (const [projectId, values] of wastageValuesByProject) {
@@ -108,7 +150,7 @@ export async function GET(req: Request) {
   const spendByMonthKey = new Map<string, number>()
   for (const t of recentInTxns) {
     const key = monthKey(t.txnDate)
-    spendByMonthKey.set(key, (spendByMonthKey.get(key) ?? 0) + t.quantity * t.unitRate)
+    spendByMonthKey.set(key, (spendByMonthKey.get(key) ?? 0) + t.quantity * (t.unitRate ?? 0))
   }
   const spendByMonth = monthBuckets.map((b) => ({
     month: b.key,
@@ -117,9 +159,13 @@ export async function GET(req: Request) {
   }))
 
   const budgetVsSpend = [...projects]
-    .sort((a, b) => b.budget - a.budget)
+    .sort((a, b) => b.totalBudget - a.totalBudget)
     .slice(0, 6)
-    .map((p) => ({ projectName: truncateName(p.name), budget: p.budget, spend: spendByProject.get(p.id) ?? 0 }))
+    .map((p) => ({
+      projectName: truncateName(p.name),
+      budget: p.totalBudget,
+      spend: spendByProject.get(p.id) ?? 0,
+    }))
 
   const plansByProject = new Map<string, typeof planWastage>()
   for (const p of planWastage) {
@@ -168,7 +214,37 @@ export async function GET(req: Request) {
     }
   })
 
-  const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0)
+  const totalBudget = projects.reduce((sum, p) => sum + p.totalBudget, 0)
+
+  const projectRows = projects.map((p) => {
+    const latest = latestLogByProject.get(p.id)
+    return {
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      location: p.location ?? ([p.land.city, p.land.state].filter(Boolean).join(', ') || null),
+      status: p.status as AdminDashboardResponse['projects'][number]['status'],
+      totalBudget: p.totalBudget,
+      expectedEndDate: p.expectedEndDate ? p.expectedEndDate.toISOString() : null,
+      pmName: p.assignedPm?.name ?? null,
+      latestProgressPercent: latest?.progressPercent ?? 0,
+      latestLogDate: latest ? latest.logDate.toISOString() : null,
+      totalDailyLogs: latest?.count ?? 0,
+    }
+  })
+
+  const recentProgress = logs
+    .filter((log) => projectNameById.has(log.projectId))
+    .slice(0, 8)
+    .map((log) => ({
+      projectId: log.projectId,
+      projectName: projectNameById.get(log.projectId) ?? '',
+      code: projects.find((p) => p.id === log.projectId)?.code ?? '',
+      id: log.id,
+      logDate: log.logDate.toISOString(),
+      progressPercent: log.progressPercent,
+      workSummary: log.workSummary,
+    }))
 
   const response: AdminDashboardResponse = {
     kpis: {
@@ -192,6 +268,8 @@ export async function GET(req: Request) {
     wastageByProject,
     recentActivity,
     recentInvoices,
+    projects: projectRows,
+    recentProgress,
   }
   return ok(response)
 }

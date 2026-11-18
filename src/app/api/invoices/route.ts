@@ -3,11 +3,25 @@ import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, parseDate, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
 import { GST_OPTIONS } from '@/lib/forgeos-types'
-import type { InvoiceListResponse, InvoiceRow, InvoiceStatus } from '@/lib/forgeos-types'
+import type { InvoiceListResponse, InvoiceRow, InvoiceStatus, PaymentMethod, PaymentRow } from '@/lib/forgeos-types'
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
-  include: { project: { select: { name: true } }, payments: { select: { amount: true } } }
+  include: {
+    project: { select: { code: true; name: true } }
+    payments: true
+  }
 }>
+
+function toPaymentRow(p: Prisma.PaymentGetPayload<Record<string, never>>): PaymentRow {
+  return {
+    id: p.id,
+    invoiceId: p.invoiceId,
+    amount: p.amount,
+    method: p.method as PaymentMethod,
+    reference: p.reference,
+    paidAt: p.paidAt.toISOString(),
+  }
+}
 
 function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
   const totalWithGst = inv.amount * (1 + inv.gstPct / 100)
@@ -16,7 +30,7 @@ function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
     id: inv.id,
     invoiceNo: inv.invoiceNo,
     projectId: inv.projectId,
-    projectName: inv.project.name,
+    project: inv.project,
     amount: inv.amount,
     gstPct: inv.gstPct,
     totalWithGst,
@@ -25,6 +39,7 @@ function toInvoiceRow(inv: InvoiceWithRelations): InvoiceRow {
     dueDate: inv.dueDate.toISOString(),
     paidAmount,
     balance: totalWithGst - paidAmount,
+    payments: [...inv.payments].sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime()).map(toPaymentRow),
   }
 }
 
@@ -35,14 +50,14 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const status = url.searchParams.get('status')
   const projectId = url.searchParams.get('projectId')
-  const isPm = auth.user.role === 'PROJECT_MANAGER'
+  const isPm = auth.user.role === 'PM'
 
   const where: Prisma.InvoiceWhereInput = {}
-  if (isPm) where.project = { pmId: auth.user.id }
+  if (isPm) where.project = { assignedPmId: auth.user.id }
 
   const invoices = await db.invoice.findMany({
     where,
-    include: { project: { select: { name: true } }, payments: { select: { amount: true } } },
+    include: { project: { select: { code: true, name: true } }, payments: true },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -72,7 +87,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN', 'ACCOUNTANT'])
+  const auth = await guardAuth(req, ['ADMIN'])
   if (!auth.ok) return auth.response
 
   const body = await readJson<{
@@ -111,7 +126,7 @@ export async function POST(req: Request) {
   const prefix = `INV-${year}-`
   for (let attempt = 0; attempt < 5; attempt++) {
     const count = await db.invoice.count({ where: { invoiceNo: { startsWith: prefix } } })
-    const invoiceNo = `${prefix}${String(count + 1).padStart(3, '0')}`
+    const invoiceNo = `${prefix}${String(count + 1 + attempt).padStart(3, '0')}`
     try {
       const created = await db.invoice.create({
         data: { invoiceNo, projectId, amount, gstPct, status: 'DRAFT', issueDate, dueDate },
@@ -122,10 +137,15 @@ export async function POST(req: Request) {
         actorName: auth.user.name,
         entityType: 'invoice',
         entityId: created.id,
+        projectId,
         meta: { invoiceNo: created.invoiceNo, amount, gstPct, project: project.name },
         ip: getClientIp(req),
       })
-      const invoice = toInvoiceRow({ ...created, project: { name: project.name }, payments: [] })
+      const invoice = toInvoiceRow({
+        ...created,
+        project: { code: project.code, name: project.name },
+        payments: [],
+      })
       return ok({ invoice })
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') continue

@@ -1,67 +1,36 @@
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
-import { ok, fail, guardAuth, parsePagination, readJson, parseDate } from '@/lib/api-helpers'
+import { fail, getClientIp, guardAuth, num, ok, optString, pageMeta, parsePagination, parseDay, readJson } from '@/lib/api-helpers'
 import { writeAudit } from '@/lib/audit'
 import { PROJECT_STATUSES } from '@/lib/forgeos-types'
-import type { ProjectRow, ProjectStatus } from '@/lib/forgeos-types'
+import type { ProjectStatus } from '@/lib/forgeos-types'
 
-type ProjectWithRefs = Prisma.ProjectGetPayload<{ include: { land: true; pm: true } }>
-
-function num(value: unknown): number {
-  if (typeof value === 'number') return value
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value)
-    if (!Number.isNaN(parsed)) return parsed
+type ProjectWithRefs = Prisma.ProjectGetPayload<{
+  include: {
+    land: { select: { id: true; name: true; addressLine: true; city: true; state: true; pincode: true } }
+    assignedPm: { select: { id: true; name: true; email: true } }
   }
-  return NaN
-}
+}>
 
-async function projectStats(projectId: string) {
-  const txns = await db.inventoryTransaction.findMany({
-    where: { projectId, txnType: 'IN', voidedAt: null },
-    select: { quantity: true, unitRate: true },
-  })
-  const spend = txns.reduce((sum, t) => sum + t.quantity * t.unitRate, 0)
-
-  const invoices = await db.invoice.findMany({
-    where: { projectId, status: { notIn: ['DRAFT', 'VOID'] } },
-    select: { id: true, amount: true, gstPct: true },
-  })
-  const invoiced = invoices.reduce((sum, i) => sum + i.amount * (1 + i.gstPct / 100), 0)
-
-  let collected = 0
-  if (invoices.length > 0) {
-    const payments = await db.payment.findMany({
-      where: { invoiceId: { in: invoices.map((i) => i.id) } },
-      select: { amount: true },
-    })
-    collected = payments.reduce((sum, p) => sum + p.amount, 0)
-  }
-
-  return { spend, invoiced, collected }
-}
-
-function toProjectRow(
-  p: ProjectWithRefs,
-  stats: { spend: number; invoiced: number; collected: number }
-): ProjectRow {
+function toProjectJson(p: ProjectWithRefs) {
   return {
     id: p.id,
     code: p.code,
     name: p.name,
+    description: p.description,
+    location: p.location,
     status: p.status as ProjectStatus,
-    budget: p.budget,
-    startDate: p.startDate.toISOString(),
-    plannedEndDate: p.plannedEndDate ? p.plannedEndDate.toISOString() : null,
+    startDate: p.startDate ? p.startDate.toISOString() : null,
+    expectedEndDate: p.expectedEndDate ? p.expectedEndDate.toISOString() : null,
     actualEndDate: p.actualEndDate ? p.actualEndDate.toISOString() : null,
+    totalBudget: p.totalBudget,
+    wastageThresholdPct: p.wastageThresholdPct,
     landId: p.landId,
-    landName: p.land.name,
-    pmId: p.pmId,
-    pmName: p.pm ? p.pm.name : null,
-    spend: stats.spend,
-    invoiced: stats.invoiced,
-    collected: stats.collected,
+    assignedPmId: p.assignedPmId,
+    assignedPm: p.assignedPm,
+    land: p.land,
     createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
   }
 }
 
@@ -74,38 +43,33 @@ export async function GET(req: Request) {
   const { page, limit, offset } = parsePagination(url, 20)
 
   const where: Prisma.ProjectWhereInput = {}
-  if (user.role === 'PROJECT_MANAGER') {
-    where.pmId = user.id
+  if (user.role === 'PM') {
+    where.assignedPmId = user.id
   } else {
     const pmId = url.searchParams.get('pmId')
-    if (pmId) where.pmId = pmId
+    if (pmId) where.assignedPmId = pmId
   }
   const status = url.searchParams.get('status')
   if (status) {
-    if (!PROJECT_STATUSES.includes(status as ProjectStatus)) return fail('Invalid status filter')
+    if (!PROJECT_STATUSES.includes(status as ProjectStatus)) return fail('Invalid status filter', 400)
     where.status = status
   }
-  const search = url.searchParams.get('search')
+  const search = url.searchParams.get('search')?.trim()
   if (search) {
     where.OR = [{ name: { contains: search } }, { code: { contains: search } }]
   }
 
+  const include = {
+    land: { select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true } },
+    assignedPm: { select: { id: true, name: true, email: true } },
+  }
+
   const [total, projects] = await Promise.all([
     db.project.count({ where }),
-    db.project.findMany({
-      where,
-      include: { land: true, pm: true },
-      orderBy: { createdAt: 'desc' },
-      skip: offset,
-      take: limit,
-    }),
+    db.project.findMany({ where, include, orderBy: { createdAt: 'desc' }, skip: offset, take: limit }),
   ])
 
-  const items = await Promise.all(
-    projects.map(async (p) => toProjectRow(p, await projectStats(p.id)))
-  )
-
-  return ok({ items, total, page, limit })
+  return ok(projects.map(toProjectJson), pageMeta(page, limit, total))
 }
 
 export async function POST(req: Request) {
@@ -114,38 +78,50 @@ export async function POST(req: Request) {
   const { user } = auth
 
   const body = await readJson<Record<string, unknown>>(req)
-  if (!body) return fail('Invalid request body')
+  if (!body) return fail('Invalid request body', 400)
 
   const name = typeof body.name === 'string' ? body.name.trim() : ''
-  if (name.length < 3) return fail('Name must be at least 3 characters')
+  if (name.length < 3) return fail('Name must be at least 3 characters', 400)
 
   const landId = typeof body.landId === 'string' ? body.landId : ''
   const land = landId ? await db.land.findUnique({ where: { id: landId } }) : null
-  if (!land) return fail('Land not found')
+  if (!land) return fail('Land not found', 404)
 
-  let pmId: string | null = null
-  if (typeof body.pmId === 'string' && body.pmId) {
-    const pm = await db.user.findUnique({ where: { id: body.pmId } })
-    if (!pm || !pm.isActive || pm.role !== 'PROJECT_MANAGER') {
-      return fail('Assigned manager must be an active Project Manager')
+  let assignedPmId: string | null = null
+  if (body.assignedPmId !== undefined && body.assignedPmId !== null && body.assignedPmId !== '') {
+    if (typeof body.assignedPmId !== 'string') return fail('Invalid assignedPmId', 400)
+    const pm = await db.user.findUnique({ where: { id: body.assignedPmId } })
+    if (!pm || !pm.isActive || pm.role !== 'PM') {
+      return fail('assignedPmId must reference an active PM', 400)
     }
-    pmId = pm.id
+    assignedPmId = pm.id
   }
 
-  const budget = num(body.budget)
-  if (!(budget > 0)) return fail('Budget must be greater than zero')
+  const totalBudget = num(body.totalBudget)
+  if (!(totalBudget > 0)) return fail('Total budget must be greater than zero', 400)
 
-  const startDate = parseDate(body.startDate)
-  if (!startDate) return fail('Valid start date is required')
+  const startDate = parseDay(body.startDate)
+  if (!startDate) return fail('A valid start date (YYYY-MM-DD) is required', 400)
 
-  let plannedEndDate: Date | null = null
-  const hasEnd = body.plannedEndDate !== undefined && body.plannedEndDate !== null && body.plannedEndDate !== ''
-  if (hasEnd) {
-    plannedEndDate = parseDate(body.plannedEndDate)
-    if (!plannedEndDate) return fail('Invalid planned end date')
-    if (plannedEndDate.getTime() < startDate.getTime()) {
-      return fail('Planned end date must be after the start date')
+  let expectedEndDate: Date | null = null
+  if (body.expectedEndDate !== undefined && body.expectedEndDate !== null && body.expectedEndDate !== '') {
+    expectedEndDate = parseDay(body.expectedEndDate)
+    if (!expectedEndDate) return fail('Invalid expected end date', 400)
+    if (expectedEndDate.getTime() <= startDate.getTime()) {
+      return fail('Expected end date must be after the start date', 400)
     }
+  }
+
+  let wastageThresholdPct = 10
+  if (body.wastageThresholdPct !== undefined && body.wastageThresholdPct !== null) {
+    const pct = num(body.wastageThresholdPct)
+    if (!(pct >= 0 && pct <= 100)) return fail('Wastage threshold must be between 0 and 100', 400)
+    wastageThresholdPct = pct
+  }
+
+  const include = {
+    land: { select: { id: true, name: true, addressLine: true, city: true, state: true, pincode: true } },
+    assignedPm: { select: { id: true, name: true, email: true } },
   }
 
   const base = (await db.project.count()) + 1
@@ -154,8 +130,21 @@ export async function POST(req: Request) {
     const code = `FOS-${String(base + attempt).padStart(3, '0')}`
     try {
       created = await db.project.create({
-        data: { code, name, landId, pmId, budget, startDate, plannedEndDate, status: 'PLANNING' },
-        include: { land: true, pm: true },
+        data: {
+          code,
+          name,
+          description: optString(body.description),
+          location: optString(body.location),
+          landId,
+          status: 'PLANNING',
+          startDate,
+          expectedEndDate,
+          totalBudget,
+          wastageThresholdPct,
+          assignedPmId,
+          createdById: user.id,
+        },
+        include,
       })
       break
     } catch (err) {
@@ -169,10 +158,12 @@ export async function POST(req: Request) {
     action: 'PROJECT_CREATE',
     actorId: user.id,
     actorName: user.name,
-    entityType: 'PROJECT',
+    entityType: 'project',
     entityId: created.id,
-    meta: { name: created.name, code: created.code, budget: created.budget },
+    projectId: created.id,
+    meta: { name: created.name, code: created.code, totalBudget: created.totalBudget },
+    ip: getClientIp(req),
   })
 
-  return ok({ project: toProjectRow(created, { spend: 0, invoiced: 0, collected: 0 }) })
+  return ok({ project: toProjectJson(created) })
 }
