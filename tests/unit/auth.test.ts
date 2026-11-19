@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi, beforeAll } from 'vitest'
 import { SignJWT } from 'jose'
 import {
   hashPassword,
@@ -10,6 +10,21 @@ import {
   SESSION_TTL_SECONDS,
 } from '@/lib/auth'
 import type { SessionUser } from '@/lib/forgeos-types'
+
+// getSessionUser revalidates every session against the database. For unit
+// purposes the DB is replaced with an in-memory stub holding one ACTIVE user
+// (id 'user-1') — the stale-token hardening semantics below are exercised for
+// real against SQLite in tests/integration/auth.test.ts.
+const dbUser = { id: 'user-1', name: 'DB Name', email: 'db@example.com', role: 'PM', isActive: true }
+vi.mock('@/lib/db', () => ({
+  db: {
+    user: {
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
+        where.id === dbUser.id && dbUser.isActive ? { ...dbUser } : null,
+      ),
+    },
+  },
+}))
 
 const user: SessionUser = { id: 'user-1', name: 'Test User', email: 'test@example.com', role: 'PM' }
 
@@ -85,14 +100,21 @@ describe('signSession / verifySessionToken', () => {
   })
 })
 
-describe('getSessionUser (cookie + bearer parsing)', () => {
+describe('getSessionUser (cookie + bearer parsing, DB revalidation)', () => {
+  beforeAll(() => {
+    dbUser.isActive = true
+    dbUser.role = 'PM'
+  })
+
   test('reads the token from the Authorization: Bearer header', async () => {
     const { token } = await signSession(user)
     const session = await getSessionUser(
       new Request('http://localhost/', { headers: { authorization: `Bearer ${token}` } })
     )
     expect(session?.id).toBe('user-1')
+    // The database row is authoritative, not the JWT claims.
     expect(session?.role).toBe('PM')
+    expect(session?.name).toBe('DB Name')
   })
 
   test('reads the token from the session cookie when no bearer is present', async () => {
@@ -102,7 +124,37 @@ describe('getSessionUser (cookie + bearer parsing)', () => {
         headers: { cookie: `other=1; ${SESSION_COOKIE}=${token}; more=2` },
       })
     )
-    expect(session?.email).toBe('test@example.com')
+    expect(session?.email).toBe('db@example.com')
+  })
+
+  test('a deactivated user is rejected immediately, even with a valid token', async () => {
+    const { token } = await signSession(user)
+    dbUser.isActive = false
+    try {
+      const session = await getSessionUser(
+        new Request('http://localhost/', { headers: { authorization: `Bearer ${token}` } })
+      )
+      expect(session).toBeNull()
+    } finally {
+      dbUser.isActive = true
+    }
+  })
+
+  test('the current DB role wins over the stale JWT role claim', async () => {
+    // Token was signed with role VIEWER, but the DB now says PM.
+    const { token } = await signSession({ ...user, role: 'VIEWER' })
+    const session = await getSessionUser(
+      new Request('http://localhost/', { headers: { authorization: `Bearer ${token}` } })
+    )
+    expect(session?.role).toBe('PM')
+  })
+
+  test('a token for a user that no longer exists is rejected', async () => {
+    const { token } = await signSession({ ...user, id: 'user-gone' })
+    const session = await getSessionUser(
+      new Request('http://localhost/', { headers: { authorization: `Bearer ${token}` } })
+    )
+    expect(session).toBeNull()
   })
 
   test('no credentials yields null', async () => {

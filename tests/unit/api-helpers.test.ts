@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { SignJWT } from 'jose'
 import {
   parsePagination,
@@ -16,6 +16,21 @@ import {
 } from '@/lib/api-helpers'
 import { signSession } from '@/lib/auth'
 import type { SessionUser } from '@/lib/forgeos-types'
+
+// guardAuth revalidates sessions against the database (stale-token hardening).
+// Unit-level: stub the DB with the three fixture users the guard tests sign.
+const DB_USERS: Record<string, { id: string; name: string; email: string; role: string; isActive: boolean }> = {
+  a1: { id: 'a1', name: 'A', email: 'a@x.dev', role: 'ADMIN', isActive: true },
+  p1: { id: 'p1', name: 'P', email: 'p@x.dev', role: 'PM', isActive: true },
+  v1: { id: 'v1', name: 'V', email: 'v@x.dev', role: 'VIEWER', isActive: true },
+}
+vi.mock('@/lib/db', () => ({
+  db: {
+    user: {
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) => DB_USERS[where.id] ?? null),
+    },
+  },
+}))
 
 const url = (query: string) => new URL(`http://localhost:3000/api/x?${query}`)
 

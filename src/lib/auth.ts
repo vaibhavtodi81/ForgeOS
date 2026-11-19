@@ -1,5 +1,6 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 import { SignJWT, jwtVerify } from 'jose'
+import { db } from '@/lib/db'
 import type { Role, SessionUser } from '@/lib/forgeos-types'
 
 export const SESSION_COOKIE = 'forgeos_session'
@@ -70,14 +71,32 @@ function readCookie(req: Request, name: string): string | null {
   return null
 }
 
-/** Reads the session from the httpOnly cookie or an Authorization: Bearer header. */
+/**
+ * Reads the session from the httpOnly cookie or an Authorization: Bearer
+ * header, then REVALIDATES it against the database on every request:
+ *
+ *   - the user must still exist and be active (deactivation takes effect
+ *     immediately, not at token expiry), and
+ *   - the CURRENT database role is authoritative (a role change or demotion
+ *     is reflected on the very next request, so a stale elevated role claim
+ *     in an old token grants nothing).
+ *
+ * The JWT's role claim is display-only; authorization always uses the DB role.
+ */
 export async function getSessionUser(req: Request): Promise<SessionUser | null> {
   const bearer = req.headers.get('authorization')
   const token = bearer?.startsWith('Bearer ')
     ? bearer.slice(7)
     : readCookie(req, SESSION_COOKIE)
   if (!token) return null
-  return verifySessionToken(token)
+  const claims = await verifySessionToken(token)
+  if (!claims) return null
+  const user = await db.user.findUnique({
+    where: { id: claims.id },
+    select: { id: true, name: true, email: true, role: true, isActive: true },
+  })
+  if (!user || !user.isActive) return null
+  return { id: user.id, name: user.name, email: user.email, role: user.role as Role }
 }
 
 export function sessionCookieOptions(maxAgeSeconds: number = SESSION_TTL_SECONDS) {
