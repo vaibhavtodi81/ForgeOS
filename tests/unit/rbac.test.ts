@@ -1,7 +1,22 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { can, PERMISSIONS, PERMISSION_KEYS, requirePermission, rolesFor } from '@/lib/rbac'
 import type { Permission } from '@/lib/rbac'
 import type { Role } from '@/lib/forgeos-types'
+
+// requirePermission delegates to guardAuth, which revalidates sessions against
+// the database. Unit-level stub: any signed-in user exists and is active with
+// the role baked into their token.
+vi.mock('@/lib/db', () => ({
+  db: {
+    user: {
+      findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
+        where.id === 'u-x'
+          ? { id: 'u-x', name: 'V', email: 'v@x.local', role: 'VIEWER', isActive: true }
+          : null,
+      ),
+    },
+  },
+}))
 
 describe('RBAC permission matrix', () => {
   test('every permission declares at least the ADMIN role', () => {

@@ -4,6 +4,7 @@ import { GET as meGET } from '@/app/api/auth/me/route'
 import { POST as changePasswordPOST } from '@/app/api/auth/change-password/route'
 import { POST as logoutPOST } from '@/app/api/auth/logout/route'
 import { POST as usersPOST } from '@/app/api/users/route'
+import { PATCH as usersIdPATCH } from '@/app/api/users/[id]/route'
 import { db } from '@/lib/db'
 import {
   req,
@@ -182,5 +183,72 @@ describe('POST /api/auth/logout', () => {
 
   test('requires authentication', async () => {
     await errBody(await logoutPOST(req('/api/auth/logout', { method: 'POST' })), 401)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Session revalidation — stale-token hardening. getSessionUser revalidates
+// every session against the database, so deactivation and role changes take
+// effect on the very next request instead of at token expiry (8h).
+// ---------------------------------------------------------------------------
+describe('session revalidation (stale-token hardening)', () => {
+  const stEmail = `t8st-${RUN_TAG}@forgeos.local`
+  const stPassword = 'Password-123'
+  let userId = ''
+
+  afterAll(async () => {
+    await db.user.deleteMany({ where: { email: stEmail } })
+  })
+
+  test('deactivating a user kills their existing token immediately', async () => {
+    const adminToken = await loginAs(ADMIN_EMAIL)
+
+    // Invite a throwaway PM and sign in.
+    await okBody(
+      await usersPOST(
+        auth('/api/users', adminToken, { body: { name: 'Stale Token', email: stEmail, password: stPassword, role: 'PM' } })
+      )
+    )
+    const row = await db.user.findUniqueOrThrow({ where: { email: stEmail } })
+    userId = row.id
+
+    const pmToken = (await okBody<{ token: string }>(
+      await login(stEmail, stPassword)
+    )).data.token
+    await okBody(await meGET(auth('/api/auth/me', pmToken))) // works while active
+
+    // Admin deactivates the user; the PM's still-valid JWT must stop working.
+    await okBody(
+      await usersIdPATCH(auth(`/api/users/${userId}`, adminToken, { method: 'PATCH', body: { isActive: false } }), {
+        params: Promise.resolve({ id: userId }),
+      })
+    )
+    await errBody(await meGET(auth('/api/auth/me', pmToken)), 401)
+  })
+
+  test('a role change is reflected on the next request using the OLD token', async () => {
+    const adminToken = await loginAs(ADMIN_EMAIL)
+
+    // Reactivate and sign back in as PM.
+    await okBody(
+      await usersIdPATCH(auth(`/api/users/${userId}`, adminToken, { method: 'PATCH', body: { isActive: true } }), {
+        params: Promise.resolve({ id: userId }),
+      })
+    )
+    const oldToken = (await okBody<{ token: string }>(
+      await login(stEmail, stPassword)
+    )).data.token
+    const asPm = await okBody<{ role: string }>(await meGET(auth('/api/auth/me', oldToken)))
+    expect(asPm.data.role).toBe('PM')
+
+    // Promote PM -> ADMIN. The existing token was signed with role PM, but
+    // authorization must now see ADMIN because the DB row is authoritative.
+    await okBody(
+      await usersIdPATCH(auth(`/api/users/${userId}`, adminToken, { method: 'PATCH', body: { role: 'ADMIN' } }), {
+        params: Promise.resolve({ id: userId }),
+      })
+    )
+    const after = await okBody<{ role: string }>(await meGET(auth('/api/auth/me', oldToken)))
+    expect(after.data.role).toBe('ADMIN')
   })
 })
