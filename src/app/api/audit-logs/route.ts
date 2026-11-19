@@ -1,10 +1,11 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { guardAuth, ok, parsePagination } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import type { AuditListResponse, AuditRow } from '@/lib/forgeos-types'
 
 export async function GET(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'audit:read')
   if (!auth.ok) return auth.response
 
   const url = new URL(req.url)

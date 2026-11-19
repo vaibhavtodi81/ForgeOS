@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { ok, fail, guardAuth, getClientIp, readJson, optString } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import type { SupplierRow } from '@/lib/forgeos-types'
 
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'suppliers:write')
   if (!auth.ok) return auth.response
 
   const body = await readJson<Record<string, unknown>>(req)

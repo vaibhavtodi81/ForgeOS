@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 
 const INCLUDE = {
@@ -10,7 +11,7 @@ const INCLUDE = {
 } satisfies Prisma.ProjectInclude
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'projects:assign')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params

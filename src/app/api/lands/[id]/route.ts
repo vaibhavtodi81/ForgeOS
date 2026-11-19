@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, num, ok, optString, readJson, parseDay } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { AREA_UNITS } from '@/lib/forgeos-types'
 import type { AreaUnit } from '@/lib/forgeos-types'
@@ -37,7 +38,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'lands:write')
   if (!auth.ok) return auth.response
 
   const { id } = await params
@@ -123,7 +124,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'lands:write')
   if (!auth.ok) return auth.response
 
   const { id } = await params

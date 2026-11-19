@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, num, ok, optString, pmOwns, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { ALLOWED_PLAN_TRANSITIONS, PLAN_STATUSES } from '@/lib/forgeos-types'
 import type { PlanStatus } from '@/lib/forgeos-types'
@@ -31,7 +32,7 @@ function toPlanRow(plan: Prisma.MaterialPlanGetPayload<{ include: typeof INCLUDE
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'plans:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params
@@ -154,7 +155,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'plans:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params

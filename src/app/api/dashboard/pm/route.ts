@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { guardAuth, ok } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import type { PmDashboardResponse, ProjectStatus } from '@/lib/forgeos-types'
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -9,7 +10,7 @@ function monthKey(d: Date): string {
 }
 
 export async function GET(req: Request) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'pm-dashboard:read')
   if (!auth.ok) return auth.response
 
   const projects = await db.project.findMany({ where: { assignedPmId: auth.user.id } })

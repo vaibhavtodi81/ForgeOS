@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, num, ok, optString, pageMeta, parsePagination, readJson, parseDay } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { AREA_UNITS } from '@/lib/forgeos-types'
 import type { AreaUnit } from '@/lib/forgeos-types'
@@ -64,7 +65,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'lands:write')
   if (!auth.ok) return auth.response
 
   const body = await readJson<Record<string, unknown>>(req)

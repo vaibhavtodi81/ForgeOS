@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, optString, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { MATERIAL_CATEGORIES } from '@/lib/forgeos-types'
 import type { MaterialCategory } from '@/lib/forgeos-types'
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'materials:write')
   if (!auth.ok) return auth.response
 
   const body = await readJson<Record<string, unknown>>(req)

@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 
 const TXN_INCLUDE = {
@@ -9,7 +10,7 @@ const TXN_INCLUDE = {
 } satisfies Prisma.InventoryTransactionInclude
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string; txnId: string }> }) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'stock:void')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id, txnId } = await params

@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, parseDate, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { GST_OPTIONS } from '@/lib/forgeos-types'
 import type { InvoiceListResponse, InvoiceRow, InvoiceStatus, PaymentMethod, PaymentRow } from '@/lib/forgeos-types'
@@ -87,7 +88,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'invoices:write')
   if (!auth.ok) return auth.response
 
   const body = await readJson<{

@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, pmOwns, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { PLAN_STATUSES } from '@/lib/forgeos-types'
 import type { PlanStatus } from '@/lib/forgeos-types'
@@ -128,7 +129,7 @@ function parseCreateBody(body: Record<string, unknown>): { error: string | null;
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'plans:write')
   if (!auth.ok) return auth.response
   const { user } = auth
 
