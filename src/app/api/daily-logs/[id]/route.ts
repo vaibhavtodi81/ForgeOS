@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, num, ok, optString, parseDay, pmOwns, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import type { NextResponse } from 'next/server'
 
@@ -129,7 +130,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'logs:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params
@@ -236,7 +237,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'logs:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params

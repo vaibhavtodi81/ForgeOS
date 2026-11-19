@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, num, ok, optString, parseDay, pmOwns, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { MILESTONE_STATUSES } from '@/lib/forgeos-types'
 import type { MilestoneStatus } from '@/lib/forgeos-types'
@@ -19,7 +20,7 @@ function toJson(m: Prisma.MilestoneGetPayload<Record<string, never>>) {
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'milestones:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params
@@ -116,7 +117,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'milestones:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params

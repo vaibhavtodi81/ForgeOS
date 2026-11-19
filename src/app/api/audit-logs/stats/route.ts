@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { guardAuth, ok } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import type { AuditStatsResponse } from '@/lib/forgeos-types'
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -9,7 +10,7 @@ function dayKey(d: Date): string {
 }
 
 export async function GET(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'audit:read')
   if (!auth.ok) return auth.response
 
   const now = new Date()

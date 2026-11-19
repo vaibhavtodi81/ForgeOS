@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, num, ok, optString, pageMeta, parsePagination, parseDay, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { PROJECT_STATUSES } from '@/lib/forgeos-types'
 import type { ProjectStatus } from '@/lib/forgeos-types'
@@ -73,7 +74,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'projects:write')
   if (!auth.ok) return auth.response
   const { user } = auth
 

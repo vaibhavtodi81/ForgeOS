@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, optString, pageMeta, parsePagination, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { hashPassword } from '@/lib/auth'
 import { writeAudit } from '@/lib/audit'
 import { INVITE_ROLES, ROLES } from '@/lib/forgeos-types'
@@ -25,7 +26,7 @@ function toUserRow(u: UserWithCount) {
 }
 
 export async function GET(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'users:write')
   if (!auth.ok) return auth.response
 
   const url = new URL(req.url)
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'users:write')
   if (!auth.ok) return auth.response
 
   const body = await readJson<Record<string, unknown>>(req)

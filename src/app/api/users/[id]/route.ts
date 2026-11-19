@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, ok, optString, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { INVITE_ROLES } from '@/lib/forgeos-types'
 import type { Role } from '@/lib/forgeos-types'
@@ -7,7 +8,7 @@ import type { Role } from '@/lib/forgeos-types'
 const ACTIVE_PROJECT_STATUSES = ['ACTIVE', 'ON_HOLD']
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['ADMIN'])
+  const auth = await requirePermission(req, 'users:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params

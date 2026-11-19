@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { fail, getClientIp, guardAuth, num, ok, optString, parseDay, pmOwns, readJson } from '@/lib/api-helpers'
+import { requirePermission } from '@/lib/rbac'
 import { writeAudit } from '@/lib/audit'
 import { ADJUSTMENT_DIRECTIONS, OUT_REASONS, TXN_TYPES } from '@/lib/forgeos-types'
 import type { AdjustmentDirection, OutReason, TxnType } from '@/lib/forgeos-types'
@@ -79,7 +80,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await guardAuth(req, ['PM'])
+  const auth = await requirePermission(req, 'stock:write')
   if (!auth.ok) return auth.response
   const { user } = auth
   const { id } = await params
