@@ -181,20 +181,20 @@ jobs:
     steps:
       - name: Verify every job succeeded
         if: >-
-          ${{ !(needs.result.lint == 'success' &&
-                needs.result.typecheck == 'success' &&
-                needs.result.backend-unit == 'success' &&
-                needs.result.backend-integration == 'success' &&
-                needs.result.frontend-tests == 'success' &&
-                needs.result.build == 'success') }}
+          ${{ !(needs.lint.result == 'success' &&
+                needs.typecheck.result == 'success' &&
+                needs.backend-unit.result == 'success' &&
+                needs.backend-integration.result == 'success' &&
+                needs.frontend-tests.result == 'success' &&
+                needs.build.result == 'success') }}
         run: |
           echo "One or more CI jobs failed:"
-          echo "  lint:                 ${{ needs.result.lint }}"
-          echo "  typecheck:            ${{ needs.result.typecheck }}"
-          echo "  backend-unit:         ${{ needs.result.backend-unit }}"
-          echo "  backend-integration:  ${{ needs.result.backend-integration }}"
-          echo "  frontend-tests:       ${{ needs.result.frontend-tests }}"
-          echo "  build:                ${{ needs.result.build }}"
+          echo "  lint:                 ${{ needs.lint.result }}"
+          echo "  typecheck:            ${{ needs.typecheck.result }}"
+          echo "  backend-unit:         ${{ needs.backend-unit.result }}"
+          echo "  backend-integration:  ${{ needs.backend-integration.result }}"
+          echo "  frontend-tests:       ${{ needs.frontend-tests.result }}"
+          echo "  build:                ${{ needs.build.result }}"
           exit 1
       - name: CI green
         run: echo "All CI checks passed."
