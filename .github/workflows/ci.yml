@@ -1,0 +1,200 @@
+# ForgeOS CI — runs the quality gates for each part of the system separately:
+#
+#   lint                 — ESLint over the whole repo
+#   typecheck            — tsc --noEmit over app + tests (after prisma generate)
+#   backend-unit         — pure unit tests (auth crypto, rate limiter, API helpers)
+#   backend-integration  — API route-handler + SQLite integration tests against a
+#                          freshly recreated and seeded db/test.db
+#   frontend-tests       — jsdom + Testing Library unit/component/hook tests
+#                          (all network access mocked — no DB, no server)
+#   build                — next build (production compile check)
+#   ci-ok                — single green gate for branch protection
+#
+# Environment notes:
+# - The tracked .env carries the non-production dev/test JWT_SECRET;
+#   tests/setup.ts reads it when the JWT_SECRET env var is not set, so a repo
+#   secret is an optional override, not a requirement.
+# - vitest.config.ts pins DATABASE_URL to <repo>/db/test.db for every test
+#   worker, so backend-integration recreates exactly that file.
+# - Prisma CLI and Bun both let real environment variables win over .env
+#   values, which is how the integration job redirects db push / seed to the
+#   test database.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------ lint --
+  lint:
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: ESLint
+        run: bun run lint
+
+  # ------------------------------------------------------------- typecheck --
+  typecheck:
+    name: Typecheck (tsc --noEmit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Generates the typed Prisma client — without this, tsc cannot see the
+      # model properties used by src/lib/db and the integration tests.
+      - name: Prisma generate
+        run: bun run db:generate
+
+      - name: TypeScript
+        run: bun run typecheck
+
+  # --------------------------------------------------------- backend: unit --
+  backend-unit:
+    name: Backend / unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prisma generate
+        run: bun run db:generate
+
+      - name: Run unit tests
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: bun run test:unit
+
+  # -------------------------------------------------- backend: integration --
+  backend-integration:
+    name: Backend / integration tests (API + SQLite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prisma generate
+        run: bun run db:generate
+
+      # The committed db/test.db may be stale — always recreate it from the
+      # current schema and reseed it so the suite starts from a known state.
+      - name: Recreate and seed the test database
+        run: |
+          rm -f db/test.db
+          export DATABASE_URL="file:$PWD/db/test.db"
+          bun run db:push
+          bun run db:seed
+
+      - name: Run integration tests
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: bun run test:integration
+
+  # ------------------------------------------------------- frontend: tests --
+  frontend-tests:
+    name: Frontend / unit + component tests (jsdom)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prisma generate
+        run: bun run db:generate
+
+      - name: Run frontend tests
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: bun run test:frontend
+
+  # ----------------------------------------------------------------- build --
+  build:
+    name: Build (next build)
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prisma generate
+        run: bun run db:generate
+
+      # Hermetic throwaway database URL — next build never opens a
+      # connection (the Prisma client is lazy), this just keeps the tracked
+      # .env's sandbox-specific absolute path out of the equation.
+      - name: Production build
+        env:
+          DATABASE_URL: "file:${{ github.workspace }}/db/ci-build.db"
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: bun run build
+
+  # ---------------------------------------------------------------- ci gate --
+  ci-ok:
+    name: All checks passed
+    if: always()
+    needs: [lint, typecheck, backend-unit, backend-integration, frontend-tests, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify every job succeeded
+        if: >-
+          ${{ !(needs.result.lint == 'success' &&
+                needs.result.typecheck == 'success' &&
+                needs.result.backend-unit == 'success' &&
+                needs.result.backend-integration == 'success' &&
+                needs.result.frontend-tests == 'success' &&
+                needs.result.build == 'success') }}
+        run: |
+          echo "One or more CI jobs failed:"
+          echo "  lint:                 ${{ needs.result.lint }}"
+          echo "  typecheck:            ${{ needs.result.typecheck }}"
+          echo "  backend-unit:         ${{ needs.result.backend-unit }}"
+          echo "  backend-integration:  ${{ needs.result.backend-integration }}"
+          echo "  frontend-tests:       ${{ needs.result.frontend-tests }}"
+          echo "  build:                ${{ needs.result.build }}"
+          exit 1
+      - name: CI green
+        run: echo "All CI checks passed."
