@@ -24,6 +24,13 @@ try {
   // .env is optional for pure unit assertions
 }
 
+if (!process.env.JWT_SECRET) {
+  // Hermetic fallback so the suite runs green straight after `git clone`
+  // (no .env required). CI sets the same value explicitly — see
+  // .github/workflows/ci.yml. Test-only; never used by the dev server.
+  process.env.JWT_SECRET = 'forgeos-test-only-session-secret-not-for-production'
+}
+
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error('tests/setup.ts: JWT_SECRET must be set and at least 32 characters')
 }

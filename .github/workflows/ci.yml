@@ -11,9 +11,10 @@
 #   ci-ok                — single green gate for branch protection
 #
 # Environment notes:
-# - The tracked .env carries the non-production dev/test JWT_SECRET;
-#   tests/setup.ts reads it when the JWT_SECRET env var is not set, so a repo
-#   secret is an optional override, not a requirement.
+# - No .env is tracked in the repo. Every job that needs a session secret
+#   sets the same hermetic test-only JWT_SECRET explicitly below, and
+#   tests/setup.ts falls back to the identical value as a safety net — a
+#   repo secret is an optional override, never a requirement.
 # - vitest.config.ts pins DATABASE_URL to <repo>/db/test.db for every test
 #   worker, so backend-integration recreates exactly that file.
 # - Prisma CLI and Bun both let real environment variables win over .env
@@ -91,7 +92,7 @@ jobs:
 
       - name: Run unit tests
         env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_SECRET: forgeos-ci-test-only-jwt-session-secret
         run: bun run test:unit
 
   # -------------------------------------------------- backend: integration --
@@ -121,7 +122,7 @@ jobs:
 
       - name: Run integration tests
         env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_SECRET: forgeos-ci-test-only-jwt-session-secret
         run: bun run test:integration
 
   # ------------------------------------------------------- frontend: tests --
@@ -142,7 +143,7 @@ jobs:
 
       - name: Run frontend tests
         env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_SECRET: forgeos-ci-test-only-jwt-session-secret
         run: bun run test:frontend
 
   # ----------------------------------------------------------------- build --
@@ -168,7 +169,7 @@ jobs:
       - name: Production build
         env:
           DATABASE_URL: "file:${{ github.workspace }}/db/ci-build.db"
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_SECRET: forgeos-ci-test-only-jwt-session-secret
         run: bun run build
 
   # ---------------------------------------------------------------- ci gate --

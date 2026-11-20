@@ -214,8 +214,9 @@ concurrency cancellation and read-only permissions.
 | `JWT_SECRET` | **required**, ≥32 chars, checked at boot — no insecure default |
 | SMTP / OAuth credentials | Gmail app password for OTP; Google OAuth client for sign-in |
 
-Secrets never live in code; the committed `.env` carries only the non-production
-dev/test values.
+Secrets never live in the repository — `.env` is git-ignored, `.env.example`
+is the committed template, and CI supplies its own hermetic test-only
+`JWT_SECRET` (mirrored by the `tests/setup.ts` fallback).
 
 ---
 

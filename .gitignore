@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -30,25 +30,43 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — real secrets never go in git; .env.example is the template
 .env*
+!.env.example
 
 # vercel
 .vercel
 
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-local-*
-.claude
-.z-ai-config
-*.log
-dev.log
-dev.out.log
-test
-prompt
 
-server.log
-# Skills directory
+# local databases (created by `bun run db:push` and `bun run db:seed`)
+db/*.db
+db/*.db-journal
+
+# logs
+*.log
+
+# local-only files
+local-*
+
+# ---------------------------------------------------------------------------
+# Sandbox / development-container scaffolding — NOT part of the ForgeOS
+# product. These live in the dev workspace only and are intentionally kept
+# out of the repository.
+# ---------------------------------------------------------------------------
+/.zscripts/
+/agent-ctx/
+/tool-results/
 /skills/
+/examples/
+/mini-services/
+/upload/
+/download/
+/Caddyfile
+/.initial_snapshot.json
+/.z-ai-config/
+/.claude/
+/tests/python-runtime-*.sh
+/tests/database-runtime-build.sh
